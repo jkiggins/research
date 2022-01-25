@@ -1,0 +1,84 @@
+% timeline.tex
+%
+% Author       : Jacob Kiggins
+% Contact      : jmk1154@g.rit.edu
+% Date Created : 01/31/2021
+%
+
+\chapter{Milestones and Tasks}\label{chapter:miles_and_tasks}
+\section{Task Breakdown}
+Total Estimate: 158 hr
+\begin{enumerate}
+    \item \label{task:proposal} Proposal Complete - 2 hr
+        \begin{itemize}
+            \item Tackle all TODOs - 1 hr
+            \item Misc updates - 1 hr
+        \end{itemize}
+    \item \label{task:committe} Committee Assembled - 1 hr
+    \item \label{task:train_success} First successful training run using a bio-inspired training rule - 8 hr 
+        \begin{itemize}
+            \item Port model to Norse - 2 hr
+            \item Write STDP Optimizer for Norse - 2 hr
+            \item Write RL Optimizer for Norse - 1 hr
+            \item Test and Debug - 3 hr
+        \end{itemize}
+    \item \label{task:astrocyte} Integrate an Astrocyte element into one of the architectures with previous success - 4 hr
+        \begin{itemize}
+            \item Determine how to integrate - 1 hr
+            \item Stub out Integration - 1 hr
+            \item Implement Astrocyte model (the math) - 2 hr
+        \end{itemize}
+    \item \label{task:astro_train} End-to-end Training with Astrocytes - 16 hr
+        \begin{itemize}
+            \item Deeper dive on Astrocyte aware training methods, and search for more approaches - 3 hr
+            \item Brainstorm training approaches - 1 hr
+            \item Pick top 3 training approaches based on what is likely to work best, and level of bio-inspiration - 2 hr
+            \item Implement top 3 training approaches one at a time, and test - 10 hr
+        \end{itemize}
+    \item \label{task:sweep} Sweep of Learning rules, Astrocyte models, and Neuron Models - 15 hr
+        \begin{itemize}
+            \item Integrate data capture for performance metrics that will be used - 5 hr
+            \item Final verification of learning rules - 2 hr
+            \item Final verification of models - 2 hr
+            \item Wrap up boilerplate code to handle training and eval - 2 hr
+            \item Summarize results, generate graphs, etc... - 4 hr
+        \end{itemize}
+    \item \label{task:simplify} Simplifications Determined for FPGA Implementation - 10 hr
+        \begin{itemize}
+            \item Hand-calculations for piecwise linear approximation - 2 hr
+            \item Find optimal coefficients - 4 hr
+            \item Implement in Python and test - 2 hr
+            \item Test out quantization, and delay-based weighting - 2 hr
+        \end{itemize}
+    \item \label{task:fpga} FPGA Implementation done - 22 hr
+        \begin{itemize}
+            \item Implement piecewise linear approx using HDL - 10 hr
+            \item Implement Neuron, Astrocyte, and Connection elements in HDL - 10 hr
+            \item Simple example, that could be scaled - 2 hr
+        \end{itemize}
+    \item \label{task:writing} Thesis Complete - 80 hr
+    \item Defense
+\end{enumerate}
+
+\section{Schedule}
+\begin{itemize}
+    \item 04/19/2021 - 16hr tasks: \ref{task:train_success}
+    \item 04/26/2021 - 16hr tasks: \ref{task:train_success}, \ref{task:proposal}, \ref{task:committe}
+    \item 05/03/2021 - 16hr tasks: \ref{task:astrocyte}
+    \item 05/10/2021 - 16hr tasks: \ref{task:astro_train}
+    \item 05/17/2021 - 16hr tasks: \ref{task:sweep}
+    \item 05/24/2021 - 26hr tasks: \ref{task:sweep}
+    \item 05/31/2021 - 26hr tasks: \ref{task:sweep}
+    \item 06/07/2021 - 26hr tasks: \ref{task:sweep}
+    \item 06/14/2021 - 26hr tasks: \ref{task:simplify}
+    \item 06/21/2021 - 26hr tasks: \ref{task:simplify}
+    \item 06/28/2021 - 26hr tasks: \ref{task:fpga}
+    \item 07/05/2021 - 26hr tasks: \ref{task:fpga}
+    \item 07/12/2021 - 26hr tasks: \ref{task:writing}
+    \item 07/19/2021 - 26hr tasks: \ref{task:writing}
+    \item 07/26/2021 - 26hr tasks: \ref{task:sweep}
+    \item 08/02/2021 - 26hr tasks: \ref{task:writing}
+    \item 08/09/2021 - 26hr tasks: \ref{task:writing}
+\end{itemize}
+
+

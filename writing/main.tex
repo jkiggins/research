@@ -1,0 +1,266 @@
+% thesis.tex
+%
+% Original version ::
+% Author       : James Mnatzaganian
+% Contact      : http://techtorials.me
+% Date Created : 08/27/15
+%
+% Description  : James Mnatzaganian's thesis document for an MS in CE at RIT.
+%
+% Organization :
+%	figures/			% Figures related to the top-level
+%	prologue.tex		% Prologue (before the main document)
+%	glossary.tex		% Acronymns and glossary
+%	mybibliography.bib			% Bibliography
+%	<chapter>			% Folder for the <chapter> chapter
+%		figures/		% Figures for the <chapter> chapter
+%		<chapter>.tex	% Document for the <chapter> chapter
+%
+% Copyright (c) 2015 James Mnatzaganian
+%
+% Version 2 ::
+% Author       : Andres Kwasinski
+% Contact      : https://people.rit.edu/axkeec/
+% Date Created : 01/09/2020
+%
+
+
+
+
+% NOTE: All filler text has "TODO" written. This must be removed in the final copy!
+
+% \begin{document type}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Document Type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Define the document type
+\documentclass[cmpethesis]{ritcmpethesis}  % Use this line for your thesis document
+%\documentclass[cmpeproject]{ritcmpethesis}  % Use this line for your project report
+%\documentclass[cmpeproject,cmpeproposal]{ritcmpethesis}  % Add the option "cmpeproposal" when preparing the proposal for your project research
+%\documentclass[cmpethesis,cmpeproposal]{ritcmpethesis}  % Add the option "cmpeproposal" when preparing the proposal for your thesis research
+% \end{document type}\end{}
+
+% \begin{packages}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Packages
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Used for creating clicking references
+\usepackage[hidelinks]{hyperref}
+
+% Used for displaying images
+\usepackage{graphicx}
+
+% Support for typesetting math
+\usepackage{mathtools}
+
+% Support for number sets
+\usepackage{amsfonts}
+
+% Support for logic notation
+\usepackage{amssymb}
+
+% Support for typesetting subcaptions
+\usepackage{subcaption}
+
+% Adding TODO Notes
+\usepackage{todonotes}
+
+%% \usepackage[backend=biber, bibencoding=utf8, style=alphabetic, citestyle=ieee]{biblatex}
+\usepackage[backend=biber, bibencoding=utf8]{biblatex}
+\addbibresource{mybibliography.bib}
+
+% Typset indexes - Needed for sorting the glossary
+%  - xindy: Sorting / indexing of items
+\usepackage[xindy]{imakeidx}
+
+% Support for glossaries
+%  - nopostdot: Omit dot at the end of each description
+%  - nonumberlist: Supress number of items
+%  - acronym: Support for acronyms
+%  - toc: Add glossary to table of contents
+%  - xindy: Sorting / indexing of items
+\usepackage[nopostdot,nonumberlist,acronym,toc,xindy]{glossaries}
+
+% Support for displaying pseudo-code
+\usepackage{algorithm}
+
+% Support for displaying pseudo-code
+%  - noend: Don't display end ...
+\usepackage[noend]{algpseudocode}
+
+% Support for pretty inline fractions
+\usepackage{nicefrac}
+
+% To generate the dummy text you'll find all over
+\usepackage[english]{babel}
+\usepackage{blindtext}
+
+% Add hyperref to ref list items
+\usepackage{hyperref}
+% \end{packages}
+
+% \begin{macros}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Default header for a table
+\newcommand{\tableheader}[1]{\multicolumn{1}{|c|}{\textbf{#1}}}
+
+% Section referencing
+\newcommand{\sref}[1]{Section~\ref{#1}}
+
+% Figure referencing
+\newcommand{\fig}[1]{Figure~\ref{#1}}
+% Usage: \afig{url}{Figure caption}{label for referencing later}
+\newcommand{\afig}[3]{
+	\begin{figure}[H]
+    	\centering
+		\includegraphics[width=\linewidth]{#1}
+        \caption{#2}
+        \label{#3}
+	\end{figure}
+}
+
+% Usage: \afigf{url}{Figure caption}{label for referencing later}
+\newcommand{\afigf}[3]{
+	\begin{figure}[h]
+    	\centering
+		\includegraphics[width=\linewidth]{#1}
+        \caption{#2}
+        \label{#3}
+	\end{figure}
+}
+
+% Usage: \afigw{url}{Figure caption}{label for referencing later}{width 1/factor}
+\newcommand{\afigw}[4]{
+	\begin{figure}[H]
+    	\centering
+		\includegraphics[width=\linewidth/#4]{#1}
+        \caption{#2}
+        \label{#3}
+	\end{figure}
+}
+
+% Usage: \afigs{url}{Figure caption}{label for referencing later}{width}
+\newcommand{\afigs}[4]{
+	\begin{figure}[H]
+    	\centering
+		\includegraphics[width=#4\columnwidth]{#1}
+        \caption{#2}
+        \label{#3}
+	\end{figure}
+}
+
+% Equation referencing
+\newcommand{\eq}[1]{(\ref{#1})}
+
+% Algorithm referencing
+\newcommand{\alg}[1]{Algorithm~\ref{#1}}
+
+% Glossary referencing
+\newcommand{\glsref}[1]{\\ \textit{Glossary:} \gls{#1}}
+
+% Change comment style to use #
+\algrenewcommand{\algorithmiccomment}[1]{\# #1}
+
+% Make *proper* vector arrows - Credit to harpoon pacakge for initial idea
+\newlength{\argwd}
+\newlength{\arght}
+\newcommand{\overharp}[3]{%
+	\settowidth{\argwd}{#2}%
+	\settoheight{\arght}{#2}%
+	\addtolength{\argwd}{.1\argwd}%
+	\raisebox{\arght}{%
+		\makebox[.04\argwd][l]{%
+			\resizebox{\argwd}{#3\arght}{$#1$}%
+		}%
+	}%
+	#2%
+}
+\newcommand{\overrightharp}[2]{\overharp{\rightharpoonup}{#1}{#2}}
+\newcommand{\vect}[2][.5]{\text{\overrightharp{\ensuremath{\boldsymbol{#2}}}{#1}}}
+\newcommand{\vectmd}[2][.5]{\text{\overrightharp{\ensuremath{#2}}{#1}}}
+
+% Make *proper* text over sim - Credit: http://tex.stackexchange.com/a/43338/66603
+\newsavebox{\mybox}\newsavebox{\mysim}
+\newcommand{\distas}[1]{%
+  \savebox{\mybox}{\hbox{$\scriptstyle#1$}}%
+  \savebox{\mysim}{\hbox{$\sim$}}%
+  \mathbin{\overset{#1}{\resizebox{\wd\mybox}{\ht\mysim}{$\sim$}}}%
+}
+% \end{macros}
+
+% \begin{document configuration}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Document Configuration
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Add DRAFT to the document
+% Comment the next 5 lines to remove "DRAFT" watermark
+\usepackage{draftwatermark}
+\SetWatermarkText{DRAFT}
+\SetWatermarkScale{9}
+\SetWatermarkColor[gray]{0.90}
+\SetWatermarkAngle{45}
+
+% Set the path for the figures
+\graphicspath{{figures/}{01_introduction/figures/}{02_background/figures/}}
+
+% Author, title, and date
+\author{Jacob Kiggins}
+\title{Properties and Performance of a Bio-Plausible Spiking Neural Network with Astrocytes}
+\date{May 2021}
+
+% Advisor details
+\advisor{Department of Computer Engineering}{Cory}{Merkel}
+\committee{Department of Computer Engineering}{First}{LastName}{Optional text: Co-Advisor (usually left blank)}
+\committee{Another Department or Affiliation}{First}{LastName}{}
+% \end{document configuration}\end{}
+
+% \begin{glossary}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Glossary Setup
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Load the glossary
+\loadglsentries{glossary}
+
+% Load the acronyms
+\loadglsentries[type=\acronymtype]{acronym}
+
+% Initialize the glossary
+\makeglossaries
+\setglossarystyle{altlist}
+
+% Sort the glossary
+\makeindex
+% \end{glossary}
+
+% \begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Document Start
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+	
+	% Pre chapter stuff
+	\include{prologue}
+	
+	% Actual chapters
+	%% \include{01_introduction/introduction}
+	\include{02_background/background}
+	%% \include{03_objective_details/objective_details}
+	%% \include{04_timeline/timeline}
+    %% \include{05_Experiments/experiments}
+	
+    % Bibliography file
+    \printbibliography
+
+    % Glossary
+    \printglossary[type=main]
+
+% End the document
+\end{document} 

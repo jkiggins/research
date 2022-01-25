@@ -1,0 +1,81 @@
+% prologue.tex
+%
+% Author       : James Mnatzaganian
+% Contact      : http://techtorials.me
+% Date Created : 08/27/15
+%
+% Description  : The prologue used by "thesis.tex".
+%
+% Copyright (c) 2015 James Mnatzaganian
+
+% NOTE: All filler text has "TODO" written. This must be removed in the final copy!
+
+% Initialize starting pages to use Roman numerals
+\frontmatter
+
+% \begin{acknowledgments}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Acknowledgments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{acknowledgments}
+	TODO
+\end{acknowledgments}
+% \end{acknowledgments}
+
+% \begin{dedication}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Dedication
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{dedication}
+	TODO
+\end{dedication}
+% \end{dedication}
+
+%\begin{abstract}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Abstract
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Abstract
+\begin{abstract}
+	The mammalian brain is the most capable and complex computing entity known
+	today. For many years there has been research focusing on reproducing the
+	brain's processing capabilities. The first iteration of this process was
+	Artificial Neural Networks. The use of sigmoid neurons and convolution
+	operations have lead to significant success with many difficult
+	problems. Object detection, style transfer, and segmentation of complex
+	objects in noisy environments are examples. These systems can match and
+	outperform humans in specific situations. Though in general, they require
+	much more training, have higher power consumption, are more susceptible to
+	noise, and can fail with adversarial inputs. In addition, state of the art
+	models have a difficult time handling time-series data, and don't have any
+	inherent memory, at least not with the same flexibility as humans
+	display. Spiking neural networks are a logical next step to getting some of 
+	the biological advantages on to computing platforms. This work explores a
+	bio-plausible configuration of Spiking Neural Networks with Astrocytes,
+	which displays desirable properties beyond what Spiking Networks are able
+	to achieve alone, and bring the field a bit closer to leveraging some of the
+	distinct advantages of biological neural networks.
+\end{abstract}
+%\end{abstract}
+
+% \begin{introductory lists and tabels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Introductory Lists and Tables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Add TOC, list of figures, list of tables in that order
+\makealllists
+
+% Add the acronyms
+\glsaddall
+\printglossary[type=\acronymtype]
+
+% Reset all acronyms
+\glsresetall
+
+% Start using Arabic numbers
+\mainmatter
+% \end{introductory lists and tabels}

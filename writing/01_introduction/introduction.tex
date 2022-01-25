@@ -1,0 +1,31 @@
+% introduction.tex
+%
+% Author       : James Mnatzaganian
+% Contact      : http://techtorials.me
+% Date Created : 08/27/15
+%
+% Description  : Introduction chapter used by "thesis.tex".
+%
+% Copyright (c) 2015 James Mnatzaganian
+%
+% Version 2 ::
+% Author       : Andres Kwasinski
+% Contact      : https://people.rit.edu/axkeec/
+% Date Created : 01/09/2020
+%
+
+% NOTE: All filler text has "TODO" written. This must be removed in the final copy!
+
+\chapter{Introduction}\label{section:introduction}
+    \section{Motivation}
+    Biological neurons and neural networks originally inspired traditional, real-valued ANNs. Decades of research and hardware advancements later, ANNs have achieved and even surpassed humans in specialized tasks. Currently neural networks outperform humans in object recognition and classification, a variety of games (chess, go, some video games), and speech recognition. This performance comes at a cost however, huge networks with millions of parameters are needed. Computing their decision in real-time requires specialized, power-hungry hardware, and their ability to handle time-series data is limited. The human brain on the other hand, is able to handle a wide variety of complex tasks with $\approx$ 20 W of power, and seamlessly handle time-series input. Over the decades, research in the neuroscience field has advanced as well and it is known that the sigmoid neuron is poor approximation of a biological neuron. In addition Neuroscientists have discovered a variety of temporal encoding schemes beyond rate-based coding, suggesting that real values can't approximate biological neuron communication. As the functional gap between biological and artificial neurons is realized it is important to consider the differences, and possible advantages to closing this gap. Spiking neural networks, are a step in that direction and there is growing interesting in exploring their properties. The goal of such research is generally to tease out the elements of biological neural networks that facilitate low-power processing of time-series data, in addition to low-power on-line training. Achieving these things may require a fundamental shift in the models used, a shift towards spiking neural networks. Reducing the power requirement for a given task would be extremely beneficial from an engineering perspective, but there are further implications. SNNs lend themselves to more efficient, and simpler hardware implementations compared to ANNs. Reducing the number of transistors required for a single neuron could open doors for deeper and larger networks then would be feasible today.
+    
+    \section{Thesis Objectives}
+    The overarching goal of this thesis is to extend the bio-realism of spiking networks by introducing an Astrocyte-like element, in a way that improves performance when applied to Computer Vision tasks. There will be a focus on bio-realism, and the feasibility and performance of a hardware implementation.
+
+    More specific objectives.
+    \begin{enumerate}
+        \item Determine the effects of an Astrocyte element when added to spiking neural networks when applied to a vision task with a bio-realistic supervised learning approach.
+        \item Develop or extend an existing Spiking Neural Network supervised learning rule for end-to-end training of Spiking-Glial Neural Networks.
+        \item Propose an SNN + Astrocyte implementation on FPGA that is capable of handling a vision task with reasonable accuracy compared to simulation.
+    \end{enumerate}

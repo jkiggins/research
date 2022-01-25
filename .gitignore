@@ -1,0 +1,15 @@
+/literature
+/writing/*.out
+/writing/*.pdf
+/writing/*.log
+/writing/*.blg
+/writing/*.bcf
+/writing/*.glo
+/writing/*.xdy
+/writing/**/*.aux
+/writing/**/*.acn
+/writing/main.tex.*
+/writing/*.xml
+/writing/main.toc
+/writing/main.lo*
+/writing/main.idx

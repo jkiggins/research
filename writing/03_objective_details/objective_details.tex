@@ -1,0 +1,187 @@
+% objective_details.tex
+%
+% Author       : Jacob Kiggins
+% Contact      : jmk1154@g.rit.edu
+% Date Created : 01/31/2021
+%
+
+% NOTE: All filler text has "TODO" written. This must be removed in the final copy!
+
+\chapter{Objective Details}\label{section:objective_details}
+    The overarching goal of this thesis is to extend the bio-inspiration of spiking networks by introducing an Astrocyte-like element, in a way that improves performance when applied to Computer Vision tasks. Three data-sets will be used in evaluation. The first is MNIST, as many papers have shown success with hand-written digit recognition using SNN. The second is N-MNIST, which is a neuromorphic version of the MNIST dataset. Third, is the Davis Driving Dataset, published in 2020. There will be a focus on bio-inspiration, and the feasibility and performance of a hardware implementation. Standard metrics will be used to evaluate models trained using the two classification datasets (MNIST and N-MNIST). These will include accuracy, mean-average-precision, and a confusion matrix. For the driving dataset, mean-squared-error will be reported. In addition to standard metrics post-training, an Astrocytes' effect on convergence and generalization will be measured.
+    
+    %%%%%%%%%%%%% Datasets %%%%%%%%%%%%%
+    \section{Datasets} \label{section:datasets}
+    The MNIST dataset consists of 60,000 training images and 10,000 test images. Each image is 28x28 and contains a single hand-written digit, 0-9.
+    
+    The N-MNIST dataset is a neuromorphic variant on MNIST. It was created by pointing a ATIS sensor (dynamic vision sensor) at an LCD display. The ATIS sensor was mounted on a pan-tilt device, and moved relative to the LCD display, which displayed a sample from MNIST. Like MNIST, each sample is 28x28, there are 60,000 training images, and 10,000 test images. Though samples are stored as "frames" a greater-than-zero pixel value only indicates a change in brightness at that time.
+    
+    DDD20 (Davis Driving Dataset, released in 2020) is another neuromorphic vision dataset. This dataset consists of output from an dynamic vision camera facing forward while a car is being driven. The ground truth labels for this dataset are steering wheel position, car speed, and GPS position. Similar to N-MNIST, pixel values corresponding to brightness changes. There are 39 hours of footage in this dataset.
+    
+    %%%%%%%%%%%%% Metrics %%%%%%%%%%%%%
+    \section{Metrics} \label{section:metrics}
+    A variety of metrics will be used during development and as the standard benchmark to measure the outcome of experiments. The simplest and most well known metrics, such as mean-average-precision, accuracy, and a confusion matrix can give insight into how well the network is performing on classification tasks, and if there has been an improvement in response to whatever changes were made. In addition to standard metrics, it is important to know how the network is generalizing. This is normally measured using a held-out validation set, which the network doesn't see during training, but is tested against afterwards. Along with this standard practice models evaluated as part of this research will be compared using a unfavorable validation split. This will involve training with increasingly larger validation sets (and conversely smaller training sets). Graphs generated for each model can easily be compared to see which architectures are better at generalizing to the dataset.
+    
+    In addition to "post-learning" metrics, as listed above, it is important to take into account how the model responds during training into consideration. Loss will be recorded during training and can be compared across architectures. This will give an indication of how quickly the model is converging, and if a specific change lends itself to faster convergence.
+    
+    Lastly, two metrics will be used to monitor the network from a more application-independent perspective. This will give insight into how different architectures are behaving at a low level. The first is a per-neuron spike-trace. This will provide information like average spike rate, and show any areas of the network with increased activity. From this trace a higher-level insights can be made, namely counting the number of poly-synchronous groups, as outlined in \cite{sgnn_transistor}.
+    
+    %%%%%%%%%%%%% SW Components %%%%%%%%%%%%%
+    \section{SW Components}
+    Spiking Neural Networks are very much in their infancy as far as software and community support. This isn't due to lack of options, many frameworks are capable of simulating SNNs. However, these frameworks aren't as sophisticated, complete, error-free, or supported when compared to traditional DL libraries. In addition, many of the more bio-realistic frameworks can't simulate networks at scale (such as NEST). Recently, a few python libraries have emerged that are usable and very close to complete solutions. The first is BindsNet, which has been referenced in a variety of papers. The original implementation included an architecture that achieved SOTA results on MNIST classification. The second is PySNN, which will be used as the primary simulation tool in this research. PySNN was written by a PhD student, and builds on-top of PyTorch. This implementation is the cleanest (that I've seen) extension of PyTorch, making the most use of existing functions and keeping to the same design methodolgy. In addition many common Spiking Neuron Models are included out of the box, such as LIF, and the more bio-inspired Izhikevich model. Also worth mentioning is a newer framework, Norse. It is in active development and claims to be used in current research. This library would be another viable option, if there are issues with PySNN, or features in Norse that are advantageous.
+    
+    %%%%%%%%%%%%% SGNN Architecture %%%%%%%%%%%%%
+    \section{Develop an SGNN Architecture that Improves Performance Over SNN Alone}
+    The first objective of this thesis, is to develop an SGNN architecture, which improves performance, as measured by the metrics indicated in \ref{section:metrics}. The "glial" portion of SGNN refers to an Astrocyte-like element, which will be added to a bio-inspired SNN architecture.
+    
+    To achieve this, a suitable Astrocyte-like model (or models) will be chosen for evaluation. This starts with a survey of current research, and understanding of the underlying biology. This portion of the process has mostly been completed, see \ref{section:background}. Astrocyte models in the literature range from computationally simple models, which are generally paired with real-valued neurons. To complex mathematical models, which aim to mimic the calcium dynamics within an Astrocyte. The latter models are generally paired with spiking neural networks. With a suitable set of Astrocyte models to consider, the next step is to determine how to integrate these Astrocyte elements among the spiking neurons. \cite{sgnn_transistor} states that in the human neocortex, an area of the brain responsible for cognition and higher-order processing, is shown to have an average 1.5:1 astrocyte to neuron ratio. Keeping around this ratio seems reasonable, and will be used as a starting point for additional research. Beyond the ratio, there is a need to determine how the astrocytes will map to neurons. It is well known that astroctyes may envelop multiple synapses, up to 2,000,000 in some parts of the human brain \cite{mederos_2018}. There are also some synapes that aren't influenced by astrocytes. It is reasonable to assume a single synapse wouldn't be enveloped by multiple astrocytes, but what of a single neuron? could its synapses be affected by multiple astrocytes? For the purpose of this research, the following assumptions will be used, and limits defined.
+    
+    \begin{enumerate}
+        \item A Single astrocyte may affect multiple synapses, but no more than 1\% of the total number of synapses in the population. This threshold may be tuned, and should be thought of as a sparsity parameter
+        \item Multiple astrocytes may affect synapses on single neuron freely.
+        \item Only one astrocyte may affect a single synapse
+    \end{enumerate}
+    
+    Beyond their association with neurons, astrocytes also have their own network, in the form of gap junctions. Due to the nature of these connections (a protein spanning two cell walls) only physically adjacent astrocytes can form connections. Astrocytes don't have long-reaching projections like the axons of neurons. Astrocyte networks have been shown to form non-overlapping groups, with limited, but present connectivity between groups. These groups generally consist of between 2-10 astrocytes. This raises the question, for simulation, how are these connections initialized. \cite{snn_dynamic_calcium} has a very interesting method of generating this connectivity, that is a suitable starting point for this research. This branching algorithm is described below.
+    
+    \cite{snn_dynamic_calcium} proposes a 2d branching algorithm that uses a recursive technique, and can generate connections between astrocytes while respecting their need for close proximity. The algorithm is as follows.
+    \begin{enumerate}
+        \item From the center of each astrocyte, produce a random number between m and n of branches pointing outward in uniformly random directions.
+        \item If any branch either intersects another of the same astrocyte, or is closer to another astrocyte than its ancestor (could be its astrocyte, or another branch).\
+        \item For any surviving branches generate a random number of next-level branches between 1 and k.
+        \item repeat 2, 3 until a maximum branching level $N_max$ is reached.
+    \end{enumerate}
+    
+    With the details for generating a network topology fairly well defined at this point, it is important to consider which neuron and astrocyte models will be used for simulation. In general Astrocyte models have some concept of calcium concentration, which mathematically is an internal state variable. This state is affected by incoming spikes through one or more pathways, and in some cases by other astrocytes. Depending on this internal state, the astrocyte will release different glio-transmitters, such as ATP or Glutimate. For this reasearch it will be a requirement that an astrocyte model support the model of an internal calcium concentration, to allow for astrocyte-network simulation. This will rule out some of the more simplistic models paired with ANNs.
+    
+    \cite{snn_dynamic_calcium} proposes a Neuron-Astrocyte model based on the well known FitzHugh–Nagumo spiking neuron model. Figure \ref{fig:snn_dynamic_calcium_fig1} shows the interactions between different components in the model.
+    
+    \afig{figures/snn_dynamic_calcium_fig1.png}{Tri-Partied Synapse}{fig:snn_dynamic_calcium_fig1}{0.6}
+    
+    For the post-synaptic neuron the same FitzHugh-Nagumo neuron model is used, with some additions to account for astrocyte influence.
+    
+    \begin{align}
+        \epsilon_2 \frac{dv_2}{dt} = v_2 - \frac{v^3_2}{3} - w_2 \\
+        \frac{dw_2}{dt} = v_2+I_2-I_{syn}-I_{G2}+I_{ATP} \\
+        I_{G2} = \gamma G_m \\
+        I_{ATP} = \eta G_a
+    \end{align}
+    
+    With $I_{G2}$ and $I_{ATP}$ implementing the astrocyte response pathways for G2 and ATP.
+    
+    The astrocyte calcium dynamics are implemented as a dimensionless form of the Dupont and Goldbeter model. Additional terms are added to describe the contribution from activation pathways for $K^+$ and $IP_3$.
+    
+    \begin{align}
+        \tau \frac{dc}{dt} = (r + \alpha(w_2 - w^*_2) + \beta S_m) - c - c_4 f(c, c_e) + D_a \xi(t) \\
+        \epsilon \tau_c \frac{dc_e}{dt} = f(c, c_e)
+    \end{align}
+    
+    With c denoting the $Ca^{2+}$ concentration within the astrocyte and $c_e$ denoting the $Ca^{2+}$ store in the cell's endoplasmic reticulum.
+    
+    The term $(r + \alpha(w_2 - w^*_2) + \beta S_m)$ represents the total influx of calcium into the cytoplasm, as a result of activity at the synapse.
+    
+    \cite{realtime_sgnn} proposes a spiking neuron astrocyte interaction that is slightly simpler than the previous approach. This approach avoids differential equations, in favor of exponentals, and uses a kernel response to map input spikes to a change in membrane potential as shown by equation \ref{eq:realtime_sgnn_eq1}.
+    
+    \begin{align}
+        V_j(t) = \eta_j(t - t_j) + \Sigma^{N_{i+1}}_{i=1}W_{ij} \Sigma^{K_i}_{k=1} \epsilon(t - t_i^k - d{ij}) \label{eq:realtime_sgnn_eq1}
+    \end{align}
+    
+    For the Astrocyte model $K^+$ and IP3 pathways are considered for increasing cellular $Ca^{2+}$. This increase then leads to either a gliotransmitter release, or glutamate. This release affects both pre and post-synaptic neurons, in this model.
+    
+    \begin{align}
+        ca^{2+} = r + S_{mod} + PS_{mod}
+    \end{align}
+    
+    Where r is a constant, $S_{mod}$ is the slow pathway mediated by IP3, and $PS_{mod}$ is the fast pathway mediated by $K+$ depolarization of Astrocyte membrane. $PS_{mod}$ is defined as an exponential equation of synaptic weights for neurons that are spiking. The affects of $S_{mod}$ are also dependant on synaptic weight, but include parameters to tune the time-scale. Equations \ref{eq:realtime_sgnn_eq9} and \ref{eq:realtime_sgnn_eq10} describe this activity.
+    
+    \begin{align}
+        PS_{mod} = 
+        \begin{cases} 
+            \alpha W + W * \exp{\frac{t-t^i_k}{\tau_s}} & t_i^k \leq t \geq t_i^k + d \\
+            \alpha W * \exp{-\alpha(t - t_i^k)} & No spiking\\
+        \end{cases} \label{eq:realtime_sgnn_eq9} \\
+        S_{mod} = 
+        \begin{cases} 
+            \beta W * \exp{\frac{t-t^i_k}{\tau_r}} & t_i^k \leq t \geq t_i^k + d \\
+            0 & No spiking\\
+        \end{cases} \label{eq:realtime_sgnn_eq10}
+    \end{align}
+    
+    
+    When internal calcium levels reach a threshold the $AST_{mod}$ term increases, and contributes to the change in post-synaptic membrane potential.
+    
+    \begin{align}
+        AST_{mod} =
+        \begin{cases} 
+            0 & ca < ca_{thresh} \\
+            r tanh(ca) & otherwise
+        \end{cases}
+    \end{align}
+    
+    While this approach doesn't explicitly define a mechanism for astrocyte interactions, the use of Calcium as a state variable allows for astrocyte-to-astrocyte interactions, by adding terms to the $ca^{2+}$ equation.
+    
+    For initial evaluations and development, a spiking CNN architecture will be used. This architecture will be based on \cite{rstdp_mnist} and MNIST will be used during evaluations. There are a variety of ways astrocytes could be deployed during both training and inference, including those outlined above. The, or a variation on the latter Astrocyte model will be used for this research. It is a good balance of bio-inspiration, while still being practical and flexible.
+    
+    
+    %%%%%%%%%%%%% Learning Rule %%%%%%%%%%%%%
+    \section{Develop a Bio-Inspired End-to-End Astrocyte-Aware Supervised Learning Rule}
+    One of the key challenges holding back full-scale deployment of SNNs in industry, or their use for more complex models, is the availability of end-to-end supervised training rules.
+    
+    \subsection{Overview of Learning Rules}
+    Learning rules for SNNs fall into one of a few catagories.
+    \begin{enumerate}
+        \item Unsupervised, local, temporal based rules
+        \item Supervised rules attempting to emulate back-propagation
+        \item Supervised teaching-signal rules, such as ReSuMe
+        \item Supervised, reward-signal based rules, usually coupled with a local-learning rule, such as STDP.
+    \end{enumerate}
+    
+    Temporal learning rules are generally variants on STDP, with the differences being in the specifics of the equations mapping a time delay (between pre and post-synaptic spikes) to a weight update. Research has been done to couple STDP with a reward signal, providing a supervised approach \cite{rstdp_mnist}. In this specific implementation, supervised learning was restricted to the last two layers, with others being supervised. One advantage of a reward-modulated STDP approach, is the inherit support for recurrent spiking neural networks. This approach, or one similar to this will be used as a starting point for this research.
+    
+    Back-propagation has shown wide success in CNNs, achieving high performance in a variety of tasks. It then makes sense to at least attempt to apply this approach to SNNs. In the context of spiking neural networks, back-propagation has a few fundamental problems, making a successful algorithm difficult. First, the activation function many spiking neurons is generally a sum of dirac delta functions, which aren't differentiable. Some frameworks, such as Multi-SpikeProp are able to get around this first issue by using a continuous activation function \cite{deep_spike}. Other SNN-BP algorithms exist, such as spatio-temporal back-propagaion \cite{snn_stbp}. In this approach, an approximation of membrane potential is used instead of spike (essentially ignoring the activation function). This membrane potential quickly decays, and increases due to incoming spikes. Equation \ref{eq:snn_stbp:eq2} governs this behavior. A set of iterative equations (which take the place of a continuous solution to the O.D.E) govern membrane potential updates, only needing to be computed when a spike is generated. Using equations like this greatly reduces complexity when deriving back-propagation.
+    
+    \begin{align}
+        u(t) = u(t_{i-1})e^{\frac{t_{i-1} - 1}{\tau}} + I(t) \label{eq:snn_stbp:eq2}
+    \end{align}
+    
+    A third approach to training was considered, called ReSuMe (remote supervised learning). This approach and its derivatives make use of a teaching signal, and update weights based on the difference between real output and the teaching signal. Unfortunately, all of the methods reviewed restrict neuron outputs to having 0 or 1 spikes within some time-interval, and received input from many-spiking neurons. This is too restricting for the goals of this research \cite{deep_spike}.
+    
+    Many of the gradient based learning approaches, while able to achieve good performance under specific conditions, and can circumvent the obvious roadblocks, still have significant drawbacks. First, they don't scale well to many-layer architectures, meaning these learning approaches couldn't train networks to match or exceed traditional CNN performance. Second, the learning approaches generally don't lend themselves to an feasible hardware implementation, removing the possibility for on-chip learning \cite{bp_stdp}. BP-STDP takes traditional back-propagation, and shows how it can be implemented in spiking networks as local STDP updates. Using some teaching signal, an error function is defined at the output, this error is then propagated backward through the network, using the forward weights to scale STDP (or anti-STDP) weight updates.
+    
+    \subsection{Selection of Bio-Inspired Rules}
+    From the considered approaches two will be used, and adapted for use in this research. First, is the reward-modulated STDP. This approach has a few distinct advantages. It is independent of a specific neuron model, and can be used in conjunction with recurrent connections. Its simplicity provides flexibility for integration with an Astrocyte element, where Astrocyte dynamics can exist along side the learning rule. In addition, this learning rule is independent of neuron model, allowing for fast prototyping when selecting a neuron model. The rule will be adapted to allow for full-network training, likely using spike history to correlate an output at one time, with activity within the network in the past.
+    
+    Second the spatio-temporal update back-propagation will be evaluated and adapted for this research. The main advantage here is precise control over the activity of the network, since weights are updated according to spike timing throughout the network. This approach also supports end-to-end training as is. The approach will need to be adapted to support a more bio-inspired neuron model, if such a model is desired. This approach seemed the best of the back-propagation with SNN implementations, and can be used as a comparison to local, time-based learning rules such as R-STDP.
+    
+    \section{Develop the Foundation of a Scale-able FPGA Implementation}
+    In an attempt to package the conclusions of this research into a usable implementation, both for industry and future research, an FPGA implementation will be developed. The goal is to develop the building blocks for an SGNN along with a small example proving these elements can work together. A large-scale implementation may not be possible given hardware constraints, but calculations showing scalability either on FPGA or neuromorphic hardware will be included instead.
+    
+    There are many examples in the literature of spiking networks being implemented in FPGA, however many of these employ simple LIF neurons, and don't have the added complexity of an Astrocyte element. Fortunately, there is at least one example for which to reference in attempting a digital implementation of complex SGNN dynamics. \cite{fpga_sgnn} develops a digital implementation of an Izhikevich spiking neuron, modeling the complex dynamics using piece-wise linear equations. Calcium dynamics within the Astrocyte are modeled similarly. Their use of the Izhikevich is especially helpful, since that is the upper limit for complexity as far as neuron models are concerned, that will likely be employed in this research. If it can be implemented in FPGA in an efficient way, then an efficient implementation of the neuron model which is eventually chosen is guaranteed to be feasible on FPGA.
+    
+    One of the key building blocks for an FPGA implementation will be the piece-wise-linear approximations of complex neuron and neuron-astrocyte dynamics. The approach in \cite{fpga_sgnn} can be generalized to any non-linear function of a single variable. The approach searches a space of possible linear approximations, consisting of 3 - 7 linear functions. For each of 3 - 7, 2 - 6 points are chosen, dividing the function into 3 - 7 sections. For each section Least-Squares is used to find a linear best-fit. Combining error values from each of the sections provides an overall approximation error. Numerical methods are used to find the best points to divide up the function (for a given segment count). Comparing MSE from each of the specified segment counts, an optimum solution is chosen. A complex system is modeled this way, by approximating the fundamental pieces.
+    
+    As an example, consider Equations \ref{eq:fpga_sgnn_15} and \ref{eq:fpga_sgnn_16}.
+    \begin{align}
+        0.04v^2 + 5v + 140 - u = 0 \label{eq:fpga_sgnn_15} \\
+        0.02(0.2v - u) = 0 \label{eq:fpga_sgnn_16}
+    \end{align}
+    
+    Using the linear approximation steps above \cite{fpga_sgnn} presented approximations
+    
+    \begin{align*}
+        v = 0.5|v+68| + 0.5|v+57| - 22 - u + I \\
+        u = 0.02(0.2v - u)
+    \end{align*}
+    
+    These equations are then discretized for simulation on FPGA using the Euler method, with $h=\frac{1}{2^6}$.
+    
+    \begin{align*}
+        v[n+1] = (0.5 * |v[n] + 68| + 0.5 * |v[n] + 57| - 22 - u[n] + I)h + v[n]
+        u[n+1] = (0.02(0.2v[n] - u[n]))h + u[n]
+    \end{align*}
+    
+    Choosing h as a power of 2, and approximating 0.02 and 0.2 as powers of 2, the equations can be implemented on FPGA without a single multiplier, using only shifters and adders. This general approach, linear approximation then discritization with powers of 2 will be used to develop efficient scaleable neuron and Astrocyte implementations that can be used at scale.
+    
+    
+    
+    

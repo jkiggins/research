@@ -1,0 +1,9 @@
+astro_params:
+  tau_u: 10.0
+  tau_i_pre: 10000.0
+  alpha_pre: 100.0
+  alpha_post: 1.0
+  u_th: 1.0
+
+sim:
+  dt: 0.001

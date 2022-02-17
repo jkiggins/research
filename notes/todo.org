@@ -1,0 +1,25 @@
+#+BEGIN: clocktable :scope file :maxlevel 2
+#+CAPTION: Clock summary at [2022-01-19 Wed 11:54]
+| Headline     | Time   |
+|--------------+--------|
+| *Total time* | *0:00* |
+#+END:
+
+* Today
+** TODO Update over weekend
+
+
+* TODO For Next Time
+  DEADLINE: <2022-02-15 Tue>
+
+
+** TODO Improved Closure on SOTA + Background updates
+Use Dr. Schaffer's review of Manninen paper
+
+** TODO Background section upate: always keep writing
+
+
+* Future
+** TODO Look into Lenk papers
+
+* Misc

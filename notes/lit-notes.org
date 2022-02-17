@@ -1,0 +1,944 @@
+
+* Core Neuron-Astro Papers
+[[min_2012]]
+[[amiri_2011]]
+[[chung_2015]]
+[[gordleeva_2021]]
+[[wade_2012]]
+[[pitta_2011]]
+[[pitta_2012]]
+[[manninen_2018]]
+[[pitta_2015]]
+[[pitta_2016]]
+[[gordleeva_2012]]
+[[postnov_2009]]
+[[pereria_2010]]
+
+
+* Foundational Neuron-Astrocyte Works
+
+* Topics
+** Astrocyte Connectedness
+[[wade_2011]] - brief mention
+
+** Astrocytes Exhibit fast local responses followed by slow global responses
+[[min_2012]], [[araque_2014]]
+
+** Astrocyte Working Mem
+[[pitta_2021]]
+
+Larger-scale network with Astrocyte mediated memory: [[pitta_2021-5]]
+
+** Astrocyte Timescales
+[[pitta_2021-2]]
+[[postnov_2007]]
+
+** CICR
+[[wade_2011]]
+
+
+** Engineering models
+[[bassam_2009]],
+
+** High level Functional Roles
+
+** Research Timeline
+Tripartied synapse introduced: [[sajedinia_2018_1]]
+
+
+* References to Review Next
+[[bassam_2009_next]]
+[[sajedinia_2018_next]]
+
+
+* References
+** <<amiri_2011>> - On the role of astrocytes in synchronization of two coupled neurons: a mathematical perspective
+
+** <<salaj_2021>> - Spike frequency adaptation supports network computations on temporally dispersed information
+SFA has a large impact on performance when applied to a task that requires integration of
+inputs in the realm of seconds. SNN would have trouble doing this alone as they operate on the
+time-scale of ms - 10ms.
+
+SFA results in negative-imprinting, where repeated patterns result in less of a response
+
+Researchers have shown that this approach improves performance (in some cases significantly)
+on tasks: Sequential MNIST, XOR, 12AX. They leveraged recurrent neural networks, and partial SFA
+(40%) on these tasks.
+
+
+** <<chung_2015>> - Astrocytes Control Synapse Formation, Function, and Elimination
+Astrocytes facilitate the formation of synaptic connections in the developing brain. They
+are also associated with synapse elimination.
+
+Astrocytes show a tiling pattern, and for non-overlapping groups. This is thought
+to be due to contact-inhibitions. If there is disease this pattern may break, and
+Astrocytes will show intermingling.
+
+One Astrocyte contacts about 100,000 synapses in Rat brains.
+
+Astrocytes prevent NT spillover and keep synapse comms local. They also listen and respond to
+synapse activity, affecting synapses in their
+
+
+** <<gordleeva_2021>> - Modeling Working Memory in a Spiking Neuron Network Accompanied by Astrocytes
+The authors implemented a working memory network consisting of a SNN network interacting with an
+Astrocyte network. Successful retrival of the data is possible 90% of the time, with the information
+being stored for several seconds. There are overlapping pieces of memory stored in this case.
+
+The time-scale of Astrocytes and working memory line up, suggesting they may be involved. Further
+evidence supports this.
+- Pathology of astrocytes in the median pre-frontal cortex impairs working memory
+- Increasing astrocyte density in PFC enhances short-term memory performance
+
+"in particular, recent in vivo studies
+have shown the participation of astrocytes in the synchronization
+of certain cortical network activities (Takata et al., 2011; Chen
+et al., 2012; Paukert et al., 2014; Perea et al., 2014),"
+
+"t has been experimentally estimated that there is some overlap
+in the spatial territories occupied by individual astrocytes in the
+cortex (Halassa et al., 2007). An individual cortical astrocyte
+contacts on average 4-8 neuronal somata and 300–600 neuronal
+dendrites (Halassa et al., 2007)."
+
+Some related work explored the possibility of WM with different neuron properties or connetions.
+WM was possible in both recurrent and FF architectures. Two main problems arose from these
+approaches.
+- There is no way to store information in the network when the neurons are in a resting
+state
+- Minor variations in activity destroyed the information
+
+It is estimated that within the Pre-frontal cortex of mammals, that an individual
+astroctye contacs 4-8 neuronal bodies and 600-800 dendrites.
+
+The considered architecture consists of WxH izh spiking neurons layed out in a grid, with
+connection lengths being randomly drawn from the exponential distribution. Figure 1. Astrocytes
+are placed in a similar grid, with lower resolution, allowing them to contact multiple neurons
+and synapses. In this work, astrocytes are only activated when there is a sufficent level of
+correlated firing, specifically 0.5. At a high level, astrocyte [Ca2+] is affected by neuron activity
+via a direct, and IP3 mediated pathways, as well as influx of Ca2+ from neighboring astrocytes.
+This rise in [Ca2+] results in an overall potentiation of associated synapse via the following
+equation.
+
+g_{syn} = n + vCA
+vCA = vCA*STEP([Ca2+] - [Ca2+]_{thr})
+
+Glu released by a pre-synaptic neuron is modeled by a first order differential
+equation with a clearance constant, and release efficacy constant.
+
+Glu uptake by the astrocytes drive IP3 production, and IP3 production drives
+Ca2+. For [Ca2+] to increase in the astrocyte, the average number of synapses
+connected to a single astrocyte with $[Glu] > Glu_{thr}$ must be $>0.5$
+
+To summarize: IP3 depends on $J_{glu}$, which is only $>0$ when a fraction of
+synapses is greater than a specified threshold. When this condition is reached,
+$J_{glu}$ is then set to a fixed $A_{glu}$ for duration $t_{glu}$ forming a
+rectangular pulse. These pulses then contribute to IP3, which in turn controls
+Ca dynamics.
+
+Astro -> astro communication is facilitated by Cx43 gap junctions, and modeled
+using diffusion rates.
+
+Astrocytes signal back using Glu release, increasing pre-synaptic PR via weight
+($g_{syn}$) modulation. stimulating Slow-inward-currents (SICs) at the
+post-synaptic neuron.
+
+The $F_{act}$ parameter ended up being key in the success at the WM task, under
+specific conditions. For low or no-noise conditions, the system was able to
+learn multiple items regardless of the value of $F_{act}$.
+
+Simulation
+A base-line level of noise is added to the system, such that there are low-level spontanious
+spiking events. Numerical digits were presented to the grid of neurons during a training phase
+where they were loaded into astrocyte states. After some delay, very noisy versions of the same
+inputs where presented to the network, and it responded more strongly to the ones presented during
+"training" vs. luer inputs.
+
+*** TODO References to look at
+(Durkee and Araque, 2019)
+(Kanakov et al., 2019; Kastanenka et al.,2019)
+
+
+** <<min_2012>> - The computational power of astrocyte mediated synaptic plasticity
+How do astrocytes signal back to neurons?
+- Ion (K+, Na+, etc...) update modulation. This could be akin to changing the duration of a PSP
+- Release of their own transmitters
+
+What is the overall effect?
+
+Modulation of excitability
+--------------------------
+There are a variety of chemical mechanisms by which astrocytes can modulate neuron excitability,
+but none of these mechanisms, or the overall discusson show a clear functional role.
+
+Short-Term Synaptic Plasticity
+------------------------------
+- Astrocytes can modulate synaptic strength transiently (~10s)
+- This modulation can happen at a variety of levels. Glutamate release can activate receptors on
+the axon, and increase Pre-synaptic release probability. This effect can spread to neighboring
+synapses that share the same axon. The release of glutamate can also increase firing probability
+locally.
+- Astrocytes, through different transmitters, can cause short-term synaptic depression.
+
+Long-Term Synaptic Plasticity
+-----------------------------
+Astrocytes appear to implement/facilitate STDP in the brain, and as such are in a good position
+to regulate it. There is evidence that synaptic plasticity isn't possible until an Astrocyte is
+sufficiently activated.
+
+Possible Computational Roles
+----------------------------
+- Modulation of plasticity threshold. I.e. a gating control on learning
+- Through modulation of excitability, and STP, astrocytes can select a particular synaptic ensamble
+during processing
+
+- Astrocyte modulation of weights has been shown to be dependant on the presence of as Pre-SP, but
+not necessarily a Post-SP.
+
+*** Interesting References
+Nadkarni et al. (2008) - Optimize Pre-SP release probability w/ Astrocyte
+De Pittà et al., 2011. - Astrocytes mediate the switch between pulse-paired LTD and LTP
+(anti-stdp vs stdp)
+(Abraham 2008)
+
+
+** <<pereria_2010>> - Astrocytes and human cognition: Modeling information integration and modulation of neuronal activity
+
+** <<liu_2017>> - Self-Repairing Learning Rule for Spiking Astrocyte-Neuron Networks
+This paper explores a self-repairing effect at the tripartied synapse mediated
+by astrocytes, and extends this idea by proposing a STDP/BCM learning rule that
+is capable of fault tolerance.
+
+Their model consists of an LIF neuron
+$T_m \frac{dv}{dt} = -v(t) + Rm\Sigma_{i=1}^{n} I^i_{syn}(t)$
+
+$T_m$ is the neuron membrane time constant, $v(t)$ is the membrane potential.
+$R_m$ is the membrane resistance, $I^i_{syn}(t)$ is the current contribution
+from the i-th synapse. $n$ is the number of synapses. When $v > v_{th}$ the
+neuron fires, and goes to a reset state for a refractory period of 2ms.
+
+A learning rule, which is a combination of STPD and BCM (called BCM-STDP) is
+described. For the STDP portion
+
+\[ \begin{cases}
+      A_0 exp(\frac{\Delta t}{\Tau_+}) & \Delat t \leq 0 \\
+      - A_0 exp(\frac{\Delta t}{\Tau_-}) & \Delat t > 0
+   \end{cases}
+\]
+
+The BCM portion controls the learning rate $A_0$ according to the following.
+$A_0 = \frac{A}{1 + exp(\alpha(f-f_0))} - A_-$
+
+experimentally $\alpha$ has been determined to be $0.1$. $f$ and $f_0$ are the
+target and actual firing rates.
+
+A few different senairos are tested with the same topology.
+
+n1 --
+     \----- Astro
+      n3
+	 /----- Astro
+n2 --
+
+n1 -> n3 and n2 -> n3 connections actually consists of 8 synapses
+
+In the no fault case, 25 Hz inputs are provided to n1 and n2, and the target
+firing rate for BCM was also set to 25 Hz. Results showed that synaptic weights
+were potentiated as expected. Inputs not in close proximity to 25 Hz range
+showed no learning (as expected per BCM rules)
+
+In the fault case, 6 of the 8 synapses connecting n2 -> n3 were cut. In
+simulation, it is shown that the astrocytes are able to compensate for this by
+upping the weights, and restore the post-damage firing rate.
+
+
+** <<yasemin_2019>> - Effects of astrocyte on weak signal detection performance of Hodgkin–Huxley neuron
+"Allegrini et al. [21]
+proposed a computationally simple network model of mutual neuron–astrocyte
+interactions and showed that the neural synchronization established in the
+absence of astrocyte in the network is effectively broken by neuron–astrocyte
+interactions."
+
+"De Pitta et al. [25] showed 
+that astrocytic effects on the synaptic plasticity can be
+controlled by the frequency of calcium oscillations in
+astrocyte."
+
+Astrocytes Model
+----------------
+Action potentials are detected and resulting ^ca+ through a pesudo-IPC3 pathway
+Ca2+ dynamics are modeled in a bio-plausible way using leak, pump, and gate
+currents.
+
+
+** <<wade_2011>> - (Wade 2011) Bidirectional Coupling between Astrocytes and Neurons Mediates Learning and Dynamic Coordination in the Brain
+
+Astrocytes can Encapsulate 10^5 synapses
+
+Astrocyte <-> Astrocyte communication may be related to IP3 diffusion between
+Astrocytes
+
+Slow-Indward-Currents (SICs) rise over the course of about 60ms and decay over
+about 600ms.
+
+Synchronization may be mediated by the release of glutamate at two separate
+locations of the same Astrocyte. Based on the lack of overlap within an
+Astrocyte's domain, and the time-scale of Astro <-> Astro communication this
+release (for the purpose of synchronization) is likely isolated to a single
+astrocyte.
+
+Research explores how local activity can results in plasticity at remote sites
+via SICs. SICs are used in the SGNN to synchronize neurons and provide teaching
+signals.
+
+Astrocyte Ca2+ concentration doesn't increase continuously. After a certain
+threshold there is Ca2+ mediated Ca2+ release, which results in an
+oscillation. This is modeled by a gatekeeping signal f, which dampens
+pre-synaptic activity.
+
+Tripartite Synapse Model
+------------------------
+The Tsodykes Dynamic Synapse Model (y) is used between pre-synaptic input and
+weight. The STDP block considers the pre-synaptic and post-neuron signals for
+learning. The Neuron->Astrocyte comms happen post-Tsodykes but pre-weight. SICs
+affect the neuron directly. There is a pre-synaptic inhibition effect, which
+affects the Tsodykes synapse model.
+
+There is depolarization-induced suppression of pre-synaptic activity, caused by
+neurotransmitters released at the post-synaptic dendrite.
+
+This research considers both the 'Gatekeeper' and 'Nadkarni and Jung' astrocyte
+interaction models.
+
+When considering multiple inputs to an Astrocyte, the total [Ca2+] is a sum of
+the individual calcium values associated with each synapse (diffusion dynamics
+are ignored).
+
+Effect on STDP/Learning
+-----------------------
+Astrocytes can create a bridge between synapses, and be configured in such a way
+that one synapse provides a supervisory signal to another (in the form of
+SICs). In such a configuration STDP can be driven by the astrocyte SIC, even
+when the weight and pre-synaptic activity wouldn't have been sufficient to drive
+post-synaptic spikes.
+
+Experiments
+-----------
+Establishing valid input frequency ranges that result in [Ca2+] oscillations.
+
+---
+
+Fig 5. Astrocyte supervisory signal. An astrocyte is configured to listen an
+respond on Synapse 1 (implementing the aformentioned behavior). This response is
+mirroed on Synapse 2, without any feedback from Synapse 2 affecting state or
+dynamics. This response on S2 can be thought of as a supervisory signal
+
+---
+
+Dynamic Coordination (Fig 9). Multiple synapses consisting of two different
+neurons with multiple inputs. Each input synapse is associated with the single
+astrocyte. In this configuration STDP is not employed. Each set of synapses have
+their own astrocyte microdomain, meaning Ca and IP3 dynamics are independent for
+each neuron. The gating function F and SICs are controlled by the aggregate
+[Ca2+] for the whole astrocyte.
+
+When simulating each synapse was given a different input frequency drawn from
+within the valid range. When considering the calcium oscillations in each
+microdomain, as well as the full range, no phase-locking was observed. Further
+investigation shows that the supressive signal f was responsible for any
+coordination between N1 and N2.
+
+Reducing the # of synapses down to 1 per neuron, the entire valid frequency
+range was simulated. It was found that phase-locking was possible with the AM (f
+only) model for the entire frequency range. AM-FM model achieved phase-locking
+in a very tight window, basically phase-locking was non-present.
+
+Discussion
+---------
+Astrocytes Have a role to play in LTD/LTP - bio reaserch shows difficenty in an
+astrocyte protein enhances LTP and down-regulates LTD.
+
+Astrocytes can provide input to synapses and cause down-stream firing where
+otherwise this wouldn't be possible. This allows potentiaion of weights that
+would never increase due to STDP (initial value is too small).
+
+
+*** TODO References to Look into
+[30] - Gatekeeper
+[31,32] - Nadkarni and Jung model
+[33] - Rinzel Ca2+ dynamics  2+
+[66] - Review of synaptic plasticity models
+[19,20,80-89]
+
+
+** <<wade_2012>> Self-repair in a bidirectionally coupled astrocyte-neuron (AN) system based on retrograde signaling
+This work explores astrocytes as a self-repair entity for low PR (dead)
+synapses.
+
+Retrograde signaling is thought to be the mechanism by which dead synapses are
+re-awakened. Direct retrograde signaling is faster, and overpowers the Indirect
+Astrocyte mediated pathway. The direct pathway involves 2-AG retrograde
+transport from post-synaptic -> presynaptic. This can decrease PR by up to
+50%. Indirect (Astrocyte mediated) retrograde transport increases PR by up to
+200%.
+
+Faults occur in synapse due to DSE (direct retrograde feedback) and are repaired
+using the indirect astrocyte mediated pathway (e-SP).
+
+PR(t) = (PR(t0) / 100 * DSE(t)) + (PR(t0) / 100 + eSP(t))
+
+eSP(t) is driven by glutamate release which is driven by [Ca2+] within the
+astrocyte. Calcium is driven by IP3 among other dynamics <- maybe look further
+into this.
+
+
+Simulations
+-----------
+
+Consider two neurons, where DSE signaling is local, and e-SP signaling is
+global. Simulation w/ out any fault 
+
+---
+
+In the case of total fault, the Astrocyte eSP signaling is able to raise PR to a
+level where normal activity (and plasticity) can resume.
+
+
+
+*** TODO References to look into
+- Volman et.al: Gatekeeper
+- Nadkarni and Jung(2004, 2007)
+
+
+
+** <<manninen_2019>> Computational Models of Astrocytes and Astrocyte–Neuron Interactions: Characterization, Reproducibility, and Future Perspectives
+
+See table 16.1 for timeline of computational Astrocyte publications. This work
+is a meta-analysis.
+
+- De Pitta et al. 2016
+- Manninen et al. 2018b
+
+Astrocyte Calcium Dynamics:
+
+Höfer et al. (2002), Nadkarni and Jung (2004), and Volman et al. (2007). A
+variety of models have been published since these early times. These include models
+by Silchenko and Tass (2008), De Pittà et al. (2009b), Postnov et al. (2009), and
+Lallouette et al. (2014). Recently, models that incorporate a variety of metabolic,
+biochemical, and electrical interactions have been designed (see, e.g., Tewari and
+Majumdar 2012a, b).
+
+
+Computational Models of Astrocyte:
+
+(see, e.g., Jolivet et al. 2010; De Pittà et al.
+2012, 2016; Fellin et al. 2012; Min et al. 2012; Volman et al. 2012; Wade et al. 2013;
+Linne and Jalonen 2014; Tewari and Parpura 2014; Manninen et al. 2018b).
+
+Most of the models studied either Ca2+ oscillations in astrocytes:
+
+(Roth et al. 1995; Lavrentovich and Hemkin 2008; De Pittà et al. 2009a, b; Zeng
+et al. 2009; Skupin et al. 2010; Dupont et al. 2011; Riera et al. 2011a, b;
+Toivari et al. 2011; López-Caamal et al. 2014)
+
+Ca2+ waves in astrocyte:
+
+networks (Höfer et al. 2002; Goto et al. 2004; Bellinger 2005; Bennett et
+al. 2005, 2006; Iacobas et al. 2006; Stamatakis and Mantzaris 2006; Ullah et
+al. 2006; Kang and Othmer 2009; Kazantsev 2009; 
+
+
+** <<manninen_2019>> Computational Models for Calcium-Mediated Astrocyte Functions
+
+
+** <<manninen_2020>> Astrocyte-mediated spike-timing-dependent long-term depression modulates synaptic properties in the developing cortex
+
+
+** <<pitta_2011>> A tale of two stories: astrocyte regulation of synaptic depression and facilitation
+Pre-synaptic Short term potentiation/depression, as a function of neuron firing
+activity is critical for info processing. It is observed that astrocytes drive
+either short term faciliation or depression locally. In general this local
+affect is coupled with an opposite global affect, where pulse-paired plasticity
+is bias to STP/STD
+
+Glutamate released by astrocytes (when [Ca2+] > threshold) spikes then is
+quickly broken down.
+
+Astrocytes can control the transition between STD and STP, where the mechanism
+for plasticity is rate-dependant modulation depending on availability of
+neurotransmitter.
+
+
+*** TODO References to look at
+Need to review Tsodyks synapse model
+
+
+** <<pitta_2012>> Computational quest for understanding the role of astrocyte signaling in synaptic transmission and plasticity
+Aims to distill much of the bio-realistic complexity into a usable model, which
+can explain experimental observations.
+
+A complex web of bidirectional signaling can be boiled down to A simple
+paradime.
+
+Pre -> Synapse
+Synapse -> Astro
+Astro -> Pre
+Astro -> Postp
+Astro->Astro
+
+To distill things down to a simpler model, some fundamental properties must be
+investigated.
+
+CHARACTERISTICS OF ASTROCYTE Ca 2+ EXCITABILITY AND
+ITS RELATIONSHIP WITH SYNAPTIC ACTIVITY
+---------------------------------------------------
+[Ca2+] is not simply an on/off switch, there are complex dynamcs. There are two
+main modes of response. One is a synapse local response due to neural
+activity. The second are Calcium waves resulting from Calcium dependent calcium
+release from the ER. These waves can propagate to the cell soma, and possibly
+other Astrocytes.
+
+Calcium waves need not necessarily go through the cell soma, and can jump
+directly to other end-foot processes.
+
+A few main processes effect [Ca2+].
+- Active transport of Ca2+ from cystol to ER (SERCA pumps)
+- A constant leak from ER to cystol (due to Ca2+ gradient)
+- IP3 channels (which depend on both [IP3] and [Ca2+])
+
+Enzymatic breakdown of IP3 is also calcium dependant, and results in negative
+feedback as [Ca2+] increases.
+
+IP3 can diffuse over gap junctions or from other parts of the astrocyte. IP3
+levels tend to increase propotial to gulutamate activity at the synapse. If IP3
+results in enough calcium release from the ER to trigger CICR, then IP3 levels
+are quickly degraded back to resting levels.
+
+COMPUTATIONAL ASPECTS OF PROPAGATING Ca2+ SIGNALS
+-------------------------------------------------
+The bio-research isn't far enough along for a solid theoretical understanding on
+how Ca2+ propagates from distal processes to other parts of the cell, or other
+astrocytes.
+
+Local activity near a distal process results in short-lived calcium
+"puffs". When such events sum in time and space longer-duration calcium waves
+can propagate within the cell. The astrocyte can also release ATP, which can
+propagate externally to other portions of the same Astrocyte, or other
+astrocytes.
+
+
+*MODULATION OF SYNAPTIC RELEASE BY ASTROCYTIC GLUTAMATE AND ATP*
+Astrocytes can either increase PR via glutamate, or decrease it via ATP. This
+behavior is not universal however, as ATP can increase PR via the $A_{2A}
+receptor, present in some synapses.
+
+The effect on transmission can be measured using the PPR (pulse-paired ratio)
+which is a ratio of Post-synaptic response of two successive input spikes.
+
+In general (I think due to other mechanisms) a low PR is associated with STP in
+general. and a high PR is associated with a tendancy towards STD.
+
+
+*IMPLICATIONS OF ASTROCYTE MODULATION OF SYNAPTIC TRANSMISSION AND PLASTICITY*
+
+** <<manninen_2018>> Computational models for Calcium-Mediated Astrocyte Functions
+** <<pitta_2015>> (De Pitta 2015) Astrocytes: orchestrating synaptic plasticity?
+*Astrocyte Regulated Short Term Plasticity*
+
+Astocytes may have a role in regulation of synaptic plasticity, this review
+explores the existing research in this area.
+
+All pathways appear to modulate PR (synaptic weight in my case). Astrocyte
+modulation of PR tends to last from 10's of seconds to minutes.
+
+Astrocyte activities work in tandem with frequency dependent modulation inherit
+to synapses. The inherit modulation is driven by the limited availability of
+n-urotransmitters. At high PR the synapse tends towards STD as neurotransmitters
+are depleted, leading successive pulses to release in a lower amount of
+neurotransmitter. At low PR, the synapse tends towards STP naturally (unknown
+mechanism) and the initial lowering of PR allows this process to occur without
+depleting neurotransmitter resources.
+
+It could be that facilitating or depressing synapses as measured by electrodes
+are actually that way due to the current astrocyte activity, and could change if
+observed long enough.
+
+
+*Astrocytes mediating long term plasticity*
+Astrocytes mediate LTD/LTP via the release of D-syrine. Through this
+neurotransmitter they could gate STDP
+		
+
+** <<amiri_2013>> (Amiri 2013) Astrocyte - Neural iteractions as a mechanism for neural Synchrony
+Astrocytes can change the level of synchronization between coupled neurons. This
+is yet another instance where astrocytes are modifying a set-point.
+
+*** Refs to look at
+[18, 29, 73]
+
+
+** <<pitta_2016>> (Pitta 2016) Modulation of Synaptic Plasticity by Glutamatergic Gliotransmission: A Modeling Study
+As with his other work, he mentions how astrocyte effect on presynaptic neurons
+results a tendancy toward activity modulated STP or STD.
+
+Astrocytes may also evoke SICs in post-synaptic and neighboring synapses
+
+*Astrocyte regulation on LTP/LTD*
+Consider a calcium based STDP rule. Less than some Ca threshold no synapse
+modification can occur, beyond this threshold, but before a second one, the
+synapse is depressed, next the synapse is potentiated. This behavior results in
+the classic STDP behvior as follows.
+
+Presynaptic transmission provides a calcium transient via NMDAR
+channels. Post-synaptic firing results in voltage gated Ca influx.
+
+In the case of pre->post with small $/delta_t$ the post-synaptic (shorter)
+calcium increase is able to ride atop the presynaptic (slower) calcium
+transient. This brings total calcium above the 2nd thr, resulting in LTP
+overall.
+
+In the case of post->pre with small $/delta_t$, the faster post-synaptic
+mediated Ca2+ increase dissipates before the sower pre-synaptic Ca2+ increase
+occurs. As a result only the lower Ca2+ thr is exceeded, and LTD proceeds.
+
+Lets consider the effect of astryocytes.
+
+It has been shown that astrocytes regulate STP/STD with Glu release. Since
+synaptic strength is directly related to Ca2+ transients, and those transients
+are dependant on PR, then modulation of PR affects STDP. This type of regulation
+may not be present at frequencies around 1Hz.
+
+It looks like the amount of time spent above th1 (but below th2) is correlated
+with LTD, and the amount of time spent above th2 is correlated with LTP. This,
+along with fast and slow Ca dynamics lead to STDP. 
+
+*Pre-synaptic Glu + STDP Post->Pre*
+The addition of excitatory (release-increasing) glio-transmission causes the
+pre-synaptic spike  neurotransmitter concentration to increase, leading to
+increased Ca2+ influx, and resulting in more time spent between thr1 and
+thr2. The overall effect is increased depression of the synapse.
+
+The addition of inhibitory gliotransmission leads to a dampening of then
+presynaptic NT mediated Ca2+ influx, meaning less time between thr1 and thr2 is
+significantly decrease. As a result, only the short post-synaptic Ca2+ spike
+occurs, and little to no change in weights occur.
+
+*Pre-synaptic Glu + STDP Pre->Post*
+With release enhancing glio-transmission, the inital Ca2+ response to the pre
+spike is enhanced. Where previously this spike didn't exceed thr1, with glion
+influence it does. Shortly after, the postsynaptic spike causes Ca2+ to rise
+above Thr2. Overall, the time spent in the LTP region is the same, but the time
+spent in the LTD region has increased. This leads to a slight increase in
+weights, or no change.
+
+With release decreasing glio-transmission the initial Ca2+ response is dampened,
+but the overall effect is still LTP, just less than what it would otherwise be.
+
+*Post-synaptic SIC effect on STDP*
+SIC's affect STDP curve differently depending on frequency of pre-synaptic
+input, and amplitude of SIC compared to EPSC. At around 1Hz w/ 1.5 EPSC, the SIC
+tends to shift the STDP curve towards depression, and flatten it out in the
+negative $\Delta t$ region, while sharpening it in the positive $\Delta t$.
+
+
+
+
+*** TODO References to look into
+[29]
+[30]
+[31]
+[34]
+[35]q
+
+
+
+** <<postnov_2007>> (Postnov 2007) Functional modeling of neural–glial interaction
+They propose a functional model based on dimensionless parameters that
+accuratley describes key features of Neuron-Astrocyte dynamics. They focus on
+- Glial cells don't generate action potentials, but do exhibit self-sustained
+  oscillations on the 50ms - 1 min time-scale
+- A rise in Extracellular K+ will immediatly depolarize an Astrocyte
+- The Astrocyte has voltage-gated Ca2+ channels, meaning a rise in K+ leads to
+  an increase in intracellular Ca2+
+- NT release by the pre-synaptic neuron can reach an Astrocyte process, and lead
+  to some internal changes. Namely Glu -> mGlu receptors on Astro surface ->
+  Leads to IP3 production -> Ca2+ release from ER.
+- Increased Ca2+ leads to the release of a glion mediator (glutamate)
+- The mediator works to depolarize the post-synaptic neuron, while
+  simultaneously reducing synaptic strength.
+
+*Presynaptic Neuron*
+FitzHugh–Nagumo model (FitzHugh, 1961) used, no astrocyte modulation.
+
+*Synapse*
+The sigmoid (spike from threshold) generation is considered part of the
+synapse, z is the output of the synapse.
+
+\[
+\Tau_s \frac{dz}{dt} = (1 + tanh(S_s(v_1-h_s)))(1 - z) - \frac{z}{d_s} \\
+I_{syn} = (K_s - \delta G_m)(z - z_0)
+\]
+
+$\Delta G_m$ is the glion modulation factor, and a positive value leads to a
+decrease in $I_{syn}$.
+
+*Post-synaptic Neuron*
+FitzHugh–Nagumo model is used, with the inclusion of the astrocyte modulation
+parameter.
+
+\[
+\epsilon_2 \frac{dv_2}{dt} = v_2 - \frac{v_2^3}{3} - w_2 \\
+\frac{dw}{dt} = v2 + I_2 + I_{syn} + I_{glion} \\
+I_{glion} = \gamma G_m
+\]
+
+So $G_m$ modulates the post-synaptic neuron via these two equations. The effect
+is somewhat non-intuitive, but an increase in $G_m$ should lead to a decrease in
+the rate of change of $w$, and a subsequent increase in membrane voltage (from
+what it used to be).
+
+*Ca dynamics of Glion*
+the two-dimensional Two-pool model (Keener and Sneyd, 1998) is used. This model
+explicitly drives oscillations in the resting state, and models ER/Cytoplasm
+Ca2+ concentrations of neurotransmitters
+
+*Mediator Production*
+IP3 and Glutamate $G_m$ production are driven by equations of the same
+functional form, using tanh as a threshold element. IP3 depends on z, and $G_m$
+depends on the Calcium concentration.
+
+*Discussion and Results*
+Considering the fast (K+ depolarization) pathway alone there is a Ca2+
+resonance, and corresponding hyperactivity at the post-synaptic terminal
+
+Considering only the slow activation path, cyclic and resonant activity was
+observed, but at different time-scales. The result was similar, in that there
+was hyper-activity at the pre-synaptic neuron. Continued pre-synaptic
+stimulation for longer and longer intervals leads to increased sub-threshold
+Oscillations in Ca2+, until finally the threshold is reached. Increasing the
+firing time beyond that point leads to a larger number of Ca threshold events.
+
+*Long Term Potentiation*
+They don't actually investigate this (the last section appears cutoff actually).
+
+
+** <<gordleeva_2012>> (Gordleeva 2012) Bi-directional astrocytic regulation of neuronal activity within a network
+This paper references diverse signaling within the Tripartite synapse.
+
+Pre --Glu--> Post
+Pre --Glu--> Astro
+Astro --Glu--> Pre (modulate PR)
+Astro --SIC--> Post
+
+SICs tend to correlate in different cells, providing a global sync effect. GABA
+Release may be the opposite of this, providing a synchronized inhibition. ATP
+can also directly depress the post-synaptic neuron (locally?).
+
+In seeming contradiction, ATP can increase PR pre-synaptic-ally.
+
+"Mean field" approach is used (is this just taking the mean?). I think they are
+looking at the average firing rate in some time window.
+
+The local Ca2+ "sparks" are different from more global, cellular level Ca2+
+activity. Whole astrocyte activity is required for sync activities.
+
+Pre -> Astro transmission is governed by a first order differential equation
+which is inversely proportional to the concentration (this reflect frequency
+dependant decrease in activity), and proportional (by the same factor) to a
+"pulse" with length $\Tau$ of incoming neurotransmitter. Short term (I think NT
+depletion) is not considered.
+
+\[
+\frac{dX}{dt} = \alpha_x(k_{pre}H_x(I_{pre} - 0.5)) \\
+\begin{cases} 
+      1 & t_i < t < t_i + \tau \\
+      0 & ow 
+\end{cases}
+\]
+
+NT release leads to a Post-synaptic current (PSC) $I_syn$, which is computed
+from a first order differential equation of the same form as pre -> astro
+concentration $X$ multiplied by
+
+Gliotransmitter release and concentration is modeled much in the same way as $X$
+
+\[
+\frac{dY_k}{dt} = -\alpha(Y_k - H_k(X)) \\
+H_k(X) = \frac{1}{1 + exp(-\frac{X - \theta_k}{k_k})}
+\]
+
+This is similar to the model presented in (Pitta 2011)
+
+- k=1 -> glutamate
+- k=2 -> D-serine
+
+$\alpha_k$ is the clearance rate, and $\Theta_k$ is a threshold constant
+
+This model removes the need to compute intra-cellular Ca2+, and focuses on
+transmission modulation. Calcium "sparks" are represented by the gliotransmitter
+concentrations, and their effect modifies the equation for X as follows.
+
+\[
+\frac{dX}{dt} = -\alpha_x(X - k_0(1 + \gamma_1Y_1)H_x(I_{pre} - 0.5))
+\]
+
+So now the neurotransmitter release is proportional to $Y_1$, the glutamate
+concentration. $\gamma_1$ controls whether this effect is excitatory (>1) or
+inhibitory (<1).
+
+D-serine release modulated the amplitude of the Post-synaptic current.
+
+Graphs showing the relationship between input and output frequencies with and
+without astrocyte intervention show they astrocyte activity is capable of
+depression overall, potentiaion overall, or a frequency-dependant combination.
+
+The main functional effect astrocytes provided was control of firing states,
+where each state is characterized by a frequency response.
+
+
+
+*** Next
+(Postnov et al., 2007)
+(Amiri et al., 2011) 
+(Wade et al.,2011)
+
+
+** <<postnov_2009>> (Postnov 2009) Dynamical patterns of calcium signaling in a functional model of neuron–astrocyte networks
+CICR can lead to sustained calcium oscillations. Astro->astro comms can lead to
+activity at silent synapses, and intense activity can propagate along this
+network to far-reaching neurons (over 100um in biological networks).
+
+The number of astrocytes in a network can vary from 2-10 cells, with common
+astrocytes sometimes connecting them.
+
+Pathways Considered for this model:
+- N1 -> S -> N2
+- S -> IP3 -> A
+- N2 -> A (via. K+ depolarization)
+- A -> G1 -> S
+- A -> G2 -> N2
+- A -> ATP -> N2
+
+*Presynaptic Neuron N1*
+Modeled based on FitzHugh–Nagumo
+
+\[
+\epsilon_1 \frac{dv_1}{dt} = v_1 - v_1^3 - w_1 \\
+\frac{dw_1}{dt} = v1 + I_1 - I_{app}
+\]
+
+$I_{app}$ is included as a generic modulation parameter to account for the
+various modulations on pre-synaptic activity.
+
+*Synaptic Coupling*
+
+The tanh "spike" is implemented here in a differential equation of z, and
+depends on the pre-neuron's membrane voltage. The PSC $I_{syn}$ Is defined here,
+and defines the synaptic current in terms of z, and glial $G_m$ modulation.
+
+*Postsynaptic Neuron N2*
+Described by the FitzHugh–Nagumo model, with additional term $I_{APT}$,
+$I_{syn}$, I_{G2} to model an Astrocyte effect.
+
+** <<araque_2014>> (Araque 2014) 
+** <<pitta_2021>> (Pitta 2021) Multiple forms of working memory emerge from synapse-astrocyte interactions
+Neuron-glial interactions are explored as a mechanism for working memory. There
+is mention of an astrocyte state decay timescale, and it is on the order of 5s
+<<pitta_2021-2>>.
+
+*Experiment Figure 1 <<pitta_2021-3>>*
+a) A single neuron with N synapses has an Astrocyte associated with some subset of
+those synapses. 
+b) There exists a positive feedback loop, where pre-synaptic transmission
+results in an increase in PR. The degree to which a pre-synaptic spike effects
+the post-synaptic neuron, and astrocyte are different.
+c) Incoming spikes result in NT release at the synapse through a stochastic
+process. Input from all synapses effect the single neurons membrane voltage
+d) The astrocyte is described by an LIF-like model as well, with calcium spikes
+resulting in GT release.
+e) 
+
+*Experiment Figure 2 <<pitta_2021-5>>*
+
+A larger number of neurons is stimulated, and it is shown that information can
+be loaded and unloaded, where presentation is defined by PR (persistent activity)
+
+
+
+** <<de-young_1992>> 
+Their model is characterized by modeling of the ER IP3 receptor open
+probability, as a function of [IP3] and [Ca2+]. This relationship is used to
+build a pump-leak type representation of Ca2+ dynamics.
+
+<<de-young_1992:CaEq>>
+$\frac{d[Ca2+]}{dt} = j_1 - j_2$ Where $j_1$ represents the influx from [IP3+]
+channels in addition to leak channels on the surface of ER. J2 represents the
+outward flux, and represents SERCA pumps moving Ca2+ back into ER. The negative
+feedback of IP3 on IP3, and of Ca2+ on Ca2+ and IP3, leads to conditions (with
+specific params) where constant stimulation results in Ca2+ oscillations. The
+addition of a positive feedback loop of Ca2+ on IP3 results in spiking behavior
+of [Ca2+], with long refractory periods between.
+
+<<d3-young_1992:discussion>
+The main contribution of this work is to show that [Ca2+] oscillations can be
+modeled with only IP3 receptor pathway, and a single Ca2+ resivour in the ER. In
+addition, including a positive feedback loop of Ca2+ on IP3 leads to sharp
+spikes in Ca2+ followed by long refractory periods, which match observations in
+biology. 
+
+** <<keizer_1995>>
+[Ca2+] oscillations occur at various (constant?) concentrations of IP3+. These
+oscillations vary in intensity, shape, and duration depening on [IP3]. At very
+high IP3 the calcium concentration is a spike with long refractory. Moving
+towards the lower end of the spectrum, the Ca2+ spike transforms into multiple
+oscillatory spikes, with shorter refractory periods. 
+
+
+** <<hofe_2002>>
+[Ca2+] waves in astrocyte provide a mechanism for long-range communication, with
+the waves traveling several hundred um in response to neural activity.
+
+Very similar to Li and Rizel model, explicilty builds IP3 and Ca2+ diffusion
+into the model.
+
+** <<bassam_2009>>
+This work aims to couple SRM0 with simplified astrocyte model. They reference
+work surrounding AGNN (non-spiking neurons w/ simplified astrocytes).
+
+*Astrocyte Ca Dynamics*
+[ca2+] = r + S_{mod} + PS_{mod}
+S_{mod} represents IP3 Pathway, PS_{mod} the K+ depolarization pathway
+
+the value of PS_{mod} spikes up w/ an incoming action potential, then decays
+exponentially accoring to a piecewise equation. This work is very similar to
+what I'm going to be attempting to do.
+
+*** <<bassam_2009_next>>
+[18], [22], [16], [25], [26] - AGNN
+[12] - functional modeling of astrocytes
+[13] - Ca2+ threshold
+
+** <<min_2012>>
+
+** <<sajedinia_2018>>
+Araque et. al 1999 first introduced tripartied synapse <<sajedinia_2018_1>>
+
+Disruption of astrocytes impairs long-term memory formation
+
+Astrocytes are modeled using the izichavich equations, and a linear I-V curve
+(not sure what this means). Using this astro model w/ re-enfocement learning
+there is improved performance in non-noisy conditions
+
+Learning rule is as follows:
+- Strong pre-synaptic activation, and strong post-synaptic activation. W/ >
+baseline dopamine levels -> LTP
+- Strong pre and post-synaptic activation w/ dopamine below baseline -> LTD
+- Weak post-synaptic activation -> LTD
+
+*** Next <<sajedinia_2018_next>>
+[25] - astrocytes and plasticity, Reinforcment learning
+[29] - slow and fast pathways target different receptors
+[28], [40] - Linear I-V curve for astrocytes (I'm not sure what they mean by
+this)
+
+

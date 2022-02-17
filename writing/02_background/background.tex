@@ -26,13 +26,13 @@
 
     \todo{Add figure of SNN topology}
     
-    Spiking neural networks, formed by connections between spiking neurons, are
-    a bio-realistic type of artificial neural networks. In traditional ANNs real
-    valued numbers propagate through the network, are multiplied and added, with
-    activation functions applied at the output of each neuron. Spiking neurons
-    instead emit voltage spikes. These spikes propagate across a synapse, are
-    usually multiplied by a weight, and are sometimes transformed in other ways
-    (delay, filtering, etc...). This transformed value is called a post-synaptic
+    SNNs, formed by connections between spiking neurons, are a bio-realistic
+    type of artificial neural networks. In traditional ANNs real valued numbers
+    propagate through the network, are multiplied and added, with activation
+    functions applied at the output of each neuron. Spiking neurons instead emit
+    voltage spikes. These spikes propagate across a synapse, are usually
+    multiplied by a weight, and are sometimes transformed in other ways (delay,
+    filtering, etc...). This transformed value is called a post-synaptic
     potential (PSP). PSPs accumulate at the neuron downstream, in the form of
     membrane voltage, or more generically a state variable. Once a certain
     threshold is reached the post-synaptic neuron fires, or emits a voltage
@@ -155,8 +155,9 @@
     cortex. Similar to ROC, with latency coding, information is represented in
     the time between spikes of a population of spiking neurons. As with ROC,
     each neuron emits a single spike. This encoding scheme is supported by
-    evidence of biology, where it has been observed that moving the timing of a
-    single spike by ~10ms can change downstream activity \cite{ponulak_2011}.
+    evidence in biological networks, where it has been observed that moving the
+    timing of a  single spike by ~10ms can change downstream activity
+    \cite{ponulak_2011}.
     
     These include rate-based coding, where firing rate over some window
     indicates activity. Time to first spike, or the latency between the start of
@@ -165,11 +166,11 @@
     
     %%%%%%%%%%%% Encoding Real Values %%%%%%%%%%%%
     \subsection{Encoding Techniques}
-    In general, data being presented to a spiking neural network will take the
-    form of a real value. This is true of images, sound, values from various
-    integrated sensors, such as temperature or acceleration. A method is needed
-    that can convert these real values into a spike, or spikes, as defined by a
-    coding scheme.
+    In general, data being presented to a SNN will take the form of a real
+    value. This is true of images, sound, values from various integrated
+    sensors, such as temperature or acceleration. A method is needed that can
+    convert these real values into a spike, or spikes, as defined by a coding
+    scheme.
     
     \subsection{Poisson Encoding/Decoding}
     A very popular method of encoding real values into spikes , or just to
@@ -200,19 +201,23 @@
     distribution.
     
     \begin{align}
-        interval = \lambda e^{-\lambda x} \\ x = rand(0,1) \\ spike_i = \lambda
-        e^{-\lambda x_i}
+      interval = \lambda e^{-\lambda x} \\
+      x = rand(0,1) \\
+      spike_i = \lambda e^{-\lambda x_i}
     \end{align}
+
+    $interval$ is computed repeatedly until the desired length spike train has
+    been constructed.
     
     %This technique generates a spikes train as shown in the following graph.
     
 %    \afig{figures/encode_poisson_sweep.png}{Poisson encoded spike train for real values between 0 and 1}{fig:enc_poisson_sweep}
     
-    To determine how different operations process data within a spiking neural
-    network, it is useful to be able to decode a spike train into real
-    values. This involves finding the most likely $\lambda$ parameter for given
-    spike train. Using maximum likelihood estimation this is found to be the
-    inverse of the sample mean.
+    To determine how different operations process data within a SNN, it is
+    useful to be able to decode a spike train into real values. This involves
+    finding the most likely $\lambda$ parameter for given spike train. Using
+    maximum likelihood estimation this is found to be the inverse of the sample
+    mean.
     
     \begin{align}
         \lambda = \frac{N}{\Sigma x_i}
@@ -224,41 +229,40 @@
     There are a variety of time-based (vs. rate-based) coding schemes, each
     slightly different, they each rely on precise spike timing to encode
     information. Beyond a qualification of these methods, a precise definition
-    (or definitions) need to be proposed and used during simulation.
+    (or definitions) needs to be proposed and used during simulation.
     
     \subsubsection{Rank Order Coding}
-    Information is encoded in the relative spike time within a population of
-    neurons. Encoding itself is fairly straight-forward. Real
-    valued inputs are transformed into spike latency, and for a given sample
-    neurons fire once. Generally larger values are assigned a smaller latency,
-    and smaller values a larger one \cite{delorme_2001}.
+    Information is encoded in the relative spike times within a population of
+    neurons. Encoding itself is fairly straight-forward. Real valued inputs are
+    transformed into spike latency, and for a given sample neurons fire
+    once. Generally larger values are assigned a smaller latency, and smaller
+    values a larger one \cite{delorme_2001}.
     
     Some changes to the network itself have shown success when paired with rank
     order coding. These Include a progressive desensitization, similar to the
     biological concept of shunting inhibition. Equation \ref{eq:roc_activation}
     shows the activation of a neuron, given a modulation factor $\alpha \in
     (0,1)$ and a set of incoming connections $a$. Subsequent spikes along a
-    given input connection have less and less of an affect on the overall
+    given input connection have less and less of an effect on the overall
     activation of the neuron \cite{delorme_2001}.
     
     \begin{align}
-        Activation(i,t) = \Sigma_{j \in
-          [1,m]}\alpha^{order(a_i)}W_{j,i} \label{eq:roc_activation}
+        Activation(i,t) = \Sigma_{j \in [1,m]}\alpha^{order(a_i)}W_{j,i} \label{eq:roc_activation}
     \end{align}
     
     %%%%%%%%%%%% Convolution in SNN %%%%%%%%%%%%
-    \section{Convolutions With Spiking Networks}
-    Convolution is not as straightforward to implement in the spiking domain,
-    when compared to traditional ANNs. There are certainly many ways one could
-    implement convolution. Including, in the same way they are handled in ANNs,
-    where neurons aren't explicitly involved. However, the goal is to be
-    biologically plausible. Observations in the human visual cortex inspired the
-    tiling window approach to convolution \cite{wang_2016}. Instead of applying
-    an activation like ReLU, the activation is a spiking neuron. In addition,
-    instead of defining convolution as a time-based operation, it is implemented
-    in space, where the kernel is represented by same-valued sets of weights,
-    connecting feature maps, represented by spiking neurons
-    \cite{mozafari_2018}. Training the weights of a convolution,
+    %% \section{Convolutions With Spiking Networks}
+    %% Convolution is not as straightforward to implement in the spiking domain,
+    %% when compared to traditional ANNs. There are certainly many ways one could
+    %% implement convolution. Including, in the same way they are handled in ANNs,
+    %% where neurons aren't explicitly involved. However, the goal is to be
+    %% biologically plausible. Observations in the human visual cortex inspired the
+    %% tiling window approach to convolution \cite{wang_2016}. Instead of applying
+    %% an activation like ReLU, the activation is a spiking neuron. In addition,
+    %% instead of defining convolution as a time-based operation, it is implemented
+    %% in space, where the kernel is represented by same-valued sets of weights,
+    %% connecting feature maps, represented by spiking neurons
+    %% \cite{mozafari_2018}. Training the weights of a convolution,
     
     %% \section{Reservoir Computing}
     %% A reservoir is a type of recurrent neural network architecture. There are
@@ -317,9 +321,8 @@
       and cite "A critical survey of STDP in Spiking Neural Networks for Pattern
       Recognition"}
     
-    STDP is a biologically inspired learning mechanism for spiking neural
-    networks. Equation \ref{eq:stdp} outlines the rule for connection weight
-    updates
+    STDP is a biologically inspired learning mechanism for SNN. Equation
+    \ref{eq:stdp} outlines the rule for connection weight updates
     
     \begin{align}
         \Delta W =
@@ -350,8 +353,8 @@
     arbitrary mapping, within its training domain.
     
     Recently, there has been some success with a supervised variant on STDP,
-    known as reward-modulated STDP. In this case a deep convolutional spiking
-    neural network (DCSNN) was applied to the MNIST digit recognition
+    known as reward-modulated STDP. In this case a Deep Convolutional Spiking
+    Neural Network (DCSNN) was applied to the MNIST digit recognition
     task. Early layers of the network were trained in an unsupervised manor,
     with normal STDP. Later layers were updated using reward-modulated
     STDP. That is, if the output was correct, STDP was applied. If not,
@@ -378,9 +381,9 @@
     %%%%%%%%%%%% Back Propagation %%%%%%%%%%%%
     \subsection{Back Propagation}
     
-    Back-propagation is traditionally difficult to implement in spiking neural
-    nets, as the spike function is not differentiable. There are some shortcuts
-    proposed, such as using the membrane voltage derivative instead of spike
+    Back-propagation is traditionally difficult to implement in SNNs, as the
+    spike function is not differentiable. There are some shortcuts proposed,
+    such as using the membrane voltage derivative instead of spike
     output. However applying backprop may not be the best approach. The brain
     doesn't (as far as is known) have a method of back-propagating errors. It
     has been proposed to adapt the network architecture to allow rewards at the
@@ -389,12 +392,11 @@
     
     %%%%%%%%%%%% Deeper Networks %%%%%%%%%%%%
     \section{Deeper Networks}
-    Deep learning is still largely unexplored in Spiking Neural Networks, as
-    well as multi-layer learning in the deep architectures that have been
-    explored. Motivating further exploration is both the success of deep
-    Artifical Neural Networks, and the observation that the mammalian brain
-    relies on a deep architecture for visual tasks such as detection and
-    recognition \cite{tavanaei_2019}.
+    Deep learning is still largely unexplored in SNNs, as well as multi-layer
+    learning in the deep architectures that have been explored. Motivating
+    further exploration is both the success of deep Artifical Neural Networks,
+    and the observation that the mammalian brain relies on a deep architecture
+    for visual tasks such as detection and recognition \cite{tavanaei_2019}.
     
     \section{Notable Experiments}
     A number of papers have shown promising results on SOTA recognition tasks,
@@ -451,15 +453,15 @@
     uptake. In general, the neurotransmitter in question is Glutamate for
     excitatatory transmission, and GABA for inhibitory. The Astrocyte will then
     respond with one or more Gliotransmitters. These include glutamate,
-    D-serine, ATP or TNF-alpha. These neurotransmitters have different effects
+    D-serine, ATP or TNF-alpha. These gliotransmitters have different effects
     depending on where and when they are released.
     \begin{itemize}
       \item Glutamate: When released to the pre-synaptic neuron Glu generally
-        results in an increase in probability or release (PR). This equates to
+        results in an increase in Probability of Release (PR). This equates to
         an increase in the weight for a computational model. At the
         post-synaptic terminal, Glutamate release results in depolarization, or
         a so called slow inward current (SIC) \cite{pitta_2016}.
-      \item D-Serine: this nurochemical gates the NDMAR receptors, and
+      \item D-Serine: this neurochemical gates the NDMA receptors, and
         subsequently gates LTP/LTD \cite{mederos_2018}.
       \item ATP has a depressive affect, opposite to Glu \cite{mederos_2018}
       \item TNF-alpha results in an increase in the number of post-synaptic
@@ -475,7 +477,7 @@
     input pathways generally converge to provide an increase to intracellular
     Ca2+ concentration, within an Astrocyte. Though there is some controversy
     surround Ca2+ signaling within astrocytes \cite{mederos_2018}. Initial
-    results of invitro experiments showed a slow Ca2+ response in Astrocyte some
+    results of in vitro experiments showed a slow Ca2+ response in Astrocyte some
     following intense neuronal activity. This showed that while Astrocytes were
     active, they could not exert rapid or granular control over information flow
     at the synapse. Further, more recent research has shown that there are
@@ -493,27 +495,28 @@
 
     \section{High Level Roles for Astrocytes In Biology}
     
-    There are a variety of theories as to the functional role of Astrocytes,
-    with some being somewhat wild speculation, and others specific and highly
-    grounded in experimental data.
+    There are a variety of theories as to the functional role of Astrocytes.
+    Some of these are speculation based on general themes of Astrocyte behavior,
+    and others specific and highly grounded in experimental data.
 
     %% Astrocytes are Master Integrators
     Astrocytes have been shown to act as integrators of synaptic activity. Early
     studies discovered that Astrocytes become active in response to intense
-    neuronal firing. Subsiquent reasearch shows that this response, represented
+    neuronal firing. Subsequent reasearch shows that this response, represented
     by Calcium concentration, was highly complex in time
-    \cite{araque_2014}. This complex global response which happens on a seconds 
+    \cite{araque_2014}. This complex global response which happens on a seconds
     timescale is preceded by calcium activity in Astrocyte processes local to
     synapses. Though there isn't direct evince of this, it is thought that these
-    local Ca2+ sparks propagate their way to the main cell body, and induces the
-    response observed at the cell body \cite{araque_2014}. In this way
-    Astrocytes can locally integrate neuronal activity temporally, on a 100s of
-    milliseconds time-scale. These local events can then be temporally and
-    spatially integrated on a seconds timescale. There is some evidence, when
-    looking at Astrocyte mGluR receptors, that along a common astrocye process,
-    there are clusters of receptors which form a local region. Each of these
-    regions is associated with synaptic terminals, and may integrate their
-    activity at different spatial and temporal time-scales as their neighbors
+    local Ca2+ increases (sometimes called ``puffs'' or ``sparks'') propagate
+    their way to the main cell body, and induces the response observed at the
+    cell body \cite{araque_2014}. In this way Astrocytes can locally integrate
+    neuronal activity temporally, on a 100s of milliseconds time-scale. These
+    local events can then be temporally and spatially integrated on a seconds
+    timescale. There is some evidence, when looking at Astrocyte mGluR
+    receptors, that along a common astrocye process, there are clusters of
+    receptors which form a local region. Each of these regions is associated
+    with synaptic terminals, and may integrate their activity at different
+    spatial and temporal time-scales as their neighbors
     \cite{pitta_2012}. Furthermore, experiments with computational models show
     that varying astrocyte modalities (as is the case in the brain) leads to
     different patterns of signal transmission. This could indicate that
@@ -521,23 +524,23 @@
     \cite{pitta_2012}.
 
     %% Astrocytes facilitate long-range spatial influence
-    A single Astrocyte, through its end-foot processies can influence many
+    A single Astrocyte, through its end-foot processes can influence many
     synapses simultaneously. In the brain, Astrocytes are physically distributed
     via a mechanism called contact spacing, where their end-foot processes
     connect at the periphery of an Astrocyte's domain \cite{pitta_2012}. This
     spacing is not always uniform, some micro-domains are formed favoring a
     neuron signal pathway, with adjacent astrocyte connections observed to be
     absent. One example is in the Ferret visual cortex, where astrocytes (like
-    Neurons) for receptive fields on the visual input \cite{pitta_2012}.
+    Neurons) have receptive fields on the visual input \cite{pitta_2012}.
 
-    Signals propagate in these Astrocyte networks (AN) in a few different ways. One
-    pathway, involves IP3 diffusion through the AN's gap junctions. Once across
-    sufficiently high levels of IP3 cause CICR, and in turn Astrocyte
-    waves. Ca2+ may also diffuse across gap junctions in the same way. This
-    propagation is dubbed Calcium Waves, due to the wave-like nature of the
-    propagation. In addition to the gap-junction mediated effects, ATP released
-    from an Astrocyte may diffuse extra-cellularly, and influence other
-    Astrocytes \cite{amiri_2013}.
+    Signals propagate in these Astrocyte networks (AN) in a few different
+    ways. One pathway, involves Inositol Triphosphate (IP3) diffusion through
+    the AN's gap junctions. Once across sufficiently high levels of IP3 cause
+    CICR, and in turn Astrocyte waves. Ca2+ may also diffuse across gap
+    junctions in the same way. This propagation is dubbed Calcium Waves, due to
+    the wave-like nature of the propagation. In addition to the gap-junction
+    mediated effects, ATP released from an Astrocyte may diffuse
+    extra-cellularly, and influence other Astrocytes \cite{amiri_2013}.
 
     
     %% Astrocytes Modulate STP/STD
@@ -573,7 +576,7 @@
     and the eventual release of ATP. ATP acts as an ihibitor, down-regulating
     excitatory transmission \cite{mederos_2018}.
     
-    Astrocytes also play a major role is Spike-Dependant plasticity, mediating
+    Astrocytes also play a major role is Spike-Dependent plasticity (STDP), mediating
     LTD/LTP at the synapse and gating it. Both LTD and LTP are controlled by the
     NMDAR receptor, with the distinction between depression and potentiation
     being the presence of K+ ions, indicating post-synaptic
@@ -810,11 +813,11 @@
     
     %%%%%%%%%%%% SNNs on an FPGA %%%%%%%%%%%%
     \section{SNNs on an FPGA}
-    \cite{cassidy_2017} have shown the LIF based spiking neural networks can be
-    implemented on FPGA using adders to numerically integrate discrete
-    spikes. STDP weight updating was also included in the implementation. Figure
-    \ref{fig:fpga_lif} shows the hardware implementation of an LIF neuron. The
-    normal continues LIF equations collapse to an adder with a negative bias.
+    \cite{cassidy_2017} have shown the LIF based SNNs can be implemented on FPGA
+    using adders to numerically integrate discrete spikes. STDP weight updating
+    was also included in the implementation. Figure \ref{fig:fpga_lif} shows the
+    hardware implementation of an LIF neuron. The normal continues LIF equations
+    collapse to an adder with a negative bias.
     
     \afigw{figures/fpga_spike.png}{FPGA Implementation of LIF
       Neuron}{fig:fpga_lif}{2}

@@ -1,19 +1,22 @@
 import torch
 import numpy as np
 
+from collections import OrderedDict
+
 class VSweep:
     def __init__(self, values=None, head=None):
         self.values = values
         self.mode = None
         self.next = None
-        # If there is no incoming head, then self is the head
-        if head is None:
-            head = self
         self.head = head
 
 
     def foreach(self, values):
-        _next = VSweep(values, self.head)
+        next_head = self.head
+        if next_head is None:
+            next_head = self
+            
+        _next = VSweep(values, next_head)
         self.next = _next
         self.mode = 'foreach'
 
@@ -21,13 +24,43 @@ class VSweep:
 
 
     def zip(self, values):
-        _next = VSweep(values, self.head)
+        next_head = self.head
+        if next_head is None:
+            next_head = self
+        _next = VSweep(values, next_head)
         self.next = _next
         self.mode = 'zip'
 
         return self.next
 
 
+    def __iter__(self):
+        if self.head is None:
+            return self.run()
+        else:
+            return self.head.__iter__()
+
+
+    def __len__(self):
+        if self.head is None:
+            return self._compute_len()
+        else:
+            return len(self.head)
+
+
+    def _compute_len(self):
+        l = len(self.values)
+        
+        if self.next is None:
+            pass
+        elif self.mode == 'foreach':
+            l = l * self.next._compute_len()
+        elif self.mode == 'zip':
+            l = self.next._compute_len()
+
+        return l
+
+        
     def run(self):
         if self.mode == 'foreach':
             for v in self.values:
@@ -48,7 +81,6 @@ class VSweep:
                     yield (v,)
                 else:
                     yield v
-
         else:
             raise ValueError("Unknown Mode: ", self.mode)
 
@@ -58,54 +90,91 @@ class ExpStorage:
         self.db = []
         pass
 
+    def __iter__(self):
+        return self.db.__iter__()
+
+    def __len__(self):
+        return len(self.db)
+
+    def __getitem__(self, idx):
+        return self.db[idx]
 
     def store(self, v):
+        if type(v) != dict:
+            raise ValueError("Values to store must be dict, not ", type(v))
+        
         self.db.append(v)
 
+    def _hashable(self, val):
+        if type(val) == list:
+            val = tuple(val)
+        elif type(val) == dict:
+            val = tuple(zip(dict.keys(), dict.values()))
+        elif type(val) == np.ndarray:
+            val = tuple(map(tuple, arr))
 
-    def unique(self, col):
-        def _hash_any(val):
-            if type(val) == list:
-                val = tuple(val)
-            elif type(val) == dict:
-                val = tuple(zip(dict.keys(), dict.values()))
-            elif type(val) == np.ndarray:
-                val = tuple(map(tuple, arr))
-
-            return hash(val)
+        return val
 
 
-        all_col_values = []
+    def group_by(self, key, sort=False):
+        """
+        Group all stored records by a given key
+        """
+
+        # Records to return, where keys are the unique values of key across the dataset
         records = {}
-        col_is_hashed = False
 
+        group_keys = []
+        
+        # Find all of the unique group_keys
         for d in self.db:
-            val = d[col]
-            if type(val) in [list, tuple, dict, np.ndarray]:
-                val = _hash_any(val)
-                col_is_hashed = True
-            
-            all_col_values.append(val)
+            if not (key in d):
+                continue
+            val = d[key]
+            g_key = self._hashable(val)
+            if not (g_key in group_keys):
+                group_keys.append(g_key)
 
-        unique = np.unique(np.array(all_col_values))
+        # Use the gather function to grab records for each unique group key
+        for g_key in group_keys:
+            records[g_key] = self.gather(
+                lambda x: hash(self._hashable(x[key])) == hash(g_key),
+                filter = lambda x: key in x
+            )
 
-        print("Gathering records where db[{}] == {}".format(col, unique))
-
-        for u in unique:
-            if col_is_hashed:
-                records[u] = self.gather(col, lambda x: _hash_any(x) == u)
-            else:
-                records[u] = self.gather(col, lambda x: np.isclose(x, u))
+        if sort:
+            sorted_keys = sorted(list(records.keys()))
+            records_sorted = OrderedDict()
+            for k in sorted_keys:
+                records_sorted[k] = records[k]
+            records = records_sorted
 
         return records
+
+    
+    def trace(self, key):
+        arr = []
+        for d in self:
+            if key in d:
+                arr.append(d[key])
+
+        return arr
+
+
+    def gather(self, match_fn, filter=None):
+        """
+        Build a new ExpStorage based on match_fn and filter functions
+        """
         
-        
-    def gather(self, col, match_fn):
-        records = []
+        records = ExpStorage()
 
         for d in self.db:
-            if match_fn(d[col]):
-                records.append(d)
+            # If filter is defined, and returns False, ignore this entry
+            if not (filter is None) and not filter(d):
+                continue
+            
+            if match_fn(d):
+                records.store(d)
 
         return records
         
@@ -141,9 +210,9 @@ def test_exp_storage():
     rand_rep_arr = np.tile(rand_rep_arr, 10)
 
     for r in rand_rep_arr:
-        db.store((r, np.random.random()))
+        db.store({'r': r, 'rand': np.random.random()})
 
-    records = db.unique(0)
+    records = db.group_by('r')
     assert len(records) == 10
     assert all([len(r) == 10 for k, r in records.items()])
 
@@ -155,9 +224,30 @@ def test_exp_storage():
 
     for row in rand_2d_arr:
         for i in range(10):
-            db.store((row.tolist(), np.random.random()))
+            db.store({'row': row.tolist(), 'rand': np.random.random()})
 
-    records = db.unique(0)
+    records = db.group_by('row')
     assert len(records) == 10
     assert all([len(r) == 10 for k, r in records.items()])
 
+
+    # Test gathering records by hash of list, then value
+    db = ExpStorage()
+    
+    rand_2d_arr = np.random.random((10,10))
+    rand_int_arr = np.random.randint((2), size=10)
+
+    for row in rand_2d_arr:
+        for i in range(10):
+            db.store({'row': row.tolist(), 'rand-int': rand_int_arr[i],'rand': np.random.random()})
+
+    records = db.group_by('row')
+    assert len(records) == 10
+    assert all([len(r) == 10 for k, r in records.items()])
+
+    for key, r in records.items():
+        records2 = r.group_by('rand-int')
+
+        for key2, r2 in records2.items():
+            num_entries_with_key = np.sum(rand_int_arr == key2)
+            assert len(r2) == num_entries_with_key

@@ -2,9 +2,16 @@ import torch
 
 from .threshold import threshold
 
+import torch.jit
+
 def astro_step_decay(state, params, dt):
     du = dt * params['tau_u'] * -state['u']
-    u_decayed = max(state['u'] + du, 0)
+
+    u_decayed = state['u'] + du
+
+    # This stops runaway oscillations. We don't want to decay into a negative state
+    if (u_decayed < 0.0) == (state['u'] > 0.0):
+        u_decayed = 0
 
     state['u'] = u_decayed
 
@@ -16,10 +23,9 @@ def astro_step_z_pre(z_pre, state, params, dt):
     # Current update
 
     di = dt * params['tau_i_pre'] * -state['i_pre']
-    i_decayed = max(state['i_pre'] + di, 0.0)
+    i_decayed = state['i_pre'] + di
     i_new = i_decayed + z_pre * params['alpha_pre']
 
-    state['u'] = state['u'] + state['i_pre'] * dt
     state['i_pre'] = i_new
 
     return state
@@ -29,15 +35,42 @@ def astro_step_z_pre(z_pre, state, params, dt):
 def astro_step_z_post(z_post, state, params, dt):
     # Current update
 
-    di = dt * params['tau_i_pre'] * -state['i_pre']
-    i_decayed = state['i_pre'] + di
+    di = dt * params['tau_i_post'] * -state['i_post']
+    i_decayed = state['i_post'] + di
     i_new = i_decayed + z_post * params['alpha_post']
 
-    state['u'] = state['u'] + state['i_post']
     state['i_post'] = i_new
 
     return state
 
+
+# Update u based on other signals
+def astro_step_u_prod(state):
+    """ Update u by adding the product of pre and post signals """
+    du = state['i_pre'] * state['i_post']
+    state['u'] = state['u'] + du
+
+    return state
+
+
+def astro_step_u_ordered_prod(state):
+    du = state['i_pre'] * state['i_post']
+
+    if state['i_pre'] > state['i_post']:
+        du = -du
+
+    state['u'] = state['u'] + du
+
+    return state
+
+
+def astro_step_u_signal(state, params, dt):
+    du = state['i_pre'] + state['i_post']
+
+    state['u'] = state['u'] + du
+
+    return state
+        
 
 # Apply a threshold
 def astro_step_thr(state, params):
@@ -45,17 +78,20 @@ def astro_step_thr(state, params):
 
     # if u exceeded the threshold
     if u_spike > 0.5:
-        state['u'] = 0.0
+        state['u'] = torch.as_tensor(0.0)
 
-    return state, u_spike > 0.5
+    return state, int(u_spike > 0.5)
 
 
 # Step astro effects, based on the value of u
-def astro_step_effect(u, state, params, dt):
-    return None, state
+def astro_step_effect_weight(u_spike, params):
+    if u_spike:
+        return 1
+
+    return 0
 
 
-################### TESTS ######################
+################### tests ######################
 
 import pytest
 from pathlib import Path
@@ -70,6 +106,69 @@ def save_path():
     return spath
 
 
+def test_pre_post_signals():
+    state = {
+        'i_pre': torch.as_tensor(1.0),
+        'i_post': torch.as_tensor(1.0),
+    }
+
+    astro_params = {
+        'tau_i_pre': 200.0,
+        'tau_i_post': 200.0,
+        'alpha_pre': 1.0,
+        'alpha_post': 1.0,
+    }
+
+    exp_values = [
+        1.0,
+        0.8000000119,
+        0.6399999857,
+        0.5119999647,
+        0.4095999599,
+        0.3276799619,
+        0.2621439695,
+        0.2097151726,
+        0.1677721441,
+        0.1342177093,
+        0.1073741689,
+        0.08589933813,
+        0.06871946901,
+        0.0549755767,
+        0.04398046061,
+        0.03518436849,
+        0.02814749442,
+        0.02251799591,
+        0.01801439747,
+        0.01441151835,
+        0.01152921468,
+    ]
+
+    state = {
+        'i_pre': torch.as_tensor(1.0),
+        'i_post': torch.as_tensor(1.0),
+    }
+
+    for i in range(len(exp_values)):
+        assert (exp_values[i] - state['i_pre']) < 1e-6, "I-PRE: Expected {}, got {}".format(exp_values[i], state['i_pre'])
+        assert (exp_values[i] - state['i_post']) < 1e-6, "I-POST: Expected {}, got {}".format(exp_values[i], state['i_post'])
+
+        astro_step_z_pre(0, state, astro_params, 0.001)
+        astro_step_z_post(0, state, astro_params, 0.001)
+
+
+    state = {
+        'i_pre': torch.as_tensor(-1.0),
+        'i_post': torch.as_tensor(-1.0),
+    }
+
+    for i in range(len(exp_values)):
+        assert abs(-exp_values[i] - state['i_pre']) < 1e-6, "I-PRE: Expected {}, got {}".format(exp_values[i], state['i_pre'])
+        assert abs(-exp_values[i] - state['i_post']) < 1e-6, "I-POST: Expected {}, got {}".format(exp_values[i], state['i_post'])
+
+        astro_step_z_pre(0, state, astro_params, 0.001)
+        astro_step_z_post(0, state, astro_params, 0.001)
+        
+    
 def test_astro_step(save_path):
     from matplotlib import pyplot as plt
     from . import encode
@@ -142,7 +241,4 @@ def test_astro_step(save_path):
     fig.savefig(str(save_path/'test_astro_step.jpg'))
 
     print(timeline)
-        
-
-    
     

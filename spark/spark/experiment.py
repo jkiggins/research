@@ -105,6 +105,11 @@ class ExpStorage:
         
         self.db.append(v)
 
+
+    def last(self):
+        return self.db[-1]
+
+
     def _hashable(self, val):
         if type(val) == list:
             val = tuple(val)

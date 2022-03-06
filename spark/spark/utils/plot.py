@@ -27,20 +27,31 @@ def plot_events(ax, events, labels=[], colors=None, offset=0):
     return ax
 
 
-def astro_params_text(cfg, exclude=None):
+def astro_params_text(cfg, exclude=[]):
     text = "U Tau :{:4.2f}\n".format(cfg['tau_u'])
 
-    if np.isclose(cfg['tau_i_pre'], cfg['tau_i_post']):
+    if type(exclude) == str:
+        exclude = [exclude]
+
+    can_group_tau = not ('tau_i_pre' in exclude) and not ('tau_i_post' in exclude)
+    can_group_alpha = not ('alpha_pre' in exclude) and not ('alpha_post' in exclude)
+
+
+    if np.isclose(cfg['tau_i_pre'], cfg['tau_i_post']) and can_group_tau:
         text += "Pre/Post Tau: {:4.2f}\n".format(cfg['tau_i_pre'])
     else:
-        text += "Pre Tau: {:4.2f}\n".format(cfg['tau_i_pre'])
-        text += "Post Tau: {:4.2f}\n".format(cfg['tau_i_post'])
+        if not ('tau_i_pre' in exclude):
+            text += "Pre Tau: {:4.2f}\n".format(cfg['tau_i_pre'])
+        if not ('tau_i_post' in exclude):
+            text += "Post Tau: {:4.2f}\n".format(cfg['tau_i_post'])
 
-    if np.isclose(cfg['alpha_pre'], cfg['alpha_post']):
+    if np.isclose(cfg['alpha_pre'], cfg['alpha_post']) and can_group_alpha:
         text += "Pre/Post Alpha: {:4.2f}\n".format(cfg['alpha_pre'])
     else:
-        text += "Pre Tau: {:4.2f}\n".format(cfg['alpha_pre'])
-        text += "Post Tau: {:4.2f}\n".format(cfg['alpha_post'])
+        if not ('alpha_pre' in exclude):
+            text += "Pre Alpha: {:4.2f}\n".format(cfg['alpha_pre'])
+        if not ('alpha_post' in exclude):
+            text += "Post Alpha: {:4.2f}\n".format(cfg['alpha_post'])
 
     return text
         

@@ -33,6 +33,9 @@ def pre_post_pair(
     if not (hasattr(spike_deltas, '__iter__')):
         spike_deltas = [spike_deltas]
 
+    if len(spike_deltas.shape) == 0:
+        spike_deltas = spike_deltas.reshape(1)
+
     all_spike_trains = []
 
     for delta_t in spike_deltas:

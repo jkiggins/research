@@ -1,10 +1,10 @@
 astro_params:
   mode: stdp
   tau_u: 10000.0
-  tau_i_pre: 250
-  alpha_pre: 0.5
-  tau_i_post: 250
-  alpha_post: 0.5
+  tau_i_pre: 100.0
+  alpha_pre: 1.0
+  tau_i_post: 100.0
+  alpha_post: 1.0
   u_th: 1.0
   u_update: stdp
 

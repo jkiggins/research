@@ -123,7 +123,7 @@ def sim_shifted_stdp(cfg, tau_pre=300.0, tau_u=1000.0, alpha=1.0, vary=None):
     fig.savefig("shifted_stdp_var_{}.svg".format(vary[0]))
     
         
-def sim_classic_stdp(cfg, tau_pre=300.0, tau_u=1000.0, alpha=1.0):
+def sim_classic_stdp(cfg, tau_pre=None, tau_u=None, alpha=None):
     spike_delta_range = (-0.05, 0.05)
     spike_deltas = torch.linspace(*spike_delta_range, 101)
     pulse_pair_spikes = spiketrain.pre_post_pair(spike_deltas, cfg['sim']['dt'])
@@ -131,11 +131,16 @@ def sim_classic_stdp(cfg, tau_pre=300.0, tau_u=1000.0, alpha=1.0):
     db = ExpStorage()
 
     dt = cfg['sim']['dt']
-    cfg('astro_params.tau_u', tau_u)
-    cfg('astro_params.tau_i_pre', tau_pre)
-    cfg('astro_params.tau_i_post', tau_pre)
-    cfg('astro_params.alpha_pre', alpha)
-    cfg('astro_params.alpha_post', alpha)
+
+    if not (tau_u is None):
+        cfg('astro_params.tau_u', tau_u)
+    if not (tau_pre is None):
+        cfg('astro_params.tau_i_pre', tau_pre)
+        cfg('astro_params.tau_i_post', tau_pre)
+    if not (alpha is None):
+        cfg('astro_params.alpha_pre', alpha)
+        cfg('astro_params.alpha_post', alpha)
+
     cfg('astro_params.u_update', 'stdp_ordered')
     astro = Astro.from_cfg(cfg['astro_params'], dt)
 
@@ -245,7 +250,7 @@ def sim_sweep_io_freq(cfg, spike_rate_range):
 
 
 def sim_sweep_spike_pairs(cfg, spike_delta_range):
-    spike_deltas = torch.linspace(*spike_delta_range, 8)
+    spike_deltas = torch.linspace(*spike_delta_range, 7)
     pulse_pair_spikes = spiketrain.pre_post_pair(spike_deltas, cfg['sim']['dt'])
     astro = Astro.from_cfg(cfg['astro_params'], cfg['sim']['dt'])
     db = ExpStorage()
@@ -401,7 +406,7 @@ def sim_heatmap_dt_tau(cfg):
         astro = Astro.from_cfg(cfg['astro_params'], cfg['sim']['dt'])
         state = None
         
-        pulse_pair_spikes = spiketrain.pre_post_pair(float(delta_t), cfg['sim']['dt'])
+        pulse_pair_spikes = spiketrain.pre_post_pair(delta_t, cfg['sim']['dt'])
         delta_u = 0
 
         for z_pre, z_post in pulse_pair_spikes[0]:
@@ -463,20 +468,20 @@ def _main():
     args = _parse_args()
 
     with torch.no_grad():
-        # cfg = config.Config(args.config)
-        # sim_sweep_spike_pairs(cfg, (-8e-3, 8e-3))
-
-        # cfg = config.Config(args.config)
-        # sim_heatmap_dt_tau(cfg)
-
-        # cfg = config.Config(args.config)
-        # sim_heatmap_alpha_update_rate(cfg)
-
-        # cfg = config.Config(args.config)
-        # sim_sweep_io_freq(cfg, (0.1, 0.6))
+        cfg = config.Config(args.config)
+        sim_sweep_spike_pairs(cfg, (-3e-3, 3e-3))
 
         cfg = config.Config(args.config)
-        sim_classic_stdp(cfg, tau_pre=100, tau_u=1000.0, alpha=1.0)
+        sim_heatmap_dt_tau(cfg)
+
+        cfg = config.Config(args.config)
+        sim_heatmap_alpha_update_rate(cfg)
+
+        cfg = config.Config(args.config)
+        sim_sweep_io_freq(cfg, (0.1, 0.6))
+
+        cfg = config.Config(args.config)
+        sim_classic_stdp(cfg)
 
         cfg = config.Config(args.config)
         mods = torch.linspace(0.5, 1.5, 5)
@@ -488,7 +493,6 @@ def _main():
         cfg = config.Config(args.config)
         sim_shifted_stdp(cfg, tau_pre=100.0, tau_u=1000.0, alpha=1.0, vary=('alpha_post', mods))
         
-
 
 
 if __name__ == '__main__':

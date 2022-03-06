@@ -47,9 +47,8 @@ class Astro:
         elif self.params['u_update'] == 'stdp_ordered':
             state = astro_step_u_ordered_prod(state)
 
-        # state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
-        # eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
-        eff = 0
+        state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
+        eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
         return eff, state
 

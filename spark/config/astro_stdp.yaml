@@ -1,12 +1,49 @@
-astro_params:
-  mode: stdp
+#### Parameter Sets ####
+classic_stdp: &classic_stdp
+  mode: plasticity
   tau_u: 10000.0
   tau_i_pre: 100.0
   alpha_pre: 1.0
   tau_i_post: 100.0
   alpha_post: 1.0
   u_th: 1.0
-  u_update: stdp
+
+  u_step_params:
+    mode: u_ordered_prod
+    ltd: 0.0
+    ltp: 0.0
+
+
+anti_stdp: &anti_stdp
+  __inherit__: *classic_stdp
+  alpha_pre: -1.0
+  alpha_post: -1.0
+
+ltp_bias: &ltp_bias
+  __inherit__: *classic_stdp
+  tau_i_pre: 60
+
+
+ltd_bias: &ltd_bias
+  __inherit__: *classic_stdp
+  tau_i_post: 60
+
+
+ltp_dt_shift: &ltp_dt_shift
+  __inherit__: *classic_stdp
+  u_step_params:
+    ltd: -0.5
+    ltp: -0.5
+
+
+ltd_dt_shift: &ltd_dt_shift
+  __inherit__: *classic_stdp
+  u_step_params:
+    ltd: 0.5
+    ltp: 0.5
+
 
 sim:
   dt: 0.001
+
+astro_params: null

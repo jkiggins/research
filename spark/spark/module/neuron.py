@@ -1,3 +1,5 @@
+import torch
+
 from ..functional.lif import lif_step
 
 class LIFNeuron:
@@ -6,7 +8,7 @@ class LIFNeuron:
         self.dt = dt
 
     @classmethod
-    def from_cfg(cfg, dt):
+    def from_cfg(cls, cfg, dt):
         return LIFNeuron(cfg, dt)
 
     def __call__(self, z, state):

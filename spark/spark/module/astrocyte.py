@@ -30,22 +30,25 @@ class Astro:
         return state
     
 
-    def _stdp_mode_step(self, state, z_pre=None, z_post=None):
+    def _plastic_mode_step(self, state, z_pre=None, z_post=None):
         state = self.init_state_if_none(state)
 
-        state = astro_step_decay(state, self.params, self.dt)  # Decay of u
+        # Decay u
+        state = astro_step_decay(state, self.params, self.dt)
+
+        # Integrate pre or post-synaptic spikes
         if not (z_pre is None):
-            # Update i_pre w/ input from z_pre
             state = astro_step_z_pre(z_pre, state, self.params, self.dt)
         if not (z_post is None):
-            # Update i_post w/ input from z_pre
             state = astro_step_z_post(z_post, state, self.params, self.dt)
 
-        # Update u, in this case it is the product of i_pre and i_post
-        if self.params['u_update'] == 'stdp':
+        # Update u
+        if self.params['u_step_params']['mode'] == 'u_prod':
             state = astro_step_u_prod(state)
-        elif self.params['u_update'] == 'stdp_ordered':
-            state = astro_step_u_ordered_prod(state)
+        elif self.params['u_step_params']['mode'] == 'u_ordered_prod':
+            state = astro_step_u_ordered_prod(state, self.params)
+        elif self.params['u_step_params']['mode'] == 'stdp':
+            state = astro_step_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
 
         state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
         eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
@@ -73,5 +76,5 @@ class Astro:
     def __call__(self, state, z_pre=None, z_post=None):
         if self.params['mode'] == 'signal':
             return self._signal_respose_mode_step(state, z_pre=z_pre, z_post=z_post)
-        elif self.params['mode'] == 'stdp':
-            return self._stdp_mode_step(state, z_pre=z_pre, z_post=z_post)
+        elif self.params['mode'] == 'plasticity':
+            return self._plastic_mode_step(state, z_pre=z_pre, z_post=z_post)

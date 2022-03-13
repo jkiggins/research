@@ -8,41 +8,64 @@ from ..experiment import VSweep, ExpStorage
 
 import argparse
 import matplotlib.pyplot as plt
-    
+from tqdm import tqdm
 
-def sim_sweep_u(cfg, tau_i_pre, alpha_pre):
+def _astro_sim(astro, cfg, spikes, db):
+    state = None
+    
+    timeline = {
+        key: torch.as_tensor([val])
+        for key, val in [
+            ('i_pre', 0.0),
+            ('i_post', 0.0),
+            ('z_pre', 0.0),
+            ('z_post', 0.0),
+            ('u', 0.0),
+            ('eff', 0.0),
+        ]
+    }
+
+    for z in tqdm(spikes.transpose(1,0)):
+        if len(z) == 1:
+            eff, state = astro(state, z_pre=z[0])
+            timeline['z_pre'] = torch.cat((timeline['z_pre'], z.reshape(1)))
+        elif len(z) == 2:
+            eff, state = astro(state, z_pre=z[0], z_post=z[1])
+            timeline['z_pre'] = torch.cat((timeline['z_pre'], z[0].reshape(1)))
+            timeline['z_post'] = torch.cat((timeline['z_post'], z[1].reshape(1)))
+            timeline['i_post'] = torch.cat((timeline['i_post'], state['i_post'].reshape(1)))
+            
+        timeline['eff'] = torch.cat((timeline['eff'], eff.reshape(1)))
+        timeline['i_pre'] = torch.cat((timeline['i_pre'], state['i_pre'].reshape(1)))
+
+        timeline['u'] = torch.cat((timeline['u'], state['u'].reshape(1)))
+
+    db.store({
+        'timeline': timeline
+    })
+
+
+def sim_sweep_u(cfg):
     tau_u = torch.logspace(-1, 4, 5)
     db = ExpStorage()
     
     spike_trains = []
-    spike_trains.append(list(spiketrain.impulse(0, 10, 100)))
+    impulse_spikes = spiketrain.impulse(0, 10, 100).repeat((2,1))
+    
+    spike_trains.append(impulse_spikes)
     for r in [0.1, 0.5, 0.7]:
-        spike_trains.append(list(spiketrain.poisson(r, 100)))
+        spike_trains.append(spiketrain.poisson([r, r], 100))
 
     param_sweep = VSweep(tau_u)
     param_sweep = param_sweep.foreach(spike_trains)
 
-    cfg('astro_params.tau_i_pre', tau_i_pre)
-    cfg('astro_params.alpha_pre', alpha_pre)
-
     for tau_u, spikes in param_sweep.head.run():
         cfg('astro_params.tau_u', tau_u)
         astro = Astro.from_cfg(cfg['astro_params'], cfg['sim']['dt'])
-        state = None
+        _astro_sim(astro, cfg, spikes, db)
+        db.last()['tau_u'] = tau_u
+        db.last()['spikes'] = spikes
 
-        timeline = {'i_pre': [], 'z_in': [], 'u': []}
-
-        for z in spikes:
-            eff, state = astro(state, z_pre=z)
-            timeline['i_pre'].append(state['i_pre'])
-            timeline['z_in'].append(z)
-            timeline['u'].append(state['u'])
-
-        db.store({
-            'tau_u': tau_u,
-            'spikes': spikes,
-            'timeline': timeline
-        })
 
     # One figure per spike-train
     records_by_spikes = db.group_by('spikes')
@@ -58,18 +81,21 @@ def sim_sweep_u(cfg, tau_i_pre, alpha_pre):
             tl = d['timeline']
             spikes = d['spikes']
             i_pre = tl['i_pre']
+            i_post = tl['i_post']
             ax.plot(tl['u'], label='tau_u={}'.format(d['tau_u']))
-            ax.set_xlim((0, len(tl['z_in'])))
+            ax.set_xlim((0, len(tl['z_pre'])))
         ax.legend()
 
         ax = fig.add_subplot(3,1,2)
         ax.set_title("Astrocyte Pre Current Over time")
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("Value")
-        ax.plot(i_pre)
+        c1 = ax.plot(i_pre, label='i_pre')[0].get_color()
+        c2 = ax.plot(i_post, label='i_post')[0].get_color()
+        ax.legend()
 
         ax = fig.add_subplot(3,1,3)
-        plot.plot_events(ax, [spikes])
+        plot.plot_events(ax, spikes.tolist(), colors=(c1,c2))
         ax.set_title("Spikes over time")
 
         fig.tight_layout()
@@ -80,33 +106,27 @@ def sim_sweep_pre_i(cfg):
     alpha_i_pre_vals = torch.linspace(0.1, 2.0, 5)
     tau_i_pre_vals = torch.logspace(1, 4, 10)
     spike_trains = []
-    spike_trains.append(list(spiketrain.impulse(0, 10, 100)))
+    spike_trains.append(spiketrain.impulse(0, 10, 100))
+
     for r in [0.1, 0.5, 0.7]:
-        spike_trains.append(list(spiketrain.poisson(r, 100)))
-        
+        spike_trains.append(spiketrain.poisson(r, 100))
+
     param_sweep = VSweep(tau_i_pre_vals)
     param_sweep = param_sweep.foreach(alpha_i_pre_vals)
     param_sweep = param_sweep.foreach(spike_trains)
     db = ExpStorage()
 
+    # Simulation
     for tau_i, alpha, spikes in param_sweep.head.run():
         cfg('astro_params.tau_i_pre', tau_i)
         cfg('astro_params.alpha_pre', alpha)
+
         astro = Astro.from_cfg(cfg['astro_params'], cfg['sim']['dt'])
-
-        timeline = {'i_pre': [], 'z_in': []}
+        _astro_sim(astro, cfg, spikes, db)
         
-        state = None
-        for z in spikes:
-            eff, state = astro(state, z_pre=z)
-            timeline['i_pre'].append(state['i_pre'])
-            timeline['z_in'].append(z)
-
-        db.store({
-            'tau_i': float(tau_i),
-            'alpha': float(alpha),
-            'spikes': spikes,
-            'timeline': timeline})
+        db.last()['tau_i'] = float(tau_i)
+        db.last()['alpha'] = float(alpha)
+        db.last()['spikes'] = spikes
 
     # Get the timelines by spike train
     records_by_spike = db.group_by('spikes')
@@ -129,18 +149,179 @@ def sim_sweep_pre_i(cfg):
             for d in by_alpha:
                 tl = d['timeline']
                 spikes = d['spikes']
-                ax.plot(tl['i_pre'], label='tau={}'.format(d['tau_i']))
-                ax.set_xlim((0, len(tl['z_in'])))
-            ax.legend()
+                ax.plot(tl['i_pre'].tolist(), label='tau={}'.format(d['tau_i']))
+                # ax.set_xlim((0, len(tl['z_pre'])))
+            # ax.legend()
 
         # Last subplot has spike train
         ax = fig.add_subplot(num_subplots, 1, num_subplots)
-        plot.plot_events(ax, [spikes])
+        
+        plot.plot_events(ax, spikes)
         ax.set_title("Spikes over time")
         ax.legend(['Z In'])
-        
+
         fig.tight_layout()
         fig.savefig('sweep_astro{}.jpg'.format(i))
+
+
+def sim_heatmap_alpha_update_rate(cfg):
+    spike_rate_range = torch.linspace(0.05, 0.8, 20)
+    alpha_range = torch.linspace(0.1, 2.0, 20)
+
+    param_sweep = VSweep(values=spike_rate_range)
+    param_sweep = param_sweep.foreach(alpha_range)
+
+    dt = cfg['sim']['dt']
+
+    db = ExpStorage()
+
+    # Simulate
+    for spike_rate, alpha in tqdm(param_sweep):
+        cfg('astro_params.alpha_pre', alpha)
+        cfg('astro_params.alpha_post', alpha)
+
+        astro = Astro.from_cfg(cfg['astro_params'], cfg['sim']['dt'])
+        pre_spikes = spiketrain.poisson(spike_rate, 1000)
+        post_spikes = spiketrain.poisson(spike_rate, 1000)
+        state = None
+        timeline = {
+            'eff': [],
+            'u': []
+        }
+
+        for z_pre, z_post in zip(pre_spikes[0], post_spikes[0]):
+            eff, state = astro(state, z_pre=z_pre, z_post=z_post)
+            timeline['eff'].append(eff)
+            timeline['u'].append(state['u'])
+
+        # print(
+        #     "alpha: {}, spike rate: {}, any_effect: {}, max(u): {}".format(
+        #         alpha,
+        #         spike_rate,
+        #         any(timeline['eff']),
+        #         max(timeline['u']),
+        #     ))
+
+        db.store({
+            'spike_rate': spike_rate,
+            'alpha': alpha,
+            'timeline': timeline})
+
+    # Graph
+    fig = plt.Figure(figsize=(20,20))
+    ax = fig.add_subplot(111)
+    ax.set_title("Heatmap of average time to weight update given Poisson spike rate vs. alpha")
+    ax.set_yticks(
+        list(range(len(alpha_range))),
+        labels=["{:2.4f}".format(float(a)) for a in alpha_range],
+        rotation=45)
+    ax.set_ylabel('Pre and Post Alpha')
+
+    ax.set_xticks(
+        list(range(len(spike_rate_range))),
+        labels=["{:2.4f}".format(float(a)) for a in spike_rate_range])
+    ax.set_xlabel('Spike Rate')
+
+    heat_img = torch.zeros((len(alpha_range), len(spike_rate_range)))
+    for i, (spike_rate, alpha_db) in enumerate(db.group_by('spike_rate', sort=True).items()):
+        for j, (alpha, elem_db) in enumerate(alpha_db.group_by('alpha', sort=True).items()):
+            tl = elem_db[0]['timeline']
+            eff_sum = sum(tl['eff'])
+            heat_img[j, i] = eff_sum
+            ax.text(
+                i, j,
+                "{}".format(float(eff_sum)),
+                ha="center", va="center", color="w")
+
+    ax.imshow(heat_img)
+    fig.tight_layout()
+    fig.savefig("astro_alpha_spike_freq_heat.svg")
+
+
+def sim_heatmap_dt_tau(cfg):
+    tau_range = torch.logspace(0.5, 3, 50)
+    delta_t_range = torch.linspace(0, 20e-3, 21)
+
+    param_sweep = VSweep(values=tau_range)
+    param_sweep = param_sweep.foreach(delta_t_range)
+
+    db = ExpStorage()
+
+    # Simulate
+    for tau, delta_t in tqdm(param_sweep):
+
+        # Create astro with modified config
+        cfg('astro_params.tau_i_pre', tau)
+        cfg('astro_params.tau_i_post', tau)
+
+        astro = Astro.from_cfg(cfg['astro_params'], cfg['sim']['dt'])
+        state = None
+
+        pulse_pair_spikes = spiketrain.pre_post_pair(delta_t, cfg['sim']['dt'])
+        delta_u = 0
+
+        for z_pre, z_post in pulse_pair_spikes[0]:
+            eff, state = astro(state, z_pre=z_pre, z_post=z_post)
+
+            if int(z_post) == 1:
+                delta_u = state['u']
+                break
+
+        db.store({
+            'tau': tau,
+            'delta_t': delta_t,
+        })
+        astro = Astro.from_cfg(cfg['astro_params'], cfg['sim']['dt'])
+        state = None
+
+        pulse_pair_spikes = spiketrain.pre_post_pair(delta_t, cfg['sim']['dt'])
+        delta_u = 0
+
+        for z_pre, z_post in pulse_pair_spikes[0]:
+            eff, state = astro(state, z_pre=z_pre, z_post=z_post)
+
+            if int(z_post) == 1:
+                delta_u = state['u']
+                break
+
+        db.store({
+            'tau': tau,
+            'delta_t': delta_t,
+            'delta_u': delta_u
+        })
+
+
+    # Graph
+    heat_img = torch.zeros((len(tau_range), len(delta_t_range)))
+    for d in db:
+        tau_idx = tau_range.tolist().index(d['tau'])
+        delta_idx = delta_t_range.tolist().index(d['delta_t'])
+        heat_img[tau_idx, delta_idx] = d['delta_u']
+
+    fig = plt.Figure(figsize=(14,40))
+    ax = fig.add_subplot(111)
+    img = ax.imshow(heat_img)
+
+    # Add annotation
+    for i in range(heat_img.shape[0]):
+        for j in range(heat_img.shape[1]):
+            ax.text(
+                j, i,
+                "{:2.2f}".format(float(heat_img[i, j])),
+                ha="center", va="center", color="w")
+
+    ax.set_xticks(
+        list(range(len(delta_t_range))),
+        labels=["{:2.4f}".format(float(a)) for a in delta_t_range],
+        rotation=45)
+    ax.set_xlabel("Delta T")
+
+    ax.set_yticks(
+        list(range(len(tau_range))),
+        labels=["{:2.4f}".format(float(a)) for a in tau_range])
+    ax.set_ylabel("I Pre and Post Tau")
+
+    fig.savefig('astro_stdp_tau_dt_heat.svg')
 
 
 def _parse_args():
@@ -155,9 +336,12 @@ def _main():
     args = _parse_args()
 
     cfg = config.Config(args.config)
-
+    cfg['astro_params'] = cfg['classic_stdp']
     sim_sweep_pre_i(cfg)
-    sim_sweep_u(cfg, 250, 0.5)
+
+    cfg = config.Config(args.config)
+    cfg['astro_params'] = cfg['classic_stdp']
+    sim_sweep_u(cfg)
 
 
 if __name__ == '__main__':

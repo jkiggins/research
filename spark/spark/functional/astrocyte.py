@@ -24,8 +24,13 @@ def astro_step_z_pre(z_pre, state, params, dt):
 
     di = dt * params['tau_i_pre'] * -state['i_pre']
     i_decayed = state['i_pre'] + di
-    i_new = i_decayed + z_pre * params['alpha_pre']
+    
+    # This stops runaway oscillations. We don't want to decay into a negative state
+    if (i_decayed < 0.0) == (state['i_pre'] > 0.0):
+        i_decayed = i_decayed * 0.0
 
+    i_new = i_decayed + z_pre * params['alpha_pre']
+    
     state['i_pre'] = i_new
 
     return state
@@ -37,6 +42,11 @@ def astro_step_z_post(z_post, state, params, dt):
 
     di = dt * params['tau_i_post'] * -state['i_post']
     i_decayed = state['i_post'] + di
+    
+    # This stops runaway oscillations. We don't want to decay into a negative state
+    if (i_decayed < 0.0) == (state['i_post'] > 0.0):
+        i_decayed = i_decayed * 0.0
+
     i_new = i_decayed + z_post * params['alpha_post']
 
     state['i_post'] = i_new
@@ -53,15 +63,47 @@ def astro_step_u_prod(state):
     return state
 
 
-def astro_step_u_ordered_prod(state):
+def astro_step_u_ordered_prod(state, params):
     du = state['i_pre'] * state['i_post']
 
-    if state['i_pre'] > state['i_post']:
-        du = -du
+    try:
+        post_pre_diff = state['i_post'] - state['i_pre']
+        if post_pre_diff < params['u_step_params']['ltd']:
+            du = -du
+        elif post_pre_diff > params['u_step_params']['ltp']:
+            pass
+        else:
+            du = torch.as_tensor(0.0)
+    except:
+        import code
+        code.interact(local=dict(globals(), **locals()))
+        exit(1)
 
     state['u'] = state['u'] + du
 
     return state
+
+
+def astro_step_u_ordered_prod(state, params):
+    du = state['i_pre'] * state['i_post']
+
+    try:
+        post_pre_diff = state['i_post'] - state['i_pre']
+        if post_pre_diff < params['u_step_params']['ltd']:
+            du = -du
+        elif post_pre_diff > params['u_step_params']['ltp']:
+            pass
+        else:
+            du = torch.as_tensor(0.0)
+    except:
+        import code
+        code.interact(local=dict(globals(), **locals()))
+        exit(1)
+
+    state['u'] = state['u'] + du
+
+    return state
+
 
 
 def astro_step_u_signal(state, params, dt):
@@ -74,21 +116,27 @@ def astro_step_u_signal(state, params, dt):
 
 # Apply a threshold
 def astro_step_thr(state, params):
-    u_spike = threshold(state['u'] - params['u_th'], 'heaviside', 0.0)
+    u_spike = torch.as_tensor(1.0)
+    
+    if state['u'] < -(params['u_th']):
+        u_spike = u_spike * -1.0
+    elif state['u'] > params['u_th']:
+        pass
+    else:
+        u_spike = u_spike * 0.0
 
-    # if u exceeded the threshold
-    if u_spike > 0.5:
-        state['u'] = torch.as_tensor(0.0)
-
-    return state, int(u_spike > 0.5)
+    return state, u_spike
 
 
 # Step astro effects, based on the value of u
 def astro_step_effect_weight(u_spike, params):
-    if u_spike:
-        return 1
 
-    return 0
+    if u_spike < -0.001:
+        return torch.as_tensor(0.8)
+    elif u_spike > 0.001:
+        return torch.as_tensor(1.03)
+
+    return torch.as_tensor(1.0)
 
 
 ################### tests ######################

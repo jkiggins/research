@@ -54,4 +54,15 @@ def astro_params_text(cfg, exclude=[]):
             text += "Post Alpha: {:4.2f}\n".format(cfg['alpha_post'])
 
     return text
+
+
+def plot_db(db, figures=None, sp=None, plot=None, yield_axis=True):
+    def _figures(db):
+        if figures is None:
+            yield None, None, plt.Figure()
+        else:
+            for key, val in db.group_by(figures).items():
+                yield key, val, plt.Figure()
+                
+
         

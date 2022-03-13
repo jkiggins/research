@@ -111,14 +111,36 @@ class ExpStorage:
 
 
     def _hashable(self, val):
+        if type(val) == torch.Tensor:
+            val = val.numpy()
+            if len(val.shape) == 0:
+                val = float(val)
+            elif len(val.shape) == 1:
+                val = val.tolist()
+
         if type(val) == list:
             val = tuple(val)
         elif type(val) == dict:
             val = tuple(zip(dict.keys(), dict.values()))
         elif type(val) == np.ndarray:
-            val = tuple(map(tuple, arr))
-
+            val = tuple(map(tuple, val.tolist()))
+            
         return val
+
+
+    def flat(self):
+        pivot_db = {}
+
+        for d in self.db:
+            for key, val in d:
+                if not (key in pivot_db):
+                    pivot_db[key] = []
+                pivot_db[key].append(val)
+
+        for key in pivot_db:
+            pivot_db[key] = torch.as_tensor(pivot_db[key])
+
+        return pivot_db
 
 
     def group_by(self, key, sort=False):
@@ -137,6 +159,7 @@ class ExpStorage:
                 continue
             val = d[key]
             g_key = self._hashable(val)
+
             if not (g_key in group_keys):
                 group_keys.append(g_key)
 

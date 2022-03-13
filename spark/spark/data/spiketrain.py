@@ -2,17 +2,17 @@ import torch
 from ..functional import encode
 
 def impulse(start, size, duration):
-    for i in range(duration):
-        if i >= start and i < (start + size):
-            z = 1
-        else:
-            z = 0
+    spikes = torch.zeros((1, duration))
+    spikes[0, start:start+size] = 1
 
-        yield z
+    return spikes
 
 
-def poisson(rates, duration):
+def poisson(rates, duration):    
     random_spikes = encode.poisson(rates, steps=duration)
+
+    if len(random_spikes.shape) == 1:
+        random_spikes = random_spikes.reshape(1, -1)
 
     return random_spikes
 

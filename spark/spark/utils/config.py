@@ -1,9 +1,10 @@
-import yaml
+import oyaml as yaml
 
 class Config:
     def __init__(self, path):
         self.path = path
         self._load()
+        self._inherit()
 
 
     def _load(self):
@@ -13,8 +14,65 @@ class Config:
         self.cfg = cfg
 
 
+    def bredth(self):
+        _next = [(None, self.cfg)]
+        while len(_next) != 0:
+            parent, cfg = _next.pop(0)
+
+            for k, v in cfg.items():
+                if type(v) == dict:
+                    _next.append((cfg, v))
+                yield cfg, k, v
+
+
+    def depth(self, cfg=None):
+        if cfg is None:
+            cfg = self.cfg
+
+        keys = list(cfg.keys())
+        values = list(cfg.values())
+
+        for k, v in zip(keys, values):
+            if type(v) == dict:
+                yield from self.depth(v)
+            yield cfg, k, v
+        
+
+    def _inherit(self):
+        for parent, k, v in self.depth():
+            if k == '__inherit__':
+                Config.merge(parent, v)
+                parent[k] == None
+
+
+    @classmethod
+    def merge(cls, src, new_cfg):
+        _next = [(src, new_cfg)]
+
+        while len(_next) != 0:
+            src, new_cfg = _next.pop(0)
+            
+            for k in new_cfg:
+                # Key exists in both
+                key_in_both = (k in src) and (k in new_cfg)
+                both_are_dict = key_in_both and (type(src[k]) == type(new_cfg[k]) == dict)
+                key_in_new = not (k in src) and (k in new_cfg)
+                
+                if both_are_dict:
+                    _next.append((src[k], new_cfg[k]))
+                elif key_in_new:
+                    src[k] = new_cfg[k]
+
+        return src
+                
+        
     def __getitem__(self, key):
         return self.cfg[key]
+
+
+    def __setitem__(self, key, value):
+        self.cfg[key] = value
+
 
 
     def __call__(self, key_addr, val=None):
@@ -34,3 +92,72 @@ class Config:
         for k in mod_dict:
             self(k, mod_dict[k])
             
+
+
+################### tests ######################
+
+import pytest
+from pathlib import Path
+
+@pytest.fixture
+def save_path():
+    import os
+    
+    spath = (Path(__file__).parent/".test").absolute()
+    if not spath.exists():
+        os.makedirs(str(spath))
+    return spath
+
+
+def test_config(save_path):
+    yaml_str = """
+classic_stdp: &classic_stdp
+    mode: stdp
+    tau_u: 10000.0
+    tau_i_pre: 100.0
+    alpha_pre: 1.0
+    tau_i_post: 100.0
+    alpha_post: 1.0
+    u_th: 1.0
+
+    u_step_params:
+        mode: stdp
+        ltd: 0.0
+        ltp: 0.0
+
+anti_stdp: &anti_stdp
+  __inherit__: *classic_stdp
+  alpha_pre: -1.0
+  alpha_post: -1.0
+
+
+ltp_bias: &ltp_bias
+  __inherit__: *classic_stdp
+  tau_i_pre: 80
+  
+  u_step_params:
+      ltd: -1.0
+"""
+
+    from pprint import pprint
+    test_yaml_path = save_path/"test.yaml"
+    with open(str(test_yaml_path), 'w') as fp:
+        fp.write(yaml_str)
+
+    cfg = Config(str(test_yaml_path))
+
+    pprint(cfg.cfg)
+
+    # Values in __inherit__ that aren't in the target section are populated
+    assert cfg['anti_stdp']['mode'] == 'stdp'
+    assert cfg['ltp_bias']['mode'] == 'stdp'
+
+    # Values that the target overrides still have their value
+    assert cfg['anti_stdp']['alpha_pre'] == -1.0
+    assert cfg['ltp_bias']['tau_i_pre'] == 80
+
+    # Nested sections from __inherit__ not present in target are populated
+    assert cfg['anti_stdp']['u_step_params']['ltd'] == 0.0
+
+    # Overrides in nested sections are preserved
+    assert cfg['ltp_bias']['u_step_params']['ltd'] == -1.0

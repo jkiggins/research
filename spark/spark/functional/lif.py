@@ -9,9 +9,17 @@ def lif_step(z, state, params, dt):
     dv = dt * params['tau_mem'] * ((params['v_leak'] - state['v']) + state['i'])
     v_decayed = state['v'] + dv
 
+    # Don't decay below zero
+    if state['v'] > 0.0 and v_decayed < 0:
+        v_decayed = v_decayed * 0.0
+
     # compute current updates
     di = -dt * params['tau_syn'] * state['i']
     i_decayed = state['i'] + di
+
+    # Don't decay below zero
+    if state['i'] > 0.0 and i_decayed < 0:
+        i_decayed = i_decayed * 0.0
 
     # compute new spikes
     z_new = threshold(v_decayed - params['v_th'], params['method'], params['alpha'])
@@ -67,9 +75,9 @@ def test_lif_step(save_path):
         'i': []
     }
             
-    for s in random_spikes:
+    for s in random_spikes[0]:        
         z, state = lif_step(s, state, lif_params, dt)
-        
+
         timeline['z'].append(float(z))
         timeline['v'].append(float(state['v']))
         timeline['i'].append(float(state['i']))
@@ -86,7 +94,7 @@ def test_lif_step(save_path):
     ax.set_xlim((0, len(timeline['z'])))
     ax.legend()
     
-    z_in = random_spikes
+    z_in = random_spikes[0]
     z_out = np.array(timeline['z'])
 
     event_z = [
@@ -97,7 +105,7 @@ def test_lif_step(save_path):
     ax = fig.add_subplot(212)
     ax.set_title("LIF neuron output events")
     ax.eventplot(event_z, lineoffsets=[0, 1], linelengths=[0.5, 0.5])
-    ax.set_xlim((0, len(timeline['z'])))
+    # ax.set_xlim((0, len(timeline['z'])))
     ax.legend(['z in', 'z out'])
 
     fig.tight_layout()

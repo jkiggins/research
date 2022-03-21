@@ -19,6 +19,30 @@
 
 \refsection{0}
   \datalist[entry]{nty/global//global/global}
+    \entry{sgnn_transistor}{article}{}
+      \name{author}{1}{}{%
+        {{hash=8038da89e49ac5eabb489cfc6cea9fc1}{%
+           family={2013},
+           familyi={2\bibinitperiod}}}%
+      }
+      \strng{namehash}{8038da89e49ac5eabb489cfc6cea9fc1}
+      \strng{fullhash}{8038da89e49ac5eabb489cfc6cea9fc1}
+      \strng{bibnamehash}{8038da89e49ac5eabb489cfc6cea9fc1}
+      \strng{authorbibnamehash}{8038da89e49ac5eabb489cfc6cea9fc1}
+      \strng{authornamehash}{8038da89e49ac5eabb489cfc6cea9fc1}
+      \strng{authorfullhash}{8038da89e49ac5eabb489cfc6cea9fc1}
+      \field{sortinit}{2}
+      \field{sortinithash}{cbff857e587bcb4635511624d773949e}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{IEEE EMBS}
+      \field{number}{00}
+      \field{title}{Novel Spiking Neuron-Astrocyte Networks based on Nonlinear Transistor-like Models of Tripartite Synapses}
+      \field{volume}{35}
+      \field{year}{2001}
+      \field{pages}{539\bibrangedash a545}
+      \range{pages}{-1}
+    \endentry
     \entry{bassam_2015}{article}{}
       \name{author}{3}{}{%
         {{hash=a4ede3e499021dbe13f40d7531e5f71f}{%
@@ -240,28 +264,6 @@
       \field{pages}{539\bibrangedash a545}
       \range{pages}{-1}
     \endentry
-    \entry{cassidy_2017}{inproceedings}{}
-      \name{author}{1}{}{%
-        {{hash=7105f58a85a139d1f5de5006403e96b6}{%
-           family={Cassidy},
-           familyi={C\bibinitperiod},
-           given={Andrew},
-           giveni={A\bibinitperiod}}}%
-      }
-      \strng{namehash}{7105f58a85a139d1f5de5006403e96b6}
-      \strng{fullhash}{7105f58a85a139d1f5de5006403e96b6}
-      \strng{bibnamehash}{7105f58a85a139d1f5de5006403e96b6}
-      \strng{authorbibnamehash}{7105f58a85a139d1f5de5006403e96b6}
-      \strng{authornamehash}{7105f58a85a139d1f5de5006403e96b6}
-      \strng{authorfullhash}{7105f58a85a139d1f5de5006403e96b6}
-      \field{sortinit}{C}
-      \field{sortinithash}{963e9d84a3da2344e8833203de5aed05}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{IEEE Biomedical Circuits and Systems Conference}
-      \field{title}{FPGA Based Silicon Spiking Neural Array}
-      \field{year}{2017}
-    \endentry
     \entry{chung_2015}{article}{}
       \name{author}{3}{}{%
         {{hash=53269a723868427009c096ca75fe9418}{%
@@ -458,62 +460,6 @@
       \field{title}{computational Models of Astrocytes and Astrocyte--Neuron Interactions: Characterization, Reproducibility, and Future Perspectives}
       \field{year}{2019}
     \endentry
-    \entry{mesejo_2015}{article}{}
-      \name{author}{6}{}{%
-        {{hash=60c229fc5299ae44e9d1af5ea8948774}{%
-           family={Mesejo},
-           familyi={M\bibinitperiod},
-           given={Pablo},
-           giveni={P\bibinitperiod}}}%
-        {{hash=576c58aa3c03e1d81af4223f9b15eba9}{%
-           family={Ib\'{a}\~{n}ez},
-           familyi={I\bibinitperiod},
-           given={Oscar},
-           giveni={O\bibinitperiod}}}%
-        {{hash=cd7678dc90ccae52b33638ca8f03fda4}{%
-           family={Fern\'{a}ndez-Blanco},
-           familyi={F\bibinithyphendelim B\bibinitperiod},
-           given={Enrique},
-           giveni={E\bibinitperiod}}}%
-        {{hash=90f3144af01a475fcbd39ffb26201882}{%
-           family={Cedr\'{o}n},
-           familyi={C\bibinitperiod},
-           given={Francisco},
-           giveni={F\bibinitperiod}}}%
-        {{hash=5797b64c7a3dd8055dd7d2839cbbeef5}{%
-           family={Pazos},
-           familyi={P\bibinitperiod},
-           given={Alejandro},
-           giveni={A\bibinitperiod}}}%
-        {{hash=e68f6cce1e0005d8cb11aa8b6f82ff9a}{%
-           family={Porto-Pazos},
-           familyi={P\bibinithyphendelim P\bibinitperiod},
-           given={Ana\bibnamedelima B.},
-           giveni={A\bibinitperiod\bibinitdelim B\bibinitperiod}}}%
-      }
-      \strng{namehash}{65e69b80878ed46e83673ca5d36cbb00}
-      \strng{fullhash}{2896583ad1c20239fb5e9de5f8197cb1}
-      \strng{bibnamehash}{65e69b80878ed46e83673ca5d36cbb00}
-      \strng{authorbibnamehash}{65e69b80878ed46e83673ca5d36cbb00}
-      \strng{authornamehash}{65e69b80878ed46e83673ca5d36cbb00}
-      \strng{authorfullhash}{2896583ad1c20239fb5e9de5f8197cb1}
-      \field{sortinit}{M}
-      \field{sortinithash}{cfd219b90152c06204fab207bc6c7cab}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{issn}{0129-0657, 1793-6462}
-      \field{journaltitle}{International Journal of Neural Systems}
-      \field{month}{6}
-      \field{number}{04}
-      \field{title}{Artificial Neuron--Glia Networks Learning Approach Based on Cooperative Coevolution}
-      \field{volume}{25}
-      \field{year}{2015}
-      \field{pages}{1550012}
-      \range{pages}{1}
-      \verb{doi}
-      \verb 10.1142/S0129065715500124
-      \endverb
-    \endentry
     \entry{min_2012}{article}{}
       \name{author}{3}{}{%
         {{hash=ac4b03da58146bb7a03f6bfb45c1a200}{%
@@ -616,6 +562,55 @@
       \verb{url}
       \verb http://dx.doi.org/10.1016/j.patcog.2019.05.015
       \endverb
+    \endentry
+    \entry{fpga_sgnn}{article}{}
+      \name{author}{4}{}{%
+        {{hash=5d3fb638ca30307d4a708c381b37104a}{%
+           family={Nazari},
+           familyi={N\bibinitperiod},
+           given={Soheila},
+           giveni={S\bibinitperiod}}}%
+        {{hash=991eaba159c6730789158a62c5d63bec}{%
+           family={Faez},
+           familyi={F\bibinitperiod},
+           given={Karim},
+           giveni={K\bibinitperiod}}}%
+        {{hash=4b83fd11867749b33124ecd406857ede}{%
+           family={Amiri},
+           familyi={A\bibinitperiod},
+           given={Mahmood},
+           giveni={M\bibinitperiod}}}%
+        {{hash=d381d2b695e1ac6306294651edb0d5ac}{%
+           family={Karami},
+           familyi={K\bibinitperiod},
+           given={Ehsan},
+           giveni={E\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier Ltd}%
+      }
+      \strng{namehash}{ed9e629049d22b5401fbc08eb87f5132}
+      \strng{fullhash}{7c843b1bd716777385be585eff71daef}
+      \strng{bibnamehash}{ed9e629049d22b5401fbc08eb87f5132}
+      \strng{authorbibnamehash}{ed9e629049d22b5401fbc08eb87f5132}
+      \strng{authornamehash}{ed9e629049d22b5401fbc08eb87f5132}
+      \strng{authorfullhash}{7c843b1bd716777385be585eff71daef}
+      \field{sortinit}{N}
+      \field{sortinithash}{f7242c3ed3dc50029fca1be76c497c7c}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{18792782}
+      \field{journaltitle}{Neural Networks}
+      \field{month}{6}
+      \field{title}{{A digital implementation of neuron-astrocyte interaction for neuromorphic applications}}
+      \field{volume}{66}
+      \field{year}{2015}
+      \field{pages}{79\bibrangedash 90}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1016/j.neunet.2015.01.005
+      \endverb
+      \keyw{FPGA,Linear approximation,Neuromorphic,Neuron-astrocyte interactions}
     \endentry
     \entry{pitta_2016}{article}{}
       \name{author}{2}{}{%
@@ -879,38 +874,6 @@
       \field{pages}{1\bibrangedash 3}
       \range{pages}{3}
     \endentry
-    \entry{schrauwen_2007}{inproceedings}{}
-      \name{author}{3}{}{%
-        {{hash=f0f119220171795798e2647a3018867a}{%
-           family={Schrauwen},
-           familyi={S\bibinitperiod},
-           given={Benjamin},
-           giveni={B\bibinitperiod}}}%
-        {{hash=7541bc49ab8a6ccc2a7d076ee9f27c52}{%
-           family={Verstraeten},
-           familyi={V\bibinitperiod},
-           given={David},
-           giveni={D\bibinitperiod}}}%
-        {{hash=de681e1115fc6f3455014a00e23513b2}{%
-           family={Campenhout},
-           familyi={C\bibinitperiod},
-           given={Jan\bibnamedelimb M.\bibnamedelimi Van},
-           giveni={J\bibinitperiod\bibinitdelim M\bibinitperiod\bibinitdelim V\bibinitperiod}}}%
-      }
-      \strng{namehash}{d3ecfd1018c0fc6fc4b13a06adaefc35}
-      \strng{fullhash}{d3ecfd1018c0fc6fc4b13a06adaefc35}
-      \strng{bibnamehash}{d3ecfd1018c0fc6fc4b13a06adaefc35}
-      \strng{authorbibnamehash}{d3ecfd1018c0fc6fc4b13a06adaefc35}
-      \strng{authornamehash}{d3ecfd1018c0fc6fc4b13a06adaefc35}
-      \strng{authorfullhash}{d3ecfd1018c0fc6fc4b13a06adaefc35}
-      \field{sortinit}{S}
-      \field{sortinithash}{322b1d5276f2f6c1bccdcd15920dbee6}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{ESANN}
-      \field{title}{An overview of reservoir computing: theory, applications and implementations}
-      \field{year}{2007}
-    \endentry
     \entry{schuman_2017}{article}{}
       \name{author}{1}{}{%
         {{hash=b9a7be8ed35e398bfa296614a56b2167}{%
@@ -935,6 +898,45 @@
       \field{year}{2017}
       \field{pages}{1\bibrangedash 3}
       \range{pages}{3}
+    \endentry
+    \entry{bp_stdp}{article}{}
+      \name{author}{2}{}{%
+        {{hash=f035f0896dbdf24036b2bec6dd2c01dd}{%
+           family={Tavanaei},
+           familyi={T\bibinitperiod},
+           given={Amirhossein},
+           giveni={A\bibinitperiod}}}%
+        {{hash=7fb7d9e04d3d66f10b2c3270f0be4087}{%
+           family={Maida},
+           familyi={M\bibinitperiod},
+           given={Anthony},
+           giveni={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{dadc214129e20d82108a5eb834445899}
+      \strng{fullhash}{dadc214129e20d82108a5eb834445899}
+      \strng{bibnamehash}{dadc214129e20d82108a5eb834445899}
+      \strng{authorbibnamehash}{dadc214129e20d82108a5eb834445899}
+      \strng{authornamehash}{dadc214129e20d82108a5eb834445899}
+      \strng{authorfullhash}{dadc214129e20d82108a5eb834445899}
+      \field{sortinit}{T}
+      \field{sortinithash}{6f7aff9db9dcfeb7f95fd5bbd2f78df9}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprinttype}{arXiv}
+      \field{issn}{18728286}
+      \field{journaltitle}{Neurocomputing}
+      \field{title}{{BP-STDP: Approximating backpropagation using spike timing dependent plasticity}}
+      \field{volume}{330}
+      \field{year}{2019}
+      \field{pages}{39\bibrangedash 47}
+      \range{pages}{9}
+      \verb{doi}
+      \verb 10.1016/j.neucom.2018.11.014
+      \endverb
+      \verb{eprint}
+      \verb 1711.04214
+      \endverb
+      \keyw{Multi-layer SNN,STDP,Spiking neural networks,Supervised learning,Temporally local learning}
     \endentry
     \entry{wade_2011}{article}{}
       \name{author}{5}{}{%
@@ -979,44 +981,11 @@
       \field{volume}{6}
       \field{year}{2011}
     \endentry
-    \entry{wang_2016}{inproceedings}{}
-      \name{author}{2}{}{%
-        {{hash=b05219a6acab0132847dc1d15a7fc0ef}{%
-           family={Wang},
-           familyi={W\bibinitperiod},
-           given={Qian},
-           giveni={Q\bibinitperiod}}}%
-        {{hash=24bece773e8873ff8f03d9a3eced56df}{%
-           family={Li},
-           familyi={L\bibinitperiod},
-           given={Peng},
-           giveni={P\bibinitperiod}}}%
-      }
-      \strng{namehash}{aad26334718636003f04c4772c31db64}
-      \strng{fullhash}{aad26334718636003f04c4772c31db64}
-      \strng{bibnamehash}{aad26334718636003f04c4772c31db64}
-      \strng{authorbibnamehash}{aad26334718636003f04c4772c31db64}
-      \strng{authornamehash}{aad26334718636003f04c4772c31db64}
-      \strng{authorfullhash}{aad26334718636003f04c4772c31db64}
-      \field{sortinit}{W}
-      \field{sortinithash}{ecb89ff85896a47dc313960773ac311d}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings - International Conference on Pattern Recognition}
-      \field{isbn}{9781509048472}
-      \field{issn}{10514651}
-      \field{title}{{D-LSM: Deep Liquid State Machine with unsupervised recurrent reservoir tuning}}
-      \field{year}{2016}
-      \field{pages}{2652\bibrangedash 2657}
-      \range{pages}{6}
-      \verb{doi}
-      \verb 10.1109/ICPR.2016.7900035
-      \endverb
-      \verb{file}
-      \verb :home/jkiggins-l/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Wang, Li - Unknown - D-LSM Deep Liquid State Machine with Unsupervised Recurrent Reservoir Tuning.pdf:pdf
-      \endverb
-    \endentry
   \enddatalist
+  \missing{deep_spike}
+  \missing{realtime_sgnn}
+  \missing{rstdp_mnist}
+  \missing{snn_dynamic_calcium}
 \endrefsection
 \endinput
 

@@ -21,6 +21,9 @@
 ** Astrocyte Connectedness
 [[wade_2011]] - brief mention
 
+** Astrocyte Networks
+[[gordleeva_2021]] - Models astro networks in a grid
+
 ** Astrocytes Exhibit fast local responses followed by slow global responses
 [[min_2012]], [[araque_2014]]
 
@@ -36,7 +39,6 @@ Larger-scale network with Astrocyte mediated memory: [[pitta_2021-5]]
 ** CICR
 [[wade_2011]]
 
-
 ** Engineering models
 [[bassam_2009]],
 
@@ -44,6 +46,12 @@ Larger-scale network with Astrocyte mediated memory: [[pitta_2021-5]]
 
 ** Research Timeline
 Tripartied synapse introduced: [[sajedinia_2018_1]]
+
+
+** STDP
+[[tavanaei_2018_bp]] - BP-STDP
+[[tavanaei_2018_dl]] - Deep learning in SNN
+[[vigneron_2020]] - Review of a variety of STDP variants
 
 
 * References to Review Next
@@ -841,6 +849,14 @@ Described by the FitzHugh–Nagumo model, with additional term $I_{APT}$,
 $I_{syn}$, I_{G2} to model an Astrocyte effect.
 
 ** <<araque_2014>> (Araque 2014) 
+Most of the knowledge we have about astrocytes comes from monitoring cell
+somata. These studies showed that astrocytes responded at a slow time-scale in
+response to intense neuronal activity.
+
+More recent studies (2011) suggest minimal synaptic activity can illicit small,
+rapid, and local changes in Ca2+ at astrocyte processes.
+
+
 ** <<pitta_2021>> (Pitta 2021) Multiple forms of working memory emerge from synapse-astrocyte interactions
 Neuron-glial interactions are explored as a mechanism for working memory. There
 is mention of an astrocyte state decay timescale, and it is on the order of 5s
@@ -942,3 +958,18 @@ baseline dopamine levels -> LTP
 this)
 
 
+
+** <<vigneron_2020>>
+WTA configurations should be discarded post-learning, as such a configuration
+might limit recognition of temporally overlapping features
+
+*** Next
+K. S. Burbank2015
+
+
+** <<tavanaei_2018_bp>>
+
+*** Next
+Sporea et. al. 2013 - BP Resume
+
+** <<tavanaei_2018_dl>>

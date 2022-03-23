@@ -754,7 +754,32 @@
     \cite{manninen_2018} Grouped models from early works that appeared to
     precede many other models (qualitatively) through 2017: One of these groups
     consists of models defined by De Young and Keizer (1992)a and Li and Rinzel
-    (1994). De Young and Keizer like models are characterized by a 
+    (1994). De Young and Keizer like models are characterized by a
+
+    \subsection{Astrocyte Networks}
+    Beyond their association with neurons, Astrocytes also form their own
+    networks, in the form of gap junctions. Due to the nature of these
+    connections (a protein spanning two cell walls) only physically adjacent
+    astrocytes can form connections. Astrocytes don't have long-reaching
+    projections like the axons of neurons. Astrocyte networks have been shown to
+    form non-overlapping groups, with limited, but present connectivity between
+    groups. These groups generally consist of between 2-10 astrocytes. This
+    raises the question, for simulation, how are these connections
+    initialized. \cite{snn_dynamic_calcium} proposes a method for forming these
+    networks during simulation. The approach is a recursive technique, and can
+    generate connections between astrocytes while respecting their need for
+    close proximity. The algorithm is as follows.
+    \begin{enumerate}
+        \item From the center of each astrocyte, produce a random number between
+          m and n of branches pointing outward in uniformly random directions.
+        \item If any branch either intersects another of the same astrocyte, or
+          is closer to another astrocyte than its ancestor (could be its
+          astrocyte, or another branch).\
+        \item For any surviving branches generate a random number of next-level
+          branches between 1 and k.
+        \item repeat 2, 3 until a maximum branching level $N_max$ is reached.
+    \end{enumerate}
+    
     
     \section{Astrocyte Mediated Effects In the Literature}
     \subsection{GT Release From Astrocyte}

@@ -7,7 +7,7 @@
 
 % NOTE: All filler text has "TODO" written. This must be removed in the final copy!
 
-\chapter{Objective Details}\label{section:objective_details}
+\chapter{Objective Details} \label{section:objective_details}
     The overarching goal of this thesis is to extend the bio-inspiration of
     spiking networks by introducing an Astrocyte-like element, and forming a
     tri-partied synapse. This Astrocyte element will drive synaptic plasticity;
@@ -43,28 +43,15 @@
         
     %%%%%%%%%%%%% Metrics %%%%%%%%%%%%%
     \section{Metrics} \label{section:metrics}
-    A variety of metrics will be used during development and as the standard
-    benchmark to measure the outcome of experiments. The simplest and most well
-    known metrics, such as mean-average-precision, accuracy, and a confusion
-    matrix can give insight into how well the network is performing on
-    classification tasks, and if there has been an improvement in response to
-    whatever changes were made. In addition to standard metrics, it is important
-    to know how the network is generalizing. This is normally measured using a
-    held-out validation set, which the network doesn't see during training, but
-    is tested against afterwards. Along with this standard practice models
-    evaluated as part of this research will be compared using a unfavorable
-    validation split. This will involve training with increasingly larger
-    validation sets (and conversely smaller training sets). Graphs generated for
-    each model can easily be compared to see which architectures are better at
-    generalizing to the dataset.
+    Few of the common metrics used in machine learning will be applicable for
+    this research. Instead Results will be presented using comparisons between
+    plasticity variants, where the methods in this research show some
+    improvement. In addition, results may display features not previously
+    observed. In that case novelty will be the metric. Accuracy will likely
+    still be applicable, especially with supervised variants of the Astrocyte
+    Plasticity model.
     
-    In addition to "post-learning" metrics, as listed above, it is important to
-    take into account how the model responds during training into
-    consideration. Loss will be recorded during training and can be compared
-    across architectures. This will give an indication of how quickly the model
-    is converging, and if a specific change lends itself to faster convergence.
-    
-    Lastly, two metrics will be used to monitor the network from a more
+    Two metrics will be used to monitor the network from a more
     application-independent perspective. This will give insight into how
     different architectures are behaving at a low level. The first is a
     per-neuron spike-trace. This will provide information like average spike
@@ -93,7 +80,7 @@
     (and in some cases defend) that they have the most efficient library for
     simulation spiking neural networks.
 
-    This research will leverage a modified version of Norse for all simulations
+    This research will leverage a modified version of Norse for all simulations.
     
     %%%%%%%%%%%%% SGNN Architecture %%%%%%%%%%%%%
     \section{Develop an Astrocyte-Synapse Model that can Implement Classical STDP}
@@ -122,43 +109,7 @@
         \item Only one astrocyte may affect a single synapse
     \end{enumerate}
     
-    Beyond their association with neurons, Astrocytes also have their own
-    network, in the form of gap junctions. Due to the nature of these
-    connections (a protein spanning two cell walls) only physically adjacent
-    astrocytes can form connections. Astrocytes don't have long-reaching
-    projections like the axons of neurons. Astrocyte networks have been shown to
-    form non-overlapping groups, with limited, but present connectivity between
-    groups. These groups generally consist of between 2-10 astrocytes. This
-    raises the question, for simulation, how are these connections
-    initialized. \cite{snn_dynamic_calcium} has a very interesting method of
-    generating this connectivity, that is a suitable starting point for this
-    research. This branching algorithm is described below.
-    
-    \cite{snn_dynamic_calcium} proposes a 2d branching algorithm that uses a
-    recursive technique, and can generate connections between astrocytes while
-    respecting their need for close proximity. The algorithm is as follows.
-    \begin{enumerate}
-        \item From the center of each astrocyte, produce a random number between
-          m and n of branches pointing outward in uniformly random directions.
-        \item If any branch either intersects another of the same astrocyte, or
-          is closer to another astrocyte than its ancestor (could be its
-          astrocyte, or another branch).\
-        \item For any surviving branches generate a random number of next-level
-          branches between 1 and k.
-        \item repeat 2, 3 until a maximum branching level $N_max$ is reached.
-    \end{enumerate}
-    
-    With the details for generating a network topology fairly well defined at
-    this point, it is important to consider which neuron and astrocyte models
-    will be used for simulation. In general Astrocyte models have some concept
-    of calcium concentration, which mathematically is an internal state
-    variable. This state is affected by incoming spikes through one or more
-    pathways, and in some cases by other astrocytes. Depending on this internal
-    state, the astrocyte will release different glio-transmitters, such as ATP
-    or Glutimate. For this reasearch it will be a requirement that an astrocyte
-    model support the model of an internal calcium concentration, to allow for
-    astrocyte-network simulation. This will rule out some of the more simplistic
-    models paired with ANNs.
+
     
     \cite{snn_dynamic_calcium} proposes a Neuron-Astrocyte model based on the
     well known FitzHugh–Nagumo spiking neuron model. Figure

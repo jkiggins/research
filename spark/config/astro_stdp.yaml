@@ -13,7 +13,6 @@ classic_stdp: &classic_stdp
     ltd: 0.0
     ltp: 0.0
 
-
 anti_stdp: &anti_stdp
   __inherit__: *classic_stdp
   alpha_pre: -1.0
@@ -41,7 +40,6 @@ ltd_dt_shift: &ltd_dt_shift
   u_step_params:
     ltd: 0.5
     ltp: 0.5
-
 
 sim:
   dt: 0.001

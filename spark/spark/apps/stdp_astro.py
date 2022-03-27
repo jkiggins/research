@@ -305,7 +305,6 @@ def _main():
             title = cfg_name
             sim_classic_stdp(cfg, name=name, title=title, u_fn='sum')
 
-
         # cfg = config.Config(args.config)
         # mods = torch.linspace(0.5, 1.5, 5)
         # sim_shifted_stdp(cfg, tau_pre=100.0, tau_u=1000.0, alpha=1.0, vary=('tau_i_pre', mods))

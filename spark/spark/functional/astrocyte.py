@@ -84,28 +84,6 @@ def astro_step_u_ordered_prod(state, params):
     return state
 
 
-def astro_step_u_ordered_prod(state, params):
-    du = state['i_pre'] * state['i_post']
-
-    try:
-        post_pre_diff = state['i_post'] - state['i_pre']
-        if post_pre_diff < params['u_step_params']['ltd']:
-            du = -du
-        elif post_pre_diff > params['u_step_params']['ltp']:
-            pass
-        else:
-            du = torch.as_tensor(0.0)
-    except:
-        import code
-        code.interact(local=dict(globals(), **locals()))
-        exit(1)
-
-    state['u'] = state['u'] + du
-
-    return state
-
-
-
 def astro_step_u_signal(state, params, dt):
     du = state['i_pre'] + state['i_post']
 
@@ -120,7 +98,9 @@ def astro_step_thr(state, params):
     
     if state['u'] < -(params['u_th']):
         u_spike = u_spike * -1.0
+        state['u'] = torch.as_tensor(0.0)
     elif state['u'] > params['u_th']:
+        state['u'] = torch.as_tensor(0.0)
         pass
     else:
         u_spike = u_spike * 0.0
@@ -132,9 +112,9 @@ def astro_step_thr(state, params):
 def astro_step_effect_weight(u_spike, params):
 
     if u_spike < -0.001:
-        return torch.as_tensor(0.8)
+        return torch.as_tensor(0.95)
     elif u_spike > 0.001:
-        return torch.as_tensor(1.03)
+        return torch.as_tensor(1.05)
 
     return torch.as_tensor(1.0)
 

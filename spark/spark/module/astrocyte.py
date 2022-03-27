@@ -53,6 +53,8 @@ class Astro:
         state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
         eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
+        
+
         return eff, state
 
 

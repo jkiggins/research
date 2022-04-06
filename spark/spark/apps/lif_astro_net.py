@@ -97,7 +97,7 @@ def sim_rate_spikes(snn_fn, cfg, name="snn_1n1s1a_rate-based-spikes"):
     db = ExpStorage()
     
     # spike_trains.append(impulse_spikes)
-    for r in [0.5, 0.7]:
+    for r in [0.1, 0.2, 0.3]:
         spike_trains.append(spiketrain.poisson([r], cfg['sim']['steps']))
 
     # Sim
@@ -106,14 +106,14 @@ def sim_rate_spikes(snn_fn, cfg, name="snn_1n1s1a_rate-based-spikes"):
         tl = _sim_snn(snn, spikes)
         db.store({'spikes': spikes, 'tl': tl})
 
-    i = 0
+    fig_idx = 0
     for spikes, by_spike in db.group_by('spikes').items():
         assert len(by_spike) == 1
         
         d = by_spike[0]
         tl = d['tl']
 
-        fig = plt.Figure(figsize=(6.4, 10))
+        fig = plt.Figure(figsize=(10, 15))
         ax = fig.add_subplot(411)
         ax.set_xlim((0, len(tl['z_pre'])))
         ax.set_title("Neuron Traces")
@@ -127,7 +127,7 @@ def sim_rate_spikes(snn_fn, cfg, name="snn_1n1s1a_rate-based-spikes"):
         ax.plot(tl['i_pre'], label='Pre-synaptic Astrocyte Trace')
         ax.plot(tl['i_post'], label='Post-synaptic Astrocyte Trace')
         ax.plot(tl['u'], label='Astrocyte State')
-        ax.plot(tl['i_post']-tl['i_pre'], label='Astrocyte Trace Diff')
+        # ax.plot(tl['i_post']-tl['i_pre'], label='Astrocyte Trace Diff')
         ax.legend()
 
         ax = fig.add_subplot(413)
@@ -145,8 +145,8 @@ def sim_rate_spikes(snn_fn, cfg, name="snn_1n1s1a_rate-based-spikes"):
         ax.plot(tl['w'], marker='.')
 
         fig.tight_layout()
-        fig.savefig("{}_{}.svg".format(name, i))
-        i += 1
+        fig.savefig("{}_{}.svg".format(name, fig_idx))
+        fig_idx += 1
 
         # Some sanity checking
         for i in range(1, len(tl['w'])-1):
@@ -165,18 +165,11 @@ def _parse_args():
     return parser.parse_args()
 
 
-
 def _main(args):
     with torch.no_grad():
         cfg = config.Config(args.config)
         cfg['astro_params'] = cfg['classic_stdp']
         sim_rate_spikes(lambda: LifAstroNet(cfg), cfg, name="snn_1n1s1a_stdp_rate-input")
-
-        bcfg = config.Config(args.config)
-        cfg['astro_params'] = cfg['anti_stdp']
-        sim_rate_spikes(lambda: LifAstroNet(cfg), cfg, name="snn_1n1s1a_anti-stdp_rate-input")
-
-        
 
 if __name__ == '__main__':
     args = _parse_args()

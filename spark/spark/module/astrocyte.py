@@ -6,6 +6,7 @@ from ..functional.astrocyte import (
     astro_step_u_prod,
     astro_step_u_ordered_prod,
     astro_step_u_signal,
+    astro_step_u_stdp,
     astro_step_thr,
     astro_step_effect_weight,
 )
@@ -42,18 +43,19 @@ class Astro:
         if not (z_post is None):
             state = astro_step_z_post(z_post, state, self.params, self.dt)
 
+
         # Update u
         if self.params['u_step_params']['mode'] == 'u_prod':
             state = astro_step_u_prod(state)
         elif self.params['u_step_params']['mode'] == 'u_ordered_prod':
             state = astro_step_u_ordered_prod(state, self.params)
         elif self.params['u_step_params']['mode'] == 'stdp':
-            state = astro_step_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
+            state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
 
         state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
         eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
-        
+        assert eff
 
         return eff, state
 

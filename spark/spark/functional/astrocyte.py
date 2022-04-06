@@ -29,7 +29,14 @@ def astro_step_z_pre(z_pre, state, params, dt):
     if (i_decayed < 0.0) == (state['i_pre'] > 0.0):
         i_decayed = i_decayed * 0.0
 
-    i_new = i_decayed + z_pre * params['alpha_pre']
+    i_new = z_pre * params['alpha_pre']
+    
+    if params['pre_reset_on_spike'] and z_pre:
+        # In this case, don't add i_decayed (forget past spikes)
+        pass
+    else:
+        i_new = i_new + i_decayed
+
     
     state['i_pre'] = i_new
 
@@ -47,7 +54,14 @@ def astro_step_z_post(z_post, state, params, dt):
     if (i_decayed < 0.0) == (state['i_post'] > 0.0):
         i_decayed = i_decayed * 0.0
 
-    i_new = i_decayed + z_post * params['alpha_post']
+
+    i_new = z_post * params['alpha_post']
+    
+    if params['post_reset_on_spike'] and z_post:
+        # In this case, don't add i_decayed (forget past spikes)
+        pass
+    else:
+        i_new = i_new + i_decayed
 
     state['i_post'] = i_new
 
@@ -66,23 +80,33 @@ def astro_step_u_prod(state):
 def astro_step_u_ordered_prod(state, params):
     du = state['i_pre'] * state['i_post']
 
-    try:
-        post_pre_diff = state['i_post'] - state['i_pre']
-        if post_pre_diff < params['u_step_params']['ltd']:
-            du = -du
-        elif post_pre_diff > params['u_step_params']['ltp']:
-            pass
-        else:
-            du = torch.as_tensor(0.0)
-    except:
-        import code
-        code.interact(local=dict(globals(), **locals()))
-        exit(1)
+    post_pre_diff = state['i_post'] - state['i_pre']
+    if post_pre_diff < params['u_step_params']['ltd']:
+        du = -du
+    elif post_pre_diff > params['u_step_params']['ltp']:
+        pass
+    else:
+        du = torch.as_tensor(0.0)
 
     state['u'] = state['u'] + du
 
     return state
 
+
+def astro_step_u_stdp(state, params, z_pre=None, z_post=None):
+    du = torch.as_tensor(0.0)
+
+    if z_post:
+        du = state['i_pre']
+        state['i_pre'] = torch.as_tensor(0.0)
+    elif z_pre:
+        du = -state['i_post']
+        state['i_post'] = torch.as_tensor(0.0)
+
+    state['u'] = state['u'] + du
+
+    return state
+        
 
 def astro_step_u_signal(state, params, dt):
     du = state['i_pre'] + state['i_post']

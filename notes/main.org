@@ -42,6 +42,7 @@ we could apply a teaching signal at N0, force it's value to the proper
 state. When there is a teaching signal at the output, could astrocytes help this
 signal propagate back across the network?
 
+
 * Current Best Theories
 ** Activity modulation
 

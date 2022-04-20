@@ -1,0 +1,84 @@
+% objective_details.tex
+%
+% Author       : Jacob Kiggins
+% Contact      : jmk1154@g.rit.edu
+% Date Created : 01/31/2021
+%
+
+% NOTE: All filler text has "TODO" written. This must be removed in the final copy!
+
+\chapter{Methods and Resources} \label{section:methods}
+    The overarching goal of this thesis is to extend the bio-inspiration of
+    spiking networks by introducing an Astrocyte-like element, and forming a
+    tri-partied synapse. This Astrocyte element will drive synaptic plasticity;
+    First implementing, then extending the widely used STDP rule. Benefits of
+    Astrocyte-like control of synaptic plasticity will be demonstrated in the
+    single synapse, single neuron configuration (1S1N) as well as select
+    multi-synapse configurations (i.e. 2S1N, 3S2N, etc...). Inputs will mostly
+    consist of procedurally generated spiking inputs. This would include poisson
+    rate-coded spike trains, spiking inputs representing Boolean variables, and
+    temporal inputs that follow specific patterns. In general, for each
+    experiment there will be some comparison necessary between the Astrocyte
+    driven plasticity and classical STDP. To evaluate each approach
+    convergence/divergence of weights or speed of convergence may be
+    used. Statistical analysis of various intermediate signals, or the weights
+    may be useful as well, depending on the experiment. If it is difficult to
+    compare an experiment to classical STDP, it should instead be possible to
+    compare to another astrocyte driven experiment.
+
+    %%%%%%%%%%%%% Datasets %%%%%%%%%%%%%
+    \section{Datasets} \label{section:datasets}
+    No formal dataset will be used in this research. Instead, inputs to spiking
+    neurons and spiking neural networks will be simulated rate-based and
+    time-based spike-trains. These spike trains will have specific patterns will
+    be chosen based on the experiment at hand. Some example pattern include.
+    \begin{enumerate}
+    \item Random Poisson spike train with a single rate parameter
+    \item Random Poisson spike train with a variable rate parameters
+    \item A bust of spikes which may be inserted into another spike train
+    \item Spikes representing Noise: Uniformly random, Gaussian, etc...
+    \item Specific temporal patterns either hand-picked, spatial, or driven by a
+      boolean function
+    \end{enumerate}
+        
+    %%%%%%%%%%%%% Metrics %%%%%%%%%%%%%
+    \section{Metrics} \label{section:metrics}
+    Few of the common metrics used in machine learning will be applicable for
+    this research. Instead Results will be presented using comparisons between
+    plasticity variants, where the methods in this research show some
+    improvement. In addition, results may display features not previously
+    observed. In that case novelty will be the metric. Accuracy will likely
+    still be applicable, especially with supervised variants of the Astrocyte
+    Plasticity model.
+    
+    Two metrics will be used to monitor the network from a more
+    application-independent perspective. This will give insight into how
+    different architectures are behaving at a low level. The first is a
+    per-neuron spike-trace. This will provide information like average spike
+    rate, and show any areas of the network with increased activity. From this
+    trace a higher-level insights can be made, namely counting the number of
+    poly-synchronous groups, as outlined in \cite{sgnn_transistor}.
+    
+    %%%%%%%%%%%%% SW Components %%%%%%%%%%%%%
+    \section{SW Components}
+    Spiking Neural Networks are very much in their infancy as far as software
+    and community support. This isn't due to lack of options, many frameworks
+    are capable of simulating SNNs. However, these frameworks aren't as
+    sophisticated, complete, error-free, or supported when compared to
+    traditional DL libraries. In addition, many of the more bio-realistic
+    frameworks can't simulate networks at scale (such as NEST). Recently, a few
+    python libraries have emerged that are usable and very close to complete
+    solutions. The first is BindsNet, which has been referenced in a variety of
+    papers. The original implementation included an architecture that achieved
+    SOTA results on MNIST classification. The second is PySNN, it was written by
+    a PhD student, and builds on-top of PyTorch. Many common Spiking Neuron
+    Models are included out of the box, such as LIF, and the more bio-inspired
+    Izhikevich model. Another framework, somewhat newer is Norse. Unlike others
+    listed here, Norse is in active development. Similar to PySNN, Norse
+    provides a very clean interface and is built ontop of PyTorch. Specifically
+    Norse leverages PyTorch's torchscript interface, which allows Norse to claim
+    (and in some cases defend) that they have the most efficient library for
+    simulation spiking neural networks.
+
+    This research will leverage a modified version of Norse for all simulations.
+    

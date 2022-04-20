@@ -19,30 +19,6 @@
 
 \refsection{0}
   \datalist[entry]{nty/global//global/global}
-    \entry{sgnn_transistor}{article}{}
-      \name{author}{1}{}{%
-        {{hash=8038da89e49ac5eabb489cfc6cea9fc1}{%
-           family={2013},
-           familyi={2\bibinitperiod}}}%
-      }
-      \strng{namehash}{8038da89e49ac5eabb489cfc6cea9fc1}
-      \strng{fullhash}{8038da89e49ac5eabb489cfc6cea9fc1}
-      \strng{bibnamehash}{8038da89e49ac5eabb489cfc6cea9fc1}
-      \strng{authorbibnamehash}{8038da89e49ac5eabb489cfc6cea9fc1}
-      \strng{authornamehash}{8038da89e49ac5eabb489cfc6cea9fc1}
-      \strng{authorfullhash}{8038da89e49ac5eabb489cfc6cea9fc1}
-      \field{sortinit}{2}
-      \field{sortinithash}{cbff857e587bcb4635511624d773949e}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{journaltitle}{IEEE EMBS}
-      \field{number}{00}
-      \field{title}{Novel Spiking Neuron-Astrocyte Networks based on Nonlinear Transistor-like Models of Tripartite Synapses}
-      \field{volume}{35}
-      \field{year}{2001}
-      \field{pages}{539\bibrangedash a545}
-      \range{pages}{-1}
-    \endentry
     \entry{bassam_2015}{article}{}
       \name{author}{3}{}{%
         {{hash=a4ede3e499021dbe13f40d7531e5f71f}{%
@@ -563,55 +539,6 @@
       \verb http://dx.doi.org/10.1016/j.patcog.2019.05.015
       \endverb
     \endentry
-    \entry{fpga_sgnn}{article}{}
-      \name{author}{4}{}{%
-        {{hash=5d3fb638ca30307d4a708c381b37104a}{%
-           family={Nazari},
-           familyi={N\bibinitperiod},
-           given={Soheila},
-           giveni={S\bibinitperiod}}}%
-        {{hash=991eaba159c6730789158a62c5d63bec}{%
-           family={Faez},
-           familyi={F\bibinitperiod},
-           given={Karim},
-           giveni={K\bibinitperiod}}}%
-        {{hash=4b83fd11867749b33124ecd406857ede}{%
-           family={Amiri},
-           familyi={A\bibinitperiod},
-           given={Mahmood},
-           giveni={M\bibinitperiod}}}%
-        {{hash=d381d2b695e1ac6306294651edb0d5ac}{%
-           family={Karami},
-           familyi={K\bibinitperiod},
-           given={Ehsan},
-           giveni={E\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {Elsevier Ltd}%
-      }
-      \strng{namehash}{ed9e629049d22b5401fbc08eb87f5132}
-      \strng{fullhash}{7c843b1bd716777385be585eff71daef}
-      \strng{bibnamehash}{ed9e629049d22b5401fbc08eb87f5132}
-      \strng{authorbibnamehash}{ed9e629049d22b5401fbc08eb87f5132}
-      \strng{authornamehash}{ed9e629049d22b5401fbc08eb87f5132}
-      \strng{authorfullhash}{7c843b1bd716777385be585eff71daef}
-      \field{sortinit}{N}
-      \field{sortinithash}{f7242c3ed3dc50029fca1be76c497c7c}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{issn}{18792782}
-      \field{journaltitle}{Neural Networks}
-      \field{month}{6}
-      \field{title}{{A digital implementation of neuron-astrocyte interaction for neuromorphic applications}}
-      \field{volume}{66}
-      \field{year}{2015}
-      \field{pages}{79\bibrangedash 90}
-      \range{pages}{12}
-      \verb{doi}
-      \verb 10.1016/j.neunet.2015.01.005
-      \endverb
-      \keyw{FPGA,Linear approximation,Neuromorphic,Neuron-astrocyte interactions}
-    \endentry
     \entry{pitta_2016}{article}{}
       \name{author}{2}{}{%
         {{hash=2af0528371cb7538307bc9fc1b98c188}{%
@@ -759,6 +686,36 @@
       \field{pages}{409\bibrangedash 433}
       \range{pages}{25}
     \endentry
+    \entry{ponulak_2010}{article}{}
+      \name{author}{2}{}{%
+        {{hash=73e0beb51b6160febf0aced3755750a2}{%
+           family={Ponulak},
+           familyi={P\bibinitperiod},
+           given={Filip},
+           giveni={F\bibinitperiod}}}%
+        {{hash=7d17b0e96947588d28b0664b67c1f973}{%
+           family={Kasinski},
+           familyi={K\bibinitperiod},
+           given={Andrzej\bibnamedelima J.},
+           giveni={A\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \strng{namehash}{7f35175d6134a0da2c096ff4d6b42a56}
+      \strng{fullhash}{7f35175d6134a0da2c096ff4d6b42a56}
+      \strng{bibnamehash}{7f35175d6134a0da2c096ff4d6b42a56}
+      \strng{authorbibnamehash}{7f35175d6134a0da2c096ff4d6b42a56}
+      \strng{authornamehash}{7f35175d6134a0da2c096ff4d6b42a56}
+      \strng{authorfullhash}{7f35175d6134a0da2c096ff4d6b42a56}
+      \field{sortinit}{P}
+      \field{sortinithash}{8d51b3d5b78d75b54308d706b9bbe285}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Neural Computation}
+      \field{title}{Supervised Learning in Spiking Neural Networks with ReSuMe: Sequence Learning, Classification, and Spike Shifting}
+      \field{volume}{22}
+      \field{year}{2010}
+      \field{pages}{467\bibrangedash 510}
+      \range{pages}{44}
+    \endentry
     \entry{postnov_2009}{article}{}
       \name{author}{1}{}{%
         {{hash=fb7ae59323b1fe139560e6f9f0ae8912}{%
@@ -899,44 +856,34 @@
       \field{pages}{1\bibrangedash 3}
       \range{pages}{3}
     \endentry
-    \entry{bp_stdp}{article}{}
+    \entry{vigneron_2020}{article}{}
       \name{author}{2}{}{%
-        {{hash=f035f0896dbdf24036b2bec6dd2c01dd}{%
-           family={Tavanaei},
-           familyi={T\bibinitperiod},
-           given={Amirhossein},
+        {{hash=eead135be43dd9d0f29557718b048bd8}{%
+           family={Vigneron},
+           familyi={V\bibinitperiod},
+           given={Alex},
            giveni={A\bibinitperiod}}}%
-        {{hash=7fb7d9e04d3d66f10b2c3270f0be4087}{%
-           family={Maida},
+        {{hash=1cdf5ba7c06b6f63129a50ddbf729430}{%
+           family={Martinet},
            familyi={M\bibinitperiod},
-           given={Anthony},
-           giveni={A\bibinitperiod}}}%
+           given={J.},
+           giveni={J\bibinitperiod}}}%
       }
-      \strng{namehash}{dadc214129e20d82108a5eb834445899}
-      \strng{fullhash}{dadc214129e20d82108a5eb834445899}
-      \strng{bibnamehash}{dadc214129e20d82108a5eb834445899}
-      \strng{authorbibnamehash}{dadc214129e20d82108a5eb834445899}
-      \strng{authornamehash}{dadc214129e20d82108a5eb834445899}
-      \strng{authorfullhash}{dadc214129e20d82108a5eb834445899}
-      \field{sortinit}{T}
-      \field{sortinithash}{6f7aff9db9dcfeb7f95fd5bbd2f78df9}
+      \strng{namehash}{fc834e3f4a203a3e48701e058e34a476}
+      \strng{fullhash}{fc834e3f4a203a3e48701e058e34a476}
+      \strng{bibnamehash}{fc834e3f4a203a3e48701e058e34a476}
+      \strng{authorbibnamehash}{fc834e3f4a203a3e48701e058e34a476}
+      \strng{authornamehash}{fc834e3f4a203a3e48701e058e34a476}
+      \strng{authorfullhash}{fc834e3f4a203a3e48701e058e34a476}
+      \field{sortinit}{V}
+      \field{sortinithash}{75dd7385c90b2252c3ae853a80ca853b}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{eprinttype}{arXiv}
-      \field{issn}{18728286}
-      \field{journaltitle}{Neurocomputing}
-      \field{title}{{BP-STDP: Approximating backpropagation using spike timing dependent plasticity}}
-      \field{volume}{330}
-      \field{year}{2019}
-      \field{pages}{39\bibrangedash 47}
+      \field{journaltitle}{2020 International Joint Conference on Neural Networks (IJCNN)}
+      \field{title}{A critical survey of STDP in Spiking Neural Networks for Pattern Recognition}
+      \field{year}{2020}
+      \field{pages}{1\bibrangedash 9}
       \range{pages}{9}
-      \verb{doi}
-      \verb 10.1016/j.neucom.2018.11.014
-      \endverb
-      \verb{eprint}
-      \verb 1711.04214
-      \endverb
-      \keyw{Multi-layer SNN,STDP,Spiking neural networks,Supervised learning,Temporally local learning}
     \endentry
     \entry{wade_2011}{article}{}
       \name{author}{5}{}{%
@@ -982,10 +929,8 @@
       \field{year}{2011}
     \endentry
   \enddatalist
-  \missing{deep_spike}
-  \missing{realtime_sgnn}
-  \missing{rstdp_mnist}
-  \missing{snn_dynamic_calcium}
+  \missing{mannenin_2018}
+  \missing{pitta_2015}
 \endrefsection
 \endinput
 

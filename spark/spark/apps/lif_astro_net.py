@@ -12,6 +12,7 @@ from ..experiment import VSweep, ExpStorage
 import argparse
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from time import time
 import copy
 
@@ -21,12 +22,14 @@ class LifAstroNet:
         self.cfg = cfg
         self.dt = cfg['sim']['dt']
 
+        num_synapse = self.cfg['linear_params']['synapse']
+
         self.modules = {}
         self.needs = {}
         
         self.neuron = LIFNeuron.from_cfg(cfg['lif_params'], self.dt)
-        self.astro = Astro.from_cfg(cfg['astro_params'], self.dt)
-        self.linear = nn.Linear(1, 1, bias=False)
+        self.astro = Astro.from_cfg(cfg['astro_params'], cfg['linear_params']['synapse'], self.dt)
+        self.linear = nn.Linear(num_synapse, 1, bias=False)
         nn.init.normal_(
             self.linear.weight,
             mean=cfg['linear_params']['mu'],
@@ -55,50 +58,136 @@ class LifAstroNet:
 
 
 def _sim_snn(snn, spikes):
+    
     tl = {
-        'u': torch.as_tensor([0.0]),
-        'a': torch.as_tensor([0.0]),
-        'dw': torch.as_tensor([0.0]),
-        'i_pre': torch.as_tensor([0.0]),
-        'i_post': torch.as_tensor([0.0]),
-        'i_n': torch.as_tensor([0.0]),
-        'v_n': torch.as_tensor([0.0]),
-        'z_pre': torch.as_tensor([0.0]),
-        'z_post': torch.as_tensor([0.0]),
-        'w': snn.linear.weight[0],
+        'u': torch.zeros_like(spikes),
+        'a': torch.zeros_like(spikes),
+        'dw': torch.zeros_like(spikes),
+        'i_pre': torch.zeros_like(spikes),
+        'i_post': torch.zeros_like(spikes),
+        'i_n': torch.zeros_like(spikes),
+        'v_n': torch.zeros_like(spikes),
+        'z_pre': torch.zeros_like(spikes),
+        'z_post': torch.zeros_like(spikes),
+        'w': torch.zeros_like(spikes)
     }
 
-    for s in spikes[0]:
-        s = s.reshape(1)
+    tl['w'][0] = snn.linear.weight[:]
+
+    for i, s in enumerate(spikes):
         z, a, n_state, a_state, linear = snn(s)
 
-        weight_update = ((a < 1.0 or a > 1.0) and torch.logical_not(torch.isclose(a, torch.as_tensor(1.0)))).float()
+        weight_update = torch.logical_not(torch.isclose(a, torch.as_tensor(1.0))).float()
 
-        tl['u'] = torch.cat((tl['u'], a_state['u'].reshape(1)))
-        tl['a'] = torch.cat((tl['a'], weight_update.reshape(1)))
-        tl['dw'] = torch.cat((tl['dw'], a.reshape(1)))
-        tl['i_pre'] = torch.cat((tl['i_pre'], a_state['i_pre'].reshape(1)))
-        tl['i_post'] = torch.cat((tl['i_post'], a_state['i_post'].reshape(1)))
-        tl['z_pre'] = torch.cat((tl['z_pre'], s.reshape(1)))
-        tl['z_post'] = torch.cat((tl['z_post'], z.reshape(1)))
+        tl['u'][i] = a_state['u']
+        tl['a'][i] = weight_update
+        tl['dw'][i] = a
+        tl['i_pre'][i] = a_state['i_pre']
+        tl['i_post'][i] = a_state['i_post']
+        tl['z_pre'][i] = s
+        tl['z_post'][i] = z
         
-        tl['i_n'] = torch.cat((tl['i_n'], n_state['i'].reshape(1)))
-        tl['v_n'] = torch.cat((tl['v_n'], n_state['v'].reshape(1)))
-
-        tl['w'] = torch.cat((tl['w'], linear.weight[0]))
+        tl['i_n'][i] = n_state['i']
+        tl['v_n'][i] = n_state['v']
+        tl['w'][i] = linear.weight[:]
 
     return tl
 
-
-def sim_rate_spikes(snn_fn, cfg, name="snn_1n1s1a_rate-based-spikes"):
+def gen_rate_spikes():
     spike_trains = []
     impulse_spikes = spiketrain.impulse(0, 10, 1000)
 
-    db = ExpStorage()
-    
     # spike_trains.append(impulse_spikes)
     for r in [0.1, 0.2, 0.3]:
         spike_trains.append(spiketrain.poisson([r], cfg['sim']['steps']))
+
+    
+def gen_group_spikes():
+    spike_trains = []
+
+    # Ramp-up spike impulse w/ gap
+    spikes = None
+    gap_size = 100
+    max_imp_len = 15
+    for imp_size in range(1, max_imp_len):
+        impulse = torch.as_tensor([1,0]).repeat(imp_size)
+
+        gap = torch.zeros((gap_size))
+
+        if spikes is None:
+            spikes = torch.cat((impulse, gap))
+        else:
+            spikes = torch.cat((spikes, impulse, gap))
+            
+    # last dim is 1 for number of synapse
+    spike_trains.append(spikes.reshape(-1, 1))
+
+    return spike_trains
+
+
+def gen_noisy_spikes(duration):
+    spikes = spiketrain.poisson(0.1, duration)
+
+    return [spikes.transpose(1,0)]
+
+
+def _graph_1nNs1a_tl(spikes, tl):
+    # Build a figure with the following
+    # * Traces for the state values for a single neuron
+    # * One plot each for the traces of an astrocyes process, for each synapse
+    # * A plot of the spiking events, including weight update events
+    # * A single plot with the weight values of all synapses
+
+    spikes = torch.as_tensor(spikes)
+    num_synapses = spikes.shape[-1]
+    
+    # Figure out the gridspec
+    nrows = 4
+    ncols = num_synapses
+    gs = GridSpec(nrows, ncols)
+
+    fig = plt.Figure(figsize=(25, 15))
+
+    # Neuron plot
+    ax = fig.add_subplot(gs[0, 0:ncols])
+    ax.set_xlim((0, len(tl['z_pre'])))
+    ax.set_title("Neuron Traces")
+    ax.plot(tl['i_n'].squeeze().tolist(), label='Neuron Current')
+    ax.plot(tl['v_n'].squeeze().tolist(), label='Neuron Membrane Voltage')
+    ax.legend()
+
+    # A set of plots per synapse: Astrocyte signals, spiking activity
+    for i in range(num_synapses):
+        ax = fig.add_subplot(gs[1, i])
+        ax.set_xlim((0, len(tl['z_pre'])))
+        ax.set_title("Astrocyte Traces, Synapse: {}".format(i))
+
+        ax.plot(tl['i_pre'][:, i], label='Pre-synaptic Astrocyte Trace')
+        ax.plot(tl['i_post'][:, i], label='Post-synaptic Astrocyte Trace')
+        ax.plot(tl['u'][:, i], label='Astrocyte State')
+        # ax.plot(tl['i_post']-tl['i_pre'], label='Astrocyte Trace Diff')
+        ax.legend()
+
+        ax = fig.add_subplot(gs[2, i])
+        ax.set_xlim((0, len(tl['z_pre'][:,i])))
+        ax.set_title("Astrocyte and Neuron Events")
+        plot.plot_events(
+            ax,
+            [tl['z_pre'][:,i], tl['z_post'][:,i], tl['a'][:,i]],
+            colors=['tab:blue', 'tab:orange', 'tab:red'])
+        ax.legend(['Pre Spikes', 'Post Spikes', 'Astro dw'])
+
+        ax = fig.add_subplot(gs[3, i])
+        ax.set_xlim((0, len(tl['z_pre'][:,i])))
+        ax.set_title("Synapse weight")
+        ax.plot(tl['w'][:,i], marker='.')
+
+    return fig
+    
+    
+def sim_spike_trains(snn_fn, cfg, spike_trains, name="snn_1n1s1a_rate-based-spikes"):
+
+    db = ExpStorage()
 
     # Sim
     for spikes in spike_trains:
@@ -106,6 +195,7 @@ def sim_rate_spikes(snn_fn, cfg, name="snn_1n1s1a_rate-based-spikes"):
         tl = _sim_snn(snn, spikes)
         db.store({'spikes': spikes, 'tl': tl})
 
+    # Graph
     fig_idx = 0
     for spikes, by_spike in db.group_by('spikes').items():
         assert len(by_spike) == 1
@@ -113,49 +203,12 @@ def sim_rate_spikes(snn_fn, cfg, name="snn_1n1s1a_rate-based-spikes"):
         d = by_spike[0]
         tl = d['tl']
 
-        fig = plt.Figure(figsize=(10, 15))
-        ax = fig.add_subplot(411)
-        ax.set_xlim((0, len(tl['z_pre'])))
-        ax.set_title("Neuron Traces")
-        ax.plot(tl['i_n'], label='Neuron Current')
-        ax.plot(tl['v_n'], label='Neuron Membrane Voltage')
-        ax.legend()
-
-        ax = fig.add_subplot(412)
-        ax.set_xlim((0, len(tl['z_pre'])))
-        ax.set_title("Astrocyte Traces")
-        ax.plot(tl['i_pre'], label='Pre-synaptic Astrocyte Trace')
-        ax.plot(tl['i_post'], label='Post-synaptic Astrocyte Trace')
-        ax.plot(tl['u'], label='Astrocyte State')
-        # ax.plot(tl['i_post']-tl['i_pre'], label='Astrocyte Trace Diff')
-        ax.legend()
-
-        ax = fig.add_subplot(413)
-        ax.set_xlim((0, len(tl['z_pre'])))
-        ax.set_title("Astrocyte and Neuron Events")
-        plot.plot_events(
-            ax,
-            [tl['z_pre'], tl['z_post'], tl['a']],
-            colors=['tab:blue', 'tab:orange', 'tab:red'])
-        ax.legend(['Pre Spikes', 'Post Spikes', 'Astro dw'])
-
-        ax = fig.add_subplot(414)
-        ax.set_xlim((0, len(tl['z_pre'])))
-        ax.set_title("Synapse weight")
-        ax.plot(tl['w'], marker='.')
+        fig = _graph_1nNs1a_tl(spikes, tl)
 
         fig.tight_layout()
         fig.savefig("{}_{}.svg".format(name, fig_idx))
         fig_idx += 1
 
-        # Some sanity checking
-        for i in range(1, len(tl['w'])-1):
-            if tl['w'][i] != tl['w'][i-1]:
-                assert tl['a'][i] == 1
-            if tl['a'][i] == 1:
-                assert tl['w'][i] != tl['w'][i-1] or tl['w'][i] == cfg['linear_params']['max'], "w[i-1]: {}, w[i]: {}".format(tl['w'][i], tl['w'][i-1])
-
-            
 
 def _parse_args():
     parser = argparse.ArgumentParser()
@@ -165,12 +218,56 @@ def _parse_args():
     return parser.parse_args()
 
 
-def _main(args):
+def _exp_average_pulse_pair(args):
+    """
+    Simulate an snn in the 1n1s1a configuration, and demonstrate how plasticity
+    triggered by a threshold on u can average multiple pulse pairs, and allow
+    for confident steps for plasticity, based on multiple events.
+    """
+    
     with torch.no_grad():
         cfg = config.Config(args.config)
         cfg['astro_params'] = cfg['classic_stdp']
-        sim_rate_spikes(lambda: LifAstroNet(cfg), cfg, name="snn_1n1s1a_stdp_rate-input")
 
+        spikes = gen_group_spikes()
+
+        # Sim w/ baseline
+        sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_stdp")
+
+        exit(0)
+
+        # Set u_thr, show that when an input is driving the firing of a downstream spike, it tends to increase the weight
+        cfg['astro_params']['u_th'] = 2.5
+        # sim_spike_trains(
+        #     lambda: LifAstroNet(cfg),
+        #     cfg,
+        #     spikes,
+        #     name="snn_1n1s1a_stdp_u_thr={}".format(cfg['astro_params']['u_th'])
+        # )
+
+        
+        # Use a different synapse to drive firing, and sprinkle in random spikes on the first
+
+        noise_spikes = gen_noisy_spikes(spikes[0].shape[0])
+
+        assert len(noise_spikes) == len(spikes)
+
+        spikes = [torch.cat((spikes[i], noise_spikes[i]), axis=-1) for i in range(len(spikes))]
+
+        cfg['astro_params']['u_th'] = 2.5
+        cfg['linear_params']['synapse'] = 2
+        sim_spike_trains(
+            lambda: LifAstroNet(cfg),
+            cfg,
+            spikes,
+            name="snn_1n1s1a_stdp_u_thr={}".format(cfg['astro_params']['u_th'])
+        )
+
+        
+
+def _main(args):
+    _exp_average_pulse_pair(args)
+    
 if __name__ == '__main__':
     args = _parse_args()
 

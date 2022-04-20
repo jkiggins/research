@@ -3,7 +3,7 @@ classic_stdp: &classic_stdp
   mode: plasticity
   
   tau_u: 50.0
-  u_th: 100.0
+  u_th: 1000000.0
   
   tau_i_pre: 100.0
   alpha_pre: 1.0
@@ -38,6 +38,7 @@ sim:
   steps: 200
 
 linear_params:
+  synapse: 1
   mu: 0.7
   sigma: 0.001
   min: 0.0

@@ -4,14 +4,21 @@ from .threshold import threshold
 
 import torch.jit
 
+def _clip_decay_across_zero(orig, decayed):
+    orig_is_gt_zero = orig > 0.0
+    decayed_is_lt_zero = decayed < 0.0
+    where_invalid = torch.where(orig_is_gt_zero == decayed_is_lt_zero)
+
+    decayed[where_invalid] = torch.as_tensor(0.0)
+
+    return decayed
+    
+
 def astro_step_decay(state, params, dt):
+    
     du = dt * params['tau_u'] * -state['u']
-
-    u_decayed = state['u'] + du
-
-    # This stops runaway oscillations. We don't want to decay into a negative state
-    if (u_decayed < 0.0) == (state['u'] > 0.0):
-        u_decayed = 0
+    u_decayed = state['u'] + torch.as_tensor(du)
+    u_decayed = _clip_decay_across_zero(state['u'], u_decayed)
 
     state['u'] = u_decayed
 
@@ -24,12 +31,16 @@ def astro_step_z_pre(z_pre, state, params, dt):
 
     di = dt * params['tau_i_pre'] * -state['i_pre']
     i_decayed = state['i_pre'] + di
-    
-    # This stops runaway oscillations. We don't want to decay into a negative state
-    if (i_decayed < 0.0) == (state['i_pre'] > 0.0):
-        i_decayed = i_decayed * 0.0
+    i_decayed = _clip_decay_across_zero(state['i_pre'], i_decayed)
 
-    i_new = i_decayed + z_pre * params['alpha_pre']
+    i_new = z_pre * params['alpha_pre']
+    
+    if params['pre_reset_on_spike'] and z_pre:
+        # In this case, don't add i_decayed (forget past spikes)
+        pass
+    else:
+        i_new = i_new + i_decayed
+
     
     state['i_pre'] = i_new
 
@@ -42,12 +53,15 @@ def astro_step_z_post(z_post, state, params, dt):
 
     di = dt * params['tau_i_post'] * -state['i_post']
     i_decayed = state['i_post'] + di
-    
-    # This stops runaway oscillations. We don't want to decay into a negative state
-    if (i_decayed < 0.0) == (state['i_post'] > 0.0):
-        i_decayed = i_decayed * 0.0
+    i_decayed = _clip_decay_across_zero(state['i_post'], i_decayed)
 
-    i_new = i_decayed + z_post * params['alpha_post']
+    i_new = z_post * params['alpha_post']
+    
+    if params['post_reset_on_spike'] and z_post:
+        # In this case, don't add i_decayed (forget past spikes)
+        pass
+    else:
+        i_new = i_new + i_decayed
 
     state['i_post'] = i_new
 
@@ -66,21 +80,58 @@ def astro_step_u_prod(state):
 def astro_step_u_ordered_prod(state, params):
     du = state['i_pre'] * state['i_post']
 
-    try:
-        post_pre_diff = state['i_post'] - state['i_pre']
-        if post_pre_diff < params['u_step_params']['ltd']:
-            du = -du
-        elif post_pre_diff > params['u_step_params']['ltp']:
-            pass
-        else:
-            du = torch.as_tensor(0.0)
-    except:
-        import code
-        code.interact(local=dict(globals(), **locals()))
-        exit(1)
+    post_pre_diff = state['i_post'] - state['i_pre']
+    if post_pre_diff < params['u_step_params']['ltd']:
+        du = -du
+    elif post_pre_diff > params['u_step_params']['ltp']:
+        pass
+    else:
+        du = torch.as_tensor(0.0)
 
     state['u'] = state['u'] + du
 
+    return state
+
+
+def astro_step_u_stdp(state, params, z_pre=None, z_post=None):
+    du = torch.as_tensor(0.0)
+
+    # for LTP, we want to fully apply du when u is close to u_thr
+    # and restruct du when u is close to -u_thr
+    # (u + u_thr) / (2*u_thr)
+
+    bool_z_post = (z_post == 1)
+    bool_z_pre = torch.logical_and(
+        torch.logical_not(bool_z_post),
+        (z_pre == 1)
+    )
+
+    # Handle z_post=1
+    wh_z_post = torch.where(bool_z_post)
+    du = state['i_pre'][wh_z_post]
+    state['i_pre'][wh_z_post] = torch.as_tensor(0.0)
+    ltp_mult = (state['u'][wh_z_post] + params['u_th']) / (2*params['u_th'])
+    state['u'][wh_z_post] = state['u'][wh_z_post] + du * ltp_mult
+
+    # Handle z_post=0, z_pre=1
+    wh_z_pre = torch.where(bool_z_pre)
+    du = state['i_pre'][wh_z_pre]
+    state['i_pre'][wh_z_pre] = torch.as_tensor(0.0)
+    ltp_mult = (state['u'][wh_z_pre] + params['u_th']) / (2*params['u_th'])
+    state['u'][wh_z_pre] = state['u'][wh_z_pre] + du * ltp_mult
+
+    # Single synapse implementation
+    # if z_post:
+    #     du = state['i_pre']
+    #     state['i_pre'] = torch.as_tensor(0.0)
+    #     ltp_mult = (state['u'] + params['u_th']) / (2*params['u_th'])
+    #     state['u'] = state['u'] + du * ltp_mult
+    # elif z_pre:
+    #     du = -state['i_post']
+    #     state['i_post'] = torch.as_tensor(0.0)
+    #     ltd_mult = (-state['u'] + params['u_th']) / (2*params['u_th'])
+    #     state['u'] = state['u'] + du * ltd_mult
+        
     return state
 
 
@@ -94,29 +145,29 @@ def astro_step_u_signal(state, params, dt):
 
 # Apply a threshold
 def astro_step_thr(state, params):
-    u_spike = torch.as_tensor(1.0)
-    
-    if state['u'] < -(params['u_th']):
-        u_spike = u_spike * -1.0
-        state['u'] = torch.as_tensor(0.0)
-    elif state['u'] > params['u_th']:
-        state['u'] = torch.as_tensor(0.0)
-        pass
-    else:
-        u_spike = u_spike * 0.0
+    u_spike_low = state['u'] < -(params['u_th'])
+    u_spike_high = state['u'] > params['u_th']
 
+    wh_no_spike = torch.where(
+        torch.logical_not(
+            torch.logical_or(u_spike_low,  u_spike_high)))
+
+    u_spike = u_spike_low * -1.0 + u_spike_high * 1.0
+    u_spike[wh_no_spike] = torch.as_tensor(0.0)
+    
     return state, u_spike
 
 
 # Step astro effects, based on the value of u
 def astro_step_effect_weight(u_spike, params):
+    weight_mod = torch.ones_like(u_spike)
+    wh_ltd = u_spike < -0.001
+    wh_ltp = u_spike > 0.001
 
-    if u_spike < -0.001:
-        return torch.as_tensor(0.95)
-    elif u_spike > 0.001:
-        return torch.as_tensor(1.05)
+    weight_mod[wh_ltd] = 0.95
+    weight_mod[wh_ltd] = 1.05
 
-    return torch.as_tensor(1.0)
+    return weight_mod
 
 
 ################### tests ######################

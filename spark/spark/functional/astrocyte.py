@@ -81,6 +81,7 @@ def astro_step_u_ordered_prod(state, params):
     du = state['i_pre'] * state['i_post']
 
     post_pre_diff = state['i_post'] - state['i_pre']
+
     if post_pre_diff < params['u_step_params']['ltd']:
         du = -du
     elif post_pre_diff > params['u_step_params']['ltp']:
@@ -148,12 +149,16 @@ def astro_step_thr(state, params):
     u_spike_low = state['u'] < -(params['u_th'])
     u_spike_high = state['u'] > params['u_th']
 
-    wh_no_spike = torch.where(
-        torch.logical_not(
-            torch.logical_or(u_spike_low,  u_spike_high)))
+    l_no_spike = torch.logical_not(
+        torch.logical_or(u_spike_low,  u_spike_high))
+
+    wh_no_spike = torch.where(l_no_spike)
+    wh_spike = torch.where(torch.logical_not(l_no_spike))
 
     u_spike = u_spike_low * -1.0 + u_spike_high * 1.0
     u_spike[wh_no_spike] = torch.as_tensor(0.0)
+
+    state['u'][wh_spike] = torch.as_tensor(0.0)
     
     return state, u_spike
 
@@ -161,11 +166,11 @@ def astro_step_thr(state, params):
 # Step astro effects, based on the value of u
 def astro_step_effect_weight(u_spike, params):
     weight_mod = torch.ones_like(u_spike)
-    wh_ltd = u_spike < -0.001
-    wh_ltp = u_spike > 0.001
+    wh_ltd = u_spike < 0.0
+    wh_ltp = u_spike > 0.0
 
     weight_mod[wh_ltd] = 0.95
-    weight_mod[wh_ltd] = 1.05
+    weight_mod[wh_ltp] = 1.05
 
     return weight_mod
 

@@ -1,7 +1,7 @@
 #### Parameter Sets ####
 classic_stdp: &classic_stdp
   mode: plasticity
-  tau_u: 1000.0
+  tau_u: 200.0
   tau_i_pre: 100.0
   alpha_pre: 1.0
   pre_reset_on_spike: False

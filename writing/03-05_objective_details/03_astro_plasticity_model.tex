@@ -100,9 +100,34 @@
     applied to $u$.
 
     \section{Exploring Input Pathways Responses}
-    %% TODO: Include all graphs and heatmaps here
 
+    In order to get some general guidelines for valid parameter ranges, it is
+    necessary to sweep parameters, and explore the response of the
+    model. Figures \ref{fig:astro:sweep_alpha_ip3_tau_1} and
+    \ref{fig:astro:sweep_alpha_ip3_tau_2} show the input pathway response to
+    different spike pattern inputs, with a different values for
+    $\alpha_{ip3}=\alpha_{k+}$ and $\tau_{ip3}$.
+    
+    \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.100.svg}{Model Response to
+      Sweeping Input pathway $\alpha$, and
+      $\tau_u$}{fig:astro:sweep_alpha_ip3_tau_1}{}
+
+    \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.440.svg}{Model Response to
+      Sweeping Input pathway $\alpha$, and
+      $\tau_{ip3}$}{fig:astro:sweep_alpha_ip3_tau_2}{}
+
+    The group of similar plots in Figures \ref{fig:astro:sweep_alpha_ip3_tau_1} and
+    \ref{fig:astro:sweep_alpha_ip3_tau_2} depict Astrocyte responses to a common
+    spike pattern, with different values for $\alpha_{ip3}=\alpha_{k+}$. The
+    curves in these plots are scale multiples of each-other, showing that
+    $\alpha_*$ does not effect timing, but only scale of the Astrocyte
+    response. The figures also indicate that small values of $\tau_{ip3}=\tau_{k+}$ can lead to
+    a response that doesn't reach a steady-state within a reasonable window.
+    %% TODO: add more detail about steady-state
+
+    
     \section{Ordered Proportional Astrocyte State Change}
+
     The first variant of the \emph{Update(ip3, k+)} function considers the
     magnitude of input pathway state variables $ip3$ and $k+$ as well as which
     variable is larger (the order). This gives a magnitude and sign to each
@@ -125,27 +150,61 @@
     degrees of tolerance to transient activity that would otherwise lead to
     weight change.
 
-    Figure \ref{fig:astro:classic_stdp} shows the response of the Rate-based
-    Neuron-Astrocyte model to a single spike pair, with the X-axis representing
-    variable $d_t$ between presynaptic and postsynaptic spikes.
+    \asvgf{figures/artifacts/obj1/sweep_u_tau_0.100.svg}{Response of $u$ to
+      Poisson Distributed spikes applied to Pre and Post-Synaptic
+      Pathways}{fig:astro:sweep_alpha_u_tau_1}{}
+
+    \asvgf{figures/artifacts/obj1/sweep_u_tau_0.500.svg}{Response of $u$ to
+      Poisson Distributed spikes applied to Pre and Post-Synaptic
+      Pathways}{fig:astro:sweep_alpha_u_tau_2}{}
+
+    Figures \ref{fig:astro:sweep_alpha_u_tau_1} and
+    \ref{fig:astro:sweep_alpha_u_tau_2} depict the response of $u$ for
+    different values of $u_{tau}$ and different spiking events. In general,
+    larger values of $\tau_u$ result in smaller deviations in $u$ overall, due
+    to the value decaying more quickly. With smaller $\tau_u$ more of the
+    previous activity is integrated into the value of $u$ and the response is
+    more broad.
+
+    Expanding on the simpler timeline plots, Figure
+    \ref{fig:astro:u_thr_heat_rate_vs_tau_u} shows the number of times $u$ crosses its
+    threshold for a given $\tau_u$ and $r$ spiking rate for the Poisson
+    spike-train inputs. This graph can be used to tune either $u_{thr}$ or
+    $\tau_u$ for a given application, and gives an impression of the
+    excitability of the model.
+
+    \subsection{Classic-STDP and Variants} \label{sec:ordered_prop:stdp}
+    
+    Using the Ordered Proportional update rule the APM is capable of
+    implementing classic STDP, along with several variations.  
+    Figure \ref{fig:astro:classic_stdp} shows the model's response to spike
+    pairs with a variety of inter-spike-interval times (X-axis). This is a
+    typical STDP curve.
 
     \asvgf{figures/stdp_plasticity_Classic_STDP_dt_dw_max.svg}{Astrocyte and
       Neuron Model Response to Pulse Pairs: Baseline}{fig:astro:classic_stdp}{}
 
-    Figures \ref{fig:astro:stdp_ltd_bias} and \ref{fig:astro:ltd_shift} show the
-    biasing and shifting behaviors of the model. Additional figures can be found
-    in Appendix \ref{appendix:astro_figures}.
-    
+    The model has additional parameters beyond what a traditional STDP rule would
+    have, and this offers flexibility. By providing asymmetric $\tau_{ip3}$ and
+    $\tau_{k+}$ the model can be bias toward LTD/LTP. Figure
+    \ref{fig:astro:stdp_ltd_bias} shows this effect for LTD.
+
     \asvgf{figures/stdp_plasticity_LTD_Bias_dt_dw_max.svg}{Astrocyte-Neuron
       Model Response to Pulse Pairs: LTD Bias}{fig:astro:stdp_ltd_bias}{}
 
+    In addition, threshold parameters $thr_{ltp}$ and $thr_{ltd}$ can be used to
+    shift activity from the LTP to LTD region, or vise versa. Figure
+    \ref{fig:astro:ltd_shift} shows this shifting behavior.
+    
     \asvgf{figures/stdp_plasticity_LTD_dt_Shift_dt_dw_max.svg}{Astrocyte-Neuron
       Model Response to Pulse Pairs: LTD Shift}{fig:astro:stdp_ltd_shift}{}
 
+    Additional figures can be found in \ref{appendix:astro_figures}.
+
     One of the main features of this model is it's ability to generalize STDP,
     and capture a variety of variants that have been proposed an explored in the
-    literature. Table \ref{table:astro_varient_params} shows a variety of
-    parameters, their values, and the corresponding STDP behavior. If that
+    literature. Table \ref{table:astro_varient_params} maps specific values of
+    model parameters to the corresponding STDP behavior. If that
     variant of STDP has a name from other research it is included.
 
     \begin{table}[!htp]\centering
@@ -164,30 +223,49 @@
       \end{tabular}
     \end{table}
     
-    
     \section{Rate-based Plasticity}
 
     When input spiking activity is sparse in time, the model behaves as outlined
-    above. However, when more dense inputs are provided, the relationship
-    between $ip3$ and $k+$ shifts from a temporal, to activity-based. In the
-    sparse case, $ip3 > k+$ implies that an incoming spike happened more
-    recently then a post-synaptic spike. When incoming spikes are dense in time,
-    $ip3 > k+$ would imply more activity on the input side (on average) than the
-    output. What follows, is a Rate-based plasticity rule, where weights are
-    updated to bring pre-synaptic, and post-synaptic firing rates to
-    approximately the same value. Equations \ref{eq:astro:rate-u} and
-    \ref{eq:astro:rate-u-eff} describe u, and weight update behavior.
+    in Section \ref{sec:ordered_prop:stdp} above. However, when more dense
+    inputs are provided, the relationship between $ip3$ and $k+$ shifts from
+    temporal, to activity-based. In the sparse case, $ip3 > k+$ implies that an
+    incoming spike happened more recently then a post-synaptic spike. When
+    incoming spikes are dense in time, $ip3 > k+$ would imply more activity on
+    the input side (on average) than the output. What follows, is a Rate-based
+    plasticity rule, where weights are updated to bring pre-synaptic, and
+    post-synaptic firing rates to approximately the same value. Equations
+    \ref{eq:astro:rate-u} and \ref{eq:astro:rate-u-eff} above describe u, and
+    weight update behavior.
+
+    Figure \ref{fig:rate:lif_net_1} shows a timeline of activity for a single
+    LIF neuron with a single synapse and single Astrocyte (1n1s1a
+    configuration). Figure \ref{fig:rate:lif_net_2} shows a timeline for the
+    same configuration, with $thr_{ltp}=1.5$ and $thr_{ltd}=-1.5$. The threshold
+    values create a band from $-1.5$ to $1.5$ where differences in pre and
+    post-synaptic activity are tolerated. This leniency results in fewer weight
+    updates and prevents oscillations when compared to Figure
+    \ref{fig:rate:lif_net_1}.
+
+    \asvgf{figures/artifacts/obj1/snn_1n1s1a_rp_no-band_0.svg}{APM Response to
+      Poisson Input With $thr_{ltp}=thr_{ltd}=0.0$}{fig:rate:lif_net_1}{}
+    
+    \asvgf{figures/artifacts/obj1/snn_1n1s1a_rp_band_0.svg}{APM response to
+      Possion Input With $thr_{ltp}=1.5,
+      thr_{ltd}=-1.5$}{fig:astro:classic_stdp}{}
+    
  
     \subsection{Integrated Spike Timing Plasticity}
+    
     In the rate-based operating mode, sparse activity results in classic STDP,
     or a variant depending on parameters. As activity levels increase though,
     the relationship between ip3 and k+ becomes one of average activity, and not
-    timing. In order to maintain sensitivity across larger time-scales, it isn't
-    enough to simply modify the time constants of ip3 and k+ signals. Some
-    feedback is required. The shift here is a to a more traditional trace-based
-    STDP implementation with ip3 and k+, and then $u$ can be used to integrate
-    these signals over time and drive weight change. Equation
-    \ref{eq:astro:temp-u} describes the update for $u$.
+    timing. One approach to mitigate the averaging effect would be lowering
+    $\tau_{ip3}$ and $\tau_{k+}$, though this would reduce sensitivity to pulse
+    pairs occurring on larger time-scales. A more elegant approach would be to
+    modify \emph{Update(ip3, k+)}, combining the input traces in a way that
+    preserves timing. $u$ can then be used to integrate timing information over
+    time and drive weight change. Equation \ref{eq:astro:temp-u} describes the
+    update for $u$.
 
     $reset_{ip3}$ and $reset_{k+}$ parameters, determine if additional spikes
     are added into the $ip3$ and $k+$ traces, or override them. These
@@ -197,10 +275,6 @@
 
     \asvgf{figures/SpikeAssociation.svg}{A Variety of Spike Associations
       Supported by the Neuron-Astrocyte model}{fig:astro:spike_associate}{}
-
-    Though there are a variety of combinations that could have been explored,
-    for the rate-based Astrocyte-Neuron model, a many-to-many association was
-    used.
 
     \begin{align}
       T_{delta} = z_{pre}(t) * H(k+ - thr_{ltd}) + z_{post}(t) * H(ip3 - thr_{ltp}) \\
@@ -220,6 +294,8 @@
     or reset when the weight is updated. This is similar to the one-to-many,
     many-to-many, or one-to-one (nearest neighbor) configurations seen with
     STDP.
+
+    
 
     %%%%%%%%%%%%% Extending STDP w/ in 1N1S Case %%%%%%%%%%%%%
     %% \section{Computational benefits of Synapically-mediated plasticity: Single Neuron Single Synapse}

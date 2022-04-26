@@ -46,7 +46,7 @@ def _astro_sim(astro, cfg, spikes, db):
 
 
 def sim_sweep_u(cfg):
-    tau_u = torch.logspace(-1, 3, 4)
+    tau_u = torch.linspace(50, 500, 20)
     db = ExpStorage()
     
     spike_trains = []
@@ -76,17 +76,17 @@ def sim_sweep_u(cfg):
         fig.suptitle("Astrocyte Response to Different Values of U Tau")
 
         ax = fig.add_subplot(3, 1, 1)
-        ax.set_title("Astrocyte State U")
+        ax.set_title("Astrocyte U")
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("Value")
 
-        # Plot i_pre and u for each tau on a single plot
+        # Plot u for each tau on a single plot
         for d in by_spike:
             tl = d['timeline']
             spikes = d['spikes']
             ax.plot(tl['u'], label='tau_u={}'.format(d['tau_u']))
             ax.set_xlim((0, len(tl['z_pre'])))
-        ax.legend()
+        # ax.legend()
 
 
         # i_pre, i_post, and spikes are the same across varying u
@@ -103,16 +103,18 @@ def sim_sweep_u(cfg):
         ax.legend()
 
         ax = fig.add_subplot(3,1,3)
+        ax.set_ylabel("Spikes")
+        ax.set_xlabel("Time (ms)")
         plot.plot_events(ax, spikes.tolist(), colors=(c1,c2))
-        ax.set_title("Pre and Post-synapic Spikes Over Time")
+        ax.set_title("Pre and Post-synapic Spikes")
 
         fig.tight_layout()
-        fig.savefig("astro_u_sweep_{}.svg".format(suffix[i]))
-    
+        fig.savefig("sweep_u_tau_{}.svg".format(suffix[i]))
+
 
 def sim_sweep_pre_i(cfg):
-    alpha_i_pre_vals = torch.linspace(0.1, 2.0, 5)
-    tau_i_pre_vals = torch.logspace(1, 4, 10)
+    alpha_i_pre_vals = torch.linspace(0.1, 1.0, 3)
+    tau_i_pre_vals = torch.logspace(1, 3, 5)
     spike_trains = []
     spike_trains.append(spiketrain.impulse(0, 10, 100))
 
@@ -140,7 +142,8 @@ def sim_sweep_pre_i(cfg):
     records_by_spike = db.group_by('spikes')
     for i, (_, by_spike) in enumerate(records_by_spike.items()):
         # One figure per spike train
-        fig = plt.Figure(figsize=(6.4, 17))
+        fig = plt.Figure(figsize=(6.4, 13))
+        fig.suptitle("Astrocyte ip3 Response to Input Spikes With Various tau and alpha")
 
         # Then split up by alpha
         records_by_alpha = by_spike.group_by('alpha')
@@ -149,7 +152,7 @@ def sim_sweep_pre_i(cfg):
         num_subplots = len(records_by_alpha) + 1
         for j, (alpha, by_alpha) in enumerate(records_by_alpha.items()):
             ax = fig.add_subplot(num_subplots, 1, j+1)
-            ax.set_title("Astrocyte State U and Current Over Time for alpha={:2.2f}".format(alpha))
+            ax.set_title("Alpha={:2.2f}".format(alpha))
             ax.set_xlabel("Time (ms)")
             ax.set_ylabel("Value")
 
@@ -157,9 +160,9 @@ def sim_sweep_pre_i(cfg):
             for d in by_alpha:
                 tl = d['timeline']
                 spikes = d['spikes']
-                ax.plot(tl['i_pre'].tolist(), label='tau={}'.format(d['tau_i']))
-                # ax.set_xlim((0, len(tl['z_pre'])))
-            # ax.legend()
+                ax.plot(tl['i_pre'].tolist(), label='tau_ip3={}'.format(d['tau_i']))
+                ax.set_xlim((0, len(tl['z_pre'])))
+            ax.legend()
 
         # Last subplot has spike train
         ax = fig.add_subplot(num_subplots, 1, num_subplots)
@@ -170,13 +173,13 @@ def sim_sweep_pre_i(cfg):
 
         fig.tight_layout()
         fig.savefig(
-            'alpha_spike_sweep_{:1.3f}.svg'.format(
+            'sweep-alpha_tau-ip3-spike{:1.3f}.svg'.format(
                 torch.mean(spikes)
             )
         )
 
 
-def sim_heatmap_alpha_update_rate(cfg):
+def sim_heatmap_alpha_u_thr_events(cfg):
     spike_rate_range = torch.linspace(0.05, 0.8, 20)
     alpha_range = torch.linspace(0.1, 2.0, 20)
 
@@ -203,7 +206,9 @@ def sim_heatmap_alpha_update_rate(cfg):
 
         for z_pre, z_post in zip(pre_spikes[0], post_spikes[0]):
             eff, state = astro(state, z_pre=z_pre, z_post=z_post)
-            timeline['eff'].append(eff)
+            timeline['eff'].append(
+                torch.isclose(eff, torch.as_tensor(1.0)).float()
+            )
             timeline['u'].append(state['u'])
 
         # print(
@@ -238,16 +243,94 @@ def sim_heatmap_alpha_update_rate(cfg):
     for i, (spike_rate, alpha_db) in enumerate(db.group_by('spike_rate', sort=True).items()):
         for j, (alpha, elem_db) in enumerate(alpha_db.group_by('alpha', sort=True).items()):
             tl = elem_db[0]['timeline']
-            eff_sum = sum(tl['eff'])
-            heat_img[j, i] = eff_sum
+            eff = torch.as_tensor(tl['eff'])
+            
+            heat_img[j, i] = (1.0 - eff.mean()) * 1000.0
             ax.text(
                 i, j,
-                "{}".format(float(eff_sum)),
+                "{:1.2f}".format(float(1000.0 - heat_img[j, i])),
                 ha="center", va="center", color="w")
 
     ax.imshow(heat_img)
     fig.tight_layout()
-    fig.savefig("astro_alpha_spike_freq_heat.svg")
+    fig.savefig("u_thr_event_heatmap_spike-rate_alpha.svg")
+
+
+
+def sim_heatmap_tau_u_thr_events(cfg):
+    spike_rate_range = torch.linspace(0.05, 0.8, 20)
+    tau_range = torch.linspace(50, 500, 20)
+
+    param_sweep = VSweep(values=spike_rate_range)
+    param_sweep = param_sweep.foreach(tau_range)
+
+    dt = cfg['sim']['dt']
+
+    db = ExpStorage()
+
+    # Simulate
+    for spike_rate, tau_u in tqdm(param_sweep):
+        cfg('astro_params.tau_u', tau_u)
+
+        astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
+        pre_spikes = spiketrain.poisson(spike_rate, 1000)
+        post_spikes = spiketrain.poisson(spike_rate, 1000)
+        state = None
+        timeline = {
+            'eff': [],
+            'u': []
+        }
+
+        for z_pre, z_post in zip(pre_spikes[0], post_spikes[0]):
+            eff, state = astro(state, z_pre=z_pre, z_post=z_post)
+            timeline['eff'].append(
+                torch.isclose(eff, torch.as_tensor(1.0)).float()
+            )
+            timeline['u'].append(state['u'])
+
+        # print(
+        #     "alpha: {}, spike rate: {}, any_effect: {}, max(u): {}".format(
+        #         alpha,
+        #         spike_rate,
+        #         any(timeline['eff']),
+        #         max(timeline['u']),
+        #     ))
+
+        db.store({
+            'spike_rate': spike_rate,
+            'tau_u': tau_u,
+            'timeline': timeline})
+
+    # Graph
+    fig = plt.Figure(figsize=(20,20))
+    ax = fig.add_subplot(111)
+    ax.set_title("Mean U Threshold Event Waiting Time Given Poisson Spike Rate vs. U Tau")
+    ax.set_yticks(
+        list(range(len(tau_range))),
+        labels=["{:2.4f}".format(float(a)) for a in tau_range],
+        rotation=45)
+    ax.set_ylabel('U Tau')
+
+    ax.set_xticks(
+        list(range(len(spike_rate_range))),
+        labels=["{:2.4f}".format(float(a)) for a in spike_rate_range])
+    ax.set_xlabel('Spike Rate')
+
+    heat_img = torch.zeros((len(tau_range), len(spike_rate_range)))
+    for i, (spike_rate, alpha_db) in enumerate(db.group_by('spike_rate', sort=True).items()):
+        for j, (alpha, elem_db) in enumerate(alpha_db.group_by('alpha', sort=True).items()):
+            tl = elem_db[0]['timeline']
+            eff = torch.as_tensor(tl['eff'])
+            
+            heat_img[j, i] = (1.0 - eff.mean()) * 1000.0
+            ax.text(
+                i, j,
+                "{:1.2f}".format(float(1000.0 - heat_img[j, i])),
+                ha="center", va="center", color="w")
+
+    ax.imshow(heat_img)
+    fig.tight_layout()
+    fig.savefig("u_thr_heatmap_spike-rate_tau_u.svg")
 
 
 def sim_heatmap_dt_tau(cfg):
@@ -282,7 +365,9 @@ def sim_heatmap_dt_tau(cfg):
         db.store({
             'tau': tau,
             'delta_t': delta_t,
+            'delta_u': delta_u,
         })
+        
         astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
         state = None
 
@@ -353,6 +438,18 @@ def _main(args):
     cfg['astro_params'] = cfg['classic_stdp']
     cfg['astro_params']['u_th'] = 100.0
     sim_sweep_u(cfg)
+
+    cfg = config.Config(args.config)
+    cfg['astro_params'] = cfg['classic_stdp']
+    sim_heatmap_alpha_u_thr_events(cfg)
+
+    cfg = config.Config(args.config)
+    cfg['astro_params'] = cfg['classic_stdp']
+    sim_heatmap_tau_u_thr_events(cfg)
+    
+    # cfg = config.Config(args.config)
+    # cfg['astro_params'] = cfg['classic_stdp']
+    # sim_heatmap_dt_tau(cfg)
 
 
 if __name__ == '__main__':

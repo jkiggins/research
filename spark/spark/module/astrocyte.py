@@ -48,8 +48,12 @@ class Astro:
         elif self.params['u_step_params']['mode'] == 'stdp':
             state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
 
+        # print("u: ", state['u'], end='')
+
         state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
         eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
+
+        # print(", u_spike: {}, eff: {}".format(u_spike, eff))
         return eff, state
 
 

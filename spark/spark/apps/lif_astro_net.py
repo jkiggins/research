@@ -37,13 +37,13 @@ class LifAstroNet:
 
         self.neuron_state = None
         self.astro_state = None
-        
+
 
     def __call__(self, z):
         z = z * 1.0
         if not (type(z) == torch.Tensor):
             z = torch.as_tensor(z)
-            
+
         z_pre = z
         z = self.linear(z)
         z_post, self.neuron_state = self.neuron(z, self.neuron_state)
@@ -93,13 +93,14 @@ def _sim_snn(snn, spikes):
 
     return tl
 
-def gen_rate_spikes():
+def gen_rate_spikes(duration):
     spike_trains = []
-    impulse_spikes = spiketrain.impulse(0, 10, 1000)
+    
+    torch.manual_seed(12343210938)
+    for r in [0.5]:
+        spike_trains.append(spiketrain.poisson([r], duration).transpose(1,0))
 
-    # spike_trains.append(impulse_spikes)
-    for r in [0.1, 0.2, 0.3]:
-        spike_trains.append(spiketrain.poisson([r], cfg['sim']['steps']))
+    return spike_trains
 
     
 def gen_group_spikes():
@@ -144,17 +145,15 @@ def _graph_1nNs1a_tl(spikes, tl):
     # Figure out the gridspec
     nrows = 4
     ncols = num_synapses
-    gs = GridSpec(nrows, ncols)
+    gs = GridSpec(nrows, ncols, height_ratios=[0.6,1,1,1])
 
-    fig = plt.Figure(figsize=(25, 15))
+    fig = plt.Figure(figsize=(6.4, 10))
 
     # Neuron plot
     ax = fig.add_subplot(gs[0, 0:ncols])
     ax.set_xlim((0, len(tl['z_pre'])))
-    ax.set_title("Neuron Traces")
-    ax.plot(tl['i_n'].squeeze().tolist(), label='Neuron Current')
+    ax.set_title("Neuron Membrane Voltage")
     ax.plot(tl['v_n'].squeeze().tolist(), label='Neuron Membrane Voltage')
-    ax.legend()
 
     # A set of plots per synapse: Astrocyte signals, spiking activity
     for i in range(num_synapses):
@@ -214,8 +213,30 @@ def _parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-c', '--config', type=str)
+    parser.add_argument('-e', '--exp', type=str, nargs='+')
 
     return parser.parse_args()
+
+
+def _exp_rate_learning(args):
+    with torch.no_grad():
+        # Sim w/ out ltd/ltp thresholds
+        cfg = config.Config(args.config)
+        cfg['astro_params'] = cfg['anti_stdp']
+        cfg['astro_params']['u_step_params']['ltd'] = 0.0
+        cfg['astro_params']['u_step_params']['ltp'] = 0.0
+
+        spikes = gen_rate_spikes(cfg['sim']['steps'])
+        sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_rp_no-band")
+
+        # Sim w/ thresholds
+        cfg = config.Config(args.config)
+        cfg['astro_params'] = cfg['anti_stdp']
+        cfg['astro_params']['u_step_params']['ltd'] = -1.5
+        cfg['astro_params']['u_step_params']['ltp'] = 1.5
+
+        spikes = gen_rate_spikes(cfg['sim']['steps'])
+        sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_rp_band")
 
 
 def _exp_average_pulse_pair(args):
@@ -232,7 +253,7 @@ def _exp_average_pulse_pair(args):
         spikes = gen_group_spikes()
 
         # Sim w/ baseline
-        sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_stdp")
+        sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_tp_pulse")
 
         exit(0)
 
@@ -254,8 +275,6 @@ def _exp_average_pulse_pair(args):
 
         spikes = [torch.cat((spikes[i], noise_spikes[i]), axis=-1) for i in range(len(spikes))]
 
-        cfg['astro_params']['u_th'] = 2.5
-        cfg['linear_params']['synapse'] = 2
         sim_spike_trains(
             lambda: LifAstroNet(cfg),
             cfg,
@@ -263,10 +282,14 @@ def _exp_average_pulse_pair(args):
             name="snn_1n1s1a_stdp_u_thr={}".format(cfg['astro_params']['u_th'])
         )
 
-        
 
 def _main(args):
-    _exp_average_pulse_pair(args)
+    torch.manual_seed(12343210938)
+    if 'rate' in args.exp:
+        _exp_rate_learning(args)
+
+    if 'tp-pulse' in args.exp:
+        _exp_average_pulse_pair(args)
     
 if __name__ == '__main__':
     args = _parse_args()

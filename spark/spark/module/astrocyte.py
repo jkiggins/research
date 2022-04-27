@@ -15,7 +15,7 @@ class Astro:
     def __init__(self, params, synapse, dt):
         self.params = params
         self.dt = dt
-        self.num_synapse = synapse
+        self.num_process = synapse
 
     @classmethod
     def from_cfg(cls, cfg, synapse, dt):
@@ -24,15 +24,16 @@ class Astro:
     def init_state_if_none(self, state):
         if state is None:
             state = {
-                'u': torch.zeros(self.num_synapse),
-                'i_pre': torch.zeros(self.num_synapse),
-                'i_post': torch.zeros(self.num_synapse),
+                'u': torch.zeros(self.num_process),
+                'i_pre': torch.zeros(self.num_process),
+                'i_post': torch.zeros(self.num_process),
             }
 
         return state
 
 
     def _plastic_mode_step(self, state, z_pre, z_post):
+
         state = self.init_state_if_none(state)
 
         # Decay u

@@ -101,37 +101,35 @@ def astro_step_u_stdp(state, params, z_pre=None, z_post=None):
     # and restruct du when u is close to -u_thr
     # (u + u_thr) / (2*u_thr)
 
-    bool_z_post = (z_post == 1)
-    bool_z_pre = torch.logical_and(
-        torch.logical_not(bool_z_post),
-        (z_pre == 1)
-    )
+    du = torch.zeros_like(state['u'])
+
+    bool_z_post = torch.logical_and(z_pre == 0, z_post == 1)
+    bool_z_pre = torch.logical_and(z_pre == 1, z_post == 0)
 
     # Handle z_post=1
+    # LTP Step
     wh_z_post = torch.where(bool_z_post)
-    du = state['i_pre'][wh_z_post]
+    du[wh_z_post] = state['i_pre'][wh_z_post].clone()
     state['i_pre'][wh_z_post] = torch.as_tensor(0.0)
     ltp_mult = (state['u'][wh_z_post] + params['u_th']) / (2*params['u_th'])
-    state['u'][wh_z_post] = state['u'][wh_z_post] + du * ltp_mult
 
     # Handle z_post=0, z_pre=1
+    # LTD Step
     wh_z_pre = torch.where(bool_z_pre)
-    du = state['i_pre'][wh_z_pre]
-    state['i_pre'][wh_z_pre] = torch.as_tensor(0.0)
+    du[wh_z_pre] = -state['i_post'][wh_z_pre].clone()
+    state['i_post'][wh_z_pre] = torch.as_tensor(0.0)
     ltp_mult = (state['u'][wh_z_pre] + params['u_th']) / (2*params['u_th'])
-    state['u'][wh_z_pre] = state['u'][wh_z_pre] + du * ltp_mult
 
-    # Single synapse implementation
-    # if z_post:
-    #     du = state['i_pre']
-    #     state['i_pre'] = torch.as_tensor(0.0)
-    #     ltp_mult = (state['u'] + params['u_th']) / (2*params['u_th'])
-    #     state['u'] = state['u'] + du * ltp_mult
-    # elif z_pre:
-    #     du = -state['i_post']
-    #     state['i_post'] = torch.as_tensor(0.0)
-    #     ltd_mult = (-state['u'] + params['u_th']) / (2*params['u_th'])
-    #     state['u'] = state['u'] + du * ltd_mult
+    # Apply LTP/LTD thresholds
+    # bool_ltp = du[wh_z_post] < params['u_step_params']['ltp']
+    # bool_ltd = du[wh_z_pre] > params['u_step_params']['ltd']
+    # wh_ltp = torch.where(bool_ltp)
+    # wh_ltd = torch.where(bool_ltd)
+
+    # du[wh_z_post][wh_ltp] = -torch.abs(du[wh_z_post][wh_ltp])
+    # du[wh_z_pre][wh_ltd] = torch.abs(du[wh_z_pre][wh_ltd])
+
+    state['u'] = state['u'] + du
         
     return state
 

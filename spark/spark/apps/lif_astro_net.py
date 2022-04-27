@@ -255,26 +255,8 @@ def _exp_average_pulse_pair(args):
         # Sim w/ baseline
         sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_tp_pulse")
 
-        exit(0)
-
         # Set u_thr, show that when an input is driving the firing of a downstream spike, it tends to increase the weight
         cfg['astro_params']['u_th'] = 2.5
-        # sim_spike_trains(
-        #     lambda: LifAstroNet(cfg),
-        #     cfg,
-        #     spikes,
-        #     name="snn_1n1s1a_stdp_u_thr={}".format(cfg['astro_params']['u_th'])
-        # )
-
-        
-        # Use a different synapse to drive firing, and sprinkle in random spikes on the first
-
-        noise_spikes = gen_noisy_spikes(spikes[0].shape[0])
-
-        assert len(noise_spikes) == len(spikes)
-
-        spikes = [torch.cat((spikes[i], noise_spikes[i]), axis=-1) for i in range(len(spikes))]
-
         sim_spike_trains(
             lambda: LifAstroNet(cfg),
             cfg,
@@ -282,7 +264,7 @@ def _exp_average_pulse_pair(args):
             name="snn_1n1s1a_stdp_u_thr={}".format(cfg['astro_params']['u_th'])
         )
 
-
+        
 def _main(args):
     torch.manual_seed(12343210938)
     if 'rate' in args.exp:

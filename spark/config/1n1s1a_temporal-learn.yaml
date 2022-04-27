@@ -1,27 +1,44 @@
 #### Astrocyte Parameter sets
 classic_stdp: &classic_stdp
-  mode: plasticity
-  
-  tau_u: 50.0
-  u_th: 1000000.0
-  
-  tau_i_pre: 100.0
-  alpha_pre: 1.0
-  pre_reset_on_spike: False
-  
-  tau_i_post: 100.0
-  alpha_post: 1.0
-  post_reset_on_spike: False
+  0:
+    mode: plasticity
+    
+    tau_u: 50.0
+    u_th: 1000000.0
+    
+    tau_i_pre: 100.0
+    alpha_pre: 1.0
+    pre_reset_on_spike: False
+    
+    tau_i_post: 100.0
+    alpha_post: 1.0
+    post_reset_on_spike: False
 
-  u_step_params:
-    mode: stdp
-    ltd: 0.0
-    ltp: 0.0
+    u_step_params: &u_step_params
+      mode: stdp
+      ltd: 0.0
+      ltp: 0.0
 
-anti_stdp: &anti_stdp
-  __inherit__: *classic_stdp
-  alpha_pre: -1.0
-  alpha_post: -1.0
+
+  1:
+    mode: plasticity
+    
+    tau_u: 50.0
+    u_th: 0.1
+    
+    tau_i_pre: 100.0
+    alpha_pre: 1.0
+    pre_reset_on_spike: False
+    
+    tau_i_post: 100.0
+    alpha_post: 1.0
+    post_reset_on_spike: False
+
+    u_step_params: &u_step_params
+      mode: stdp
+      ltd: 0.0
+      ltp: 0.0
+
 
 #### LIF Parameter sets ####
 nice_lif_params: &nice_lif_params

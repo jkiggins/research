@@ -1,6 +1,7 @@
 import torch
 from ..functional import encode
 
+
 def impulse(start, size, duration):
     spikes = torch.zeros((1, duration))
     spikes[0, start:start+size] = 1

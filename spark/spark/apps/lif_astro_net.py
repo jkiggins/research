@@ -184,18 +184,24 @@ def _graph_1nNs1a_tl(spikes, tl):
     return fig
     
     
-def sim_spike_trains(snn_fn, cfg, spike_trains, name="snn_1n1s1a_rate-based-spikes"):
+def sim_lif_astro_net(cfg, spike_trains, name="snn_1n1s1a_rate-based-spikes"):
 
     db = ExpStorage()
+    db.meta['name'] = name
 
     # Sim
     for spikes in spike_trains:
-        snn = snn_fn()
+        snn = LifAstroNet(cfg)
         tl = _sim_snn(snn, spikes)
         db.store({'spikes': spikes, 'tl': tl})
 
+    return db
+
+
+def graph_lif_astro_net(db):
     # Graph
     fig_idx = 0
+    name = db.meta['name']
     for spikes, by_spike in db.group_by('spikes').items():
         assert len(by_spike) == 1
         
@@ -261,7 +267,7 @@ def _exp_average_pulse_pair(args):
             lambda: LifAstroNet(cfg),
             cfg,
             spikes,
-            name="snn_1n1s1a_stdp_u_thr={}".format(cfg['astro_params']['u_th'])
+            name="snn_1n1s1a_stdp_u_thr-{}".format(cfg['astro_params']['u_th'])
         )
 
         

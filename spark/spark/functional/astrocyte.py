@@ -95,43 +95,33 @@ def astro_step_u_ordered_prod(state, params):
 
 
 def astro_step_u_stdp(state, params, z_pre=None, z_post=None):
-    du = torch.as_tensor(0.0)
-
-    # for LTP, we want to fully apply du when u is close to u_thr
-    # and restruct du when u is close to -u_thr
-    # (u + u_thr) / (2*u_thr)
-
     du = torch.zeros_like(state['u'])
 
-    bool_z_post = torch.logical_and(z_pre == 0, z_post == 1)
-    bool_z_pre = torch.logical_and(z_pre == 1, z_post == 0)
+    bool_ltd = torch.logical_and(
+        z_pre > 0.0,
+        torch.isclose(z_post, torch.tensor(0.0))
+    )        
+    wh_ltd = torch.where(bool_ltd)
 
-    # Handle z_post=1
-    # LTP Step
-    wh_z_post = torch.where(bool_z_post)
-    du[wh_z_post] = state['i_pre'][wh_z_post].clone()
-    state['i_pre'][wh_z_post] = torch.as_tensor(0.0)
-    ltp_mult = (state['u'][wh_z_post] + params['u_th']) / (2*params['u_th'])
+    bool_ltp = torch.logical_and(
+        z_post > 0.0,
+        torch.isclose(z_pre, torch.tensor(0.0))
+    )
+    wh_ltp = torch.where(bool_ltp)
 
-    # Handle z_post=0, z_pre=1
-    # LTD Step
-    wh_z_pre = torch.where(bool_z_pre)
-    du[wh_z_pre] = -state['i_post'][wh_z_pre].clone()
-    state['i_post'][wh_z_pre] = torch.as_tensor(0.0)
-    ltp_mult = (state['u'][wh_z_pre] + params['u_th']) / (2*params['u_th'])
-
-    # Apply LTP/LTD thresholds
-    # bool_ltp = du[wh_z_post] < params['u_step_params']['ltp']
-    # bool_ltd = du[wh_z_pre] > params['u_step_params']['ltd']
-    # wh_ltp = torch.where(bool_ltp)
-    # wh_ltd = torch.where(bool_ltd)
-
-    # du[wh_z_post][wh_ltp] = -torch.abs(du[wh_z_post][wh_ltp])
-    # du[wh_z_pre][wh_ltd] = torch.abs(du[wh_z_pre][wh_ltd])
+    # Peform LTP/LTD across astrocyte processes
+    du[wh_ltd] = -state['i_post']
+    du[wh_ltp] = state['i_pre']
 
     state['u'] = state['u'] + du
-        
+    
+    # When ip3 -> u or k+ -> u, that input trace is set to zero
+    # These input traces effectivley "give" their value to u
+    state['i_post'][wh_ltd] = torch.as_tensor(0.0)
+    state['i_pre'][wh_ltp] = torch.as_tensor(0.0)
+
     return state
+
 
 
 def astro_step_u_signal(state, params, dt):

@@ -1,0 +1,216 @@
+import torch
+import numpy as np
+
+from ..module.astrocyte import Astro
+from ..module.neuron import LIFNeuron
+from ..utils import config, plot
+from ..data import spiketrain
+from ..experiment import VSweep, ExpStorage
+
+import argparse
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from time import time
+import copy
+
+# Astro Sim With pulse pair spikes
+def sim_astro_probe(cfg, spikes, db):
+    astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
+
+    state = None
+    timeline = {
+        'u': torch.zeros(len(spikes)),
+        'eff': torch.zeros(len(spikes)),
+        'i_pre': torch.zeros(len(spikes)),
+        'i_post': torch.zeros(len(spikes)),
+        'z_pre': torch.zeros(len(spikes)),
+        'z_post': torch.zeros(len(spikes)),
+    }
+
+    last_u = torch.as_tensor(0.0)
+    
+    # Simulate
+    for i, (z_pre, z_post) in enumerate(spikes):
+        eff, state = astro(state, z_pre=z_pre, z_post=z_post)
+        
+        timeline['u'][i] = state['u']
+        timeline['eff'][i] = eff
+        timeline['i_pre'][i] = state['i_pre']
+        timeline['i_post'][i] = state['i_post']
+        timeline['z_pre'][i] = z_pre
+        timeline['z_post'][i] = z_post
+
+        if z_post == 1 or z_pre == 1:
+            timeline['max_u'] = state['u']
+            timeline['last_u'] = last_u
+            timeline['i_pre_at_max'] = state['i_pre']
+            timeline['i_post_at_max'] = state['i_post']                
+        last_u = state['u']
+
+    db.store({'timeline': timeline})
+
+    return db
+
+
+def graph_dw_dt(cfg, db, title=""):
+    # Graph
+    points = []
+    
+    for i, (delta_t, by_spike_delta) in enumerate(db.group_by('delta_t').items()):
+        tl = by_spike_delta[0]['timeline']
+        weight_change = tl['max_u']            
+
+        points.append(
+            (float(delta_t), float(weight_change))
+        )
+
+    points = np.array(points)
+    spike_deltas = points[:, 0].tolist()
+    
+    fig = plt.Figure(figsize=(16, 8))
+    ax = fig.add_subplot(111)
+    ax.set_title("{}: Weight Change vs. Pulse Pair Spike Delta".format(title))
+    ax.plot(points[:, 0], points[:, 1])
+
+    ax.spines['left'].set_position('zero')
+    ax.spines['right'].set_color('none')
+    ax.spines['bottom'].set_position('zero')
+    ax.spines['top'].set_color('none')
+
+    ax.set_xticks(
+        spike_deltas[::2],
+        labels=["{:2.4f}".format(d) for d in spike_deltas[::2]],
+        rotation=45)
+    ax.set_xlabel("Pulse Pair Delta t")
+    ax.xaxis.set_label_coords(0.7, 0.4)
+
+    ax.set_ylabel("Weight Change")
+    ax.yaxis.set_label_coords(0.47, 0.67)
+    ax.grid(True)
+
+    ax.text(
+        -0.05, 0.8,
+        plot.astro_params_text(cfg['astro_params']),
+        bbox=plot.plt_round_bbox)
+
+    fig.tight_layout()
+
+    return fig
+
+
+def graph_astro_tls(records, key, prefix=""):
+        # Graphing
+    fig = plt.Figure(figsize=(6.4, 17))
+
+    num_subplots = len(records)
+    sp_i = 1
+    for rec in records:
+        tl = rec['timeline']
+        sim_steps = len(tl['z_pre'])
+
+        # Plot pre and Post Signals over time
+        ax = fig.add_subplot(num_subplots, 1, sp_i)
+        sp_i += 1
+
+        ax.set_title("{}: Pulse Pair Response with {} = {:4.4f}".format(prefix, key, rec[key]))
+        ax.set_xlabel("Timesteps (ms)")
+        ax.set_ylabel("Value")
+        c1 = ax.plot(tl['i_pre'])[0].get_color()
+        c2 = ax.plot(tl['i_post'])[0].get_color()
+        ax.plot(tl['u'])
+        plot.plot_events(
+            ax,
+            [tl['z_pre'], tl['z_post']],
+            colors=(c1, c2))
+        ax.legend(['i_pre', 'i_post', 'u', 'z_in', 'z_out'])
+        ax.set_xlim((0, sim_steps))
+        ax.set_xticks(ticks=list(range(sim_steps)))
+
+    fig.tight_layout()
+
+    return fig
+
+        
+def sim_classic_stdp(cfg, name="", title="", u_fn='max'):
+    spike_delta_range = (-0.05, 0.05)
+    spike_deltas = torch.linspace(*spike_delta_range, 101)
+    dt = cfg['sim']['dt']
+    pulse_pair_spikes = spiketrain.pre_post_pair(spike_deltas, dt)
+
+    db = ExpStorage()
+
+
+    # Sim
+    _astro_sim(astro, spike_deltas, pulse_pair_spikes, db)
+
+    # Graph
+    fig = _graph_dw_dt(cfg, db, u_fn=u_fn, title=title)
+    fig.savefig("{}_{}.svg".format(name, u_fn))
+
+
+def sim_spike_pairs(cfg):
+    spike_deltas = torch.linspace(-0.02, 0.02, 7)
+    pulse_pair_spikes = spiketrain.pre_post_pair(spike_deltas, cfg['sim']['dt'])
+    astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
+    db = ExpStorage()
+
+    # Simulation
+    _astro_sim(astro, spike_deltas, pulse_pair_spikes, db)
+
+    return db
+
+
+def graph_sim_db(db, name, title):
+    # Graph
+    fig = _graph_astro_tl_by_key(db, "delta_t", title=title)
+    fig.savefig("{}.svg".format(name))
+
+
+def _exp_pulse_pairs(args):
+    cfg_variants = [
+        ('Classic STDP', 'classic_stdp'),
+        ('Anti STDP', 'anti_stdp'),
+        ('LTP Bias', 'ltp_bias'),
+        ('LTD Bias', 'ltd_bias'),
+        ('LTD dt Shift', 'ltd_dt_shift'),
+        ('LTP dt Shift', 'ltp_dt_shift'),
+    ]
+
+    # Rate-based plasticity
+    for title, name in cfg_variants:
+        cfg = config.Config(args.config)
+        cfg['astro_params'] = cfg[name]
+
+        db = sim_spike_pairs(cfg)
+
+        name = "spike-pair_rp_{}".format(name)
+        graph_sim_db(db, name, title)
+
+    # Temporal plasticity
+    for title, name in cfg_variants:
+        cfg = config.Config(cfg_path)
+        cfg['astro_params'] = cfg[name]
+        cfg['astro_params']['u_step_params']['mode'] = 'stdp'
+
+        db = sim_spike_pairs(cfg)
+
+        name = "spike-pair_tp_{}".format(name)
+        graph_sim_db(db, name, title)
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('-c', '--config', type=str)
+
+    return parser.parse_args()
+
+
+def _main(args):
+    with torch.no_grad():
+        _exp_pulse_pairs(args)
+
+
+if __name__ == '__main__':
+    args = _parse_args()
+    _main(args)

@@ -1,7 +1,32 @@
 import torch
 import numpy as np
+import torch
+import random
+import pickle
+
+from pathlib import Path
 
 from collections import OrderedDict
+
+def seed_many():
+    seed = 2340234234
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+
+
+def load_or_run(fn, path, sim=False):
+    path = Path(path)
+
+    if path.exists() and (not sim):
+        print('loading: ', path)
+        db = ExpStorage(path)
+    else:
+        db = fn()
+        db.save(path)
+
+    return db
+    
 
 class VSweep:
     def __init__(self, values=None, head=None):
@@ -86,9 +111,15 @@ class VSweep:
 
 
 class ExpStorage:
-    def __init__(self):
-        self.db = []
-        pass
+    def __init__(self, path=None):
+        self.experiments = {}
+        
+        if not (path is None):
+            with open(path, 'rb') as fp:
+                self.experiments = pickle.load(fp)
+
+        self.exp('main')
+
 
     def __iter__(self):
         return self.db.__iter__()
@@ -98,6 +129,18 @@ class ExpStorage:
 
     def __getitem__(self, idx):
         return self.db[idx]
+
+    def save(self, path):
+        with open(path, 'wb') as fp:
+            pickle.dump(self.experiments, fp)
+        
+    def exp(self, name):
+        self.exp_name = name
+        if not (self.exp_name in self.experiments):
+            self.experiments[self.exp_name] = {'db': [], 'meta': {}}
+            self.db = self.experiments[self.exp_name]['db']
+            self.meta = self.experiments[self.exp_name]['meta']
+
 
     def store(self, v):
         if type(v) != dict:
@@ -205,7 +248,7 @@ class ExpStorage:
                 records.store(d)
 
         return records
-        
+
 
 ################### TESTS ######################
 

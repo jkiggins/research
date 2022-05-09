@@ -32,7 +32,7 @@ class Astro:
         return state
 
 
-    def _plastic_mode_step(self, state, z_pre, z_post):
+    def _plastic_mode_step(self, state, z_pre, z_post, reward=None):
 
         state = self.init_state_if_none(state)
 
@@ -47,9 +47,7 @@ class Astro:
         elif self.params['u_step_params']['mode'] == 'u_ordered_prod':
             state = astro_step_u_ordered_prod(state, self.params)
         elif self.params['u_step_params']['mode'] == 'stdp':
-            state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
-
-        # print("u: ", state['u'], end='')
+            state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post, reward=reward)
 
         state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
         eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
@@ -75,8 +73,8 @@ class Astro:
         return u_spike, state
 
 
-    def __call__(self, state, z_pre=None, z_post=None):    
+    def __call__(self, state, z_pre=None, z_post=None, reward=None):
         if self.params['mode'] == 'signal':
             return self._signal_respose_mode_step(state, z_pre=z_pre, z_post=z_post)
         elif self.params['mode'] == 'plasticity':
-            return self._plastic_mode_step(state, z_pre=z_pre, z_post=z_post)
+            return self._plastic_mode_step(state, z_pre=z_pre, z_post=z_post, reward=reward)

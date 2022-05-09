@@ -18,6 +18,12 @@ def poisson(rates, duration):
     return random_spikes
 
 
+def uniform_noise(shape, prob):
+    noise_spikes = torch.rand(shape) < prob
+
+    return noise_spikes * 1.0
+
+
 def pre_post_pair(
         spike_deltas,
         dt,

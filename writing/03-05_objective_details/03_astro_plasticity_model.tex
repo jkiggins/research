@@ -70,7 +70,7 @@
       d_{k+} = d_t * (-k+)\tau_{k+} + \alpha z_{post}(t) \label{eq:astro:spike-k+}
     \end{align}
 
-    Where $\tau_*$ represents a time constant for a given pathway, $z_{pre}$ is
+    Where $\tau_{ip3/k+}$ represents a time constant for a given pathway, $z_{pre}$ is
     1 if there is a pre-synaptic spike at time $t$ ($0$ otherwise), and
     $z_{post}$ is $1$ when the post-synaptic neuron fires ($0$
     otherwise). Similarly, a system of linear differential equations 
@@ -105,22 +105,22 @@
     necessary to sweep parameters, and explore the response of the
     $\alpha_{ip3}=\alpha_{k+}$ and $\tau_{ip3}$.
     
-    \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0-265.svg}{Model
+    \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.265.svg}{Model
       Response to Sweeping Input pathway $\alpha$, and
-      $\tau_u$}{fig:astro:sweep_alpha_ip3_tau_1}
+      $\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_1}{0.7}
 
-    %% \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.280.svg}{Model Response to
-    %%   Sweeping Input pathway $\alpha$, and
-    %%   $\tau_{ip3}$}{fig:astro:sweep_alpha_ip3_tau_2}{}
+    \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.280.svg}{Model Response to
+      Sweeping Input pathway $\alpha$, and
+      $\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_2}{0.7}
 
     The group of similar plots in Figures \ref{fig:astro:sweep_alpha_ip3_tau_1} and
     \ref{fig:astro:sweep_alpha_ip3_tau_2} depict Astrocyte responses to a common
     spike pattern, with different values for $\alpha_{ip3}=\alpha_{k+}$. The
     curves in these plots are scale multiples of each-other, showing that
-    $\alpha_*$ does not effect timing, but only scale of the Astrocyte
+    $\alpha_{ip3/k+}$ does not effect timing, but only scale of the Astrocyte
     response. The figures also indicate that small values of
     $\tau_{ip3}=\tau_{k+}$ can lead to a response that doesn't reach a
-    steady-state within a reasonable window, such as with $\tau_* = 10$.
+    steady-state within a reasonable window, such as with $\tau_{ip3/k+} = 10$.
     %% TODO: add more detail about steady-state
 
     
@@ -148,13 +148,13 @@
     degrees of tolerance to transient activity that would otherwise lead to
     weight change.
 
-    %% \asvgf{figures/artifacts/obj1/sweep_u_tau_p0.1.svg}{Response of $u$ to
-    %%   Poisson Distributed spikes applied to Pre and Post-Synaptic
-    %%   Pathways}{fig:astro:sweep_alpha_u_tau_1}{}
+    \asvgf{figures/artifacts/obj1/sweep_u_tau_p0.1.svg}{Response of $u$ to
+      Poisson Distributed spikes applied to Pre and Post-Synaptic
+      Pathways}{fig:astro:sweep_alpha_u_tau_1}{0.8}
 
-    %% \asvgf{figures/artifacts/obj1/sweep_u_tau_p0.7.svg}{Response of $u$ to
-    %%   Poisson Distributed spikes applied to Pre and Post-Synaptic
-    %%   Pathways}{fig:astro:sweep_alpha_u_tau_2}{}
+    \asvgf{figures/artifacts/obj1/sweep_u_tau_p0.7.svg}{Response of $u$ to
+      Poisson Distributed spikes applied to Pre and Post-Synaptic
+      Pathways}{fig:astro:sweep_alpha_u_tau_2}{0.8}
 
     Figures \ref{fig:astro:sweep_alpha_u_tau_1} and
     \ref{fig:astro:sweep_alpha_u_tau_2} depict the response of $u$ for
@@ -171,6 +171,10 @@
     $\tau_u$ for a given application, and gives an impression of the
     excitability of the model.
 
+    \asvgf{figures/artifacts/obj1/heatmap_spike-rate_tau_u.svg}{Rate of
+      Astrocyte Effect on Synaptic Weight Given Different input Poisson spike
+      rates, and different values of $\tau_u$}{fig:astro:u_thr_heat_rate_vs_tau_u}{0.4}
+
     \subsection{Classic-STDP and Variants} \label{sec:ordered_prop:stdp}
     
     Using the Ordered Proportional update rule the APM is capable of
@@ -179,23 +183,23 @@
     pairs with a variety of inter-spike-interval times (X-axis). This is a
     typical STDP curve.
 
-    %% \asvgf{figures/artifacts/obj1/astro_probe_dwdt-classic_stdp_rp.svg}{Astrocyte and
-    %%   Neuron Model Response to Pulse Pairs: Baseline}{fig:astro:classic_stdp}{}
+    \asvgf{figures/artifacts/obj1/astro_probe_dwdt-classic_stdp_rp.svg}{Astrocyte and
+      Neuron Model Response to Pulse Pairs: Baseline}{fig:astro:classic_stdp}{0.4}
 
     The model has additional parameters beyond what a traditional STDP rule would
     have, and this offers flexibility. By providing asymmetric $\tau_{ip3}$ and
     $\tau_{k+}$ the model can be bias toward LTD/LTP. Figure
     \ref{fig:astro:stdp_ltd_bias} shows this effect for LTD.
 
-    %% \asvgf{figures/artifacts/obj1/astro_probe_dwdt-ltd_bias_rp.svg}{Astrocyte-Neuron
-    %%   Model Response to Pulse Pairs: LTD Bias}{fig:astro:stdp_ltd_bias}{}
+    \asvgf{figures/artifacts/obj1/astro_probe_dwdt-ltd_bias_rp.svg}{Astrocyte-Neuron
+      Model Response to Pulse Pairs: LTD Bias}{fig:astro:stdp_ltd_bias}{0.4}
 
     In addition, threshold parameters $thr_{ltp}$ and $thr_{ltd}$ can be used to
     shift activity from the LTP to LTD region, or vise versa. Figure
     \ref{fig:astro:ltd_shift} shows this shifting behavior.
     
-    %% \asvgf{figures/artifacts/obj1/astro_probe_dwdt-ltd_bias_rp.svg}{Astrocyte-Neuron
-    %%   Model Response to Pulse Pairs: LTD Shift}{fig:astro:stdp_ltd_shift}{}
+    \asvgf{figures/artifacts/obj1/astro_probe_dwdt-ltd_bias_rp.svg}{Astrocyte-Neuron
+      Model Response to Pulse Pairs: LTD Shift}{fig:astro:stdp_ltd_shift}{0.4}
 
     Additional figures can be found in \ref{appendix:astro_figures}.
 
@@ -245,11 +249,11 @@
     \ref{fig:rate:lif_net_1}.
 
     %% \asvgf{figures/artifacts/obj1/snn_1n1s1a_rp_no-band_0.svg}{APM Response to
-    %%   Poisson Input With $thr_{ltp}=thr_{ltd}=0.0$}{fig:rate:lif_net_1}{}
+    %%   Poisson Input With $thr_{ltp}=thr_{ltd}=0.0$}{fig:rate:lif_net_1}{0.5}
     
     %% \asvgf{figures/artifacts/obj1/snn_1n1s1a_rp_band_0.svg}{APM response to
     %%   Possion Input With $thr_{ltp}=1.5,
-    %%   thr_{ltd}=-1.5$}{fig:astro:classic_stdp}{}
+    %%   thr_{ltd}=-1.5$}{fig:astro:classic_stdp}{0.5}
     
  
     \subsection{Integrated Spike Timing Plasticity}
@@ -272,7 +276,7 @@
     outlines different possible spike association behaviors.
 
     %% \asvgf{figures/SpikeAssociation.svg}{A Variety of Spike Associations
-    %%   Supported by the Neuron-Astrocyte model}{fig:astro:spike_associate}{}
+    %%   Supported by the Neuron-Astrocyte model}{fig:astro:spike_associate}{0.5}
 
     \begin{align}
       T_{delta} = sign_{ltd} * z_{pre}(t) * k^+ + sign_{ltp} * z_{post}(t) * ip3 \\
@@ -280,7 +284,7 @@
     \end{align}
 
     In this case, $z_{post}$ and $z_{pre}$ are pre and post-synaptic spikes that
-    the Astrocyte is sensing. The sign $sign_*$ values are functions of $k+$ and
+    the Astrocyte is sensing. The sign $sign_{ip3/k+}$ values are functions of $k+$ and
     $ip3$ as well as $thr_{ltp}$ and $thr_{ltd}$. Depending on their value,
     weight updates may be 0 under some conditions, such as when $\delta_t$ is
     close to 0. It is also possible to modulate the sign of these quantities to
@@ -317,9 +321,9 @@
     the pulse-pair events, and the majority are LTP, no decrease in weight is
     observed.
 
-    %% \asvgf{figures/artifacts/obj1/snn_1n1s1a_stdp_u_thr-2.5_0.svg}{Simulation of
-    %% Neuron-Astrocyte Model In 1S1N1A Configuration With Spike Pulses as
-    %% Inputs}{fig:astro:1n1s1a_impulse}{}
+    \asvgf{figures/artifacts/obj1/snn_1n1s1a_tp_stdp_u_thr-2.5_0.svg}{Simulation of
+    Neuron-Astrocyte Model In 1S1N1A Configuration With Spike Pulses as
+    Inputs}{fig:astro:1n1s1a_impulse}{0.5}
     
 
     %%%%%%%%%%%%% Extending STDP w/ in 1N1S Case %%%%%%%%%%%%%

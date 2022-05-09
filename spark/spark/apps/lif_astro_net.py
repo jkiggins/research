@@ -93,6 +93,7 @@ def _sim_snn(snn, spikes):
 
     return tl
 
+
 def gen_rate_spikes(duration):
     spike_trains = []
     
@@ -102,8 +103,8 @@ def gen_rate_spikes(duration):
 
     return spike_trains
 
-    
-def gen_group_spikes():
+
+def gen_group_spikes(noise=None):
     spike_trains = []
 
     # Ramp-up spike impulse w/ gap
@@ -119,6 +120,10 @@ def gen_group_spikes():
             spikes = torch.cat((impulse, gap))
         else:
             spikes = torch.cat((spikes, impulse, gap))
+
+    if not (noise is None):
+        noise_spikes = spiketrain.uniform_noise(spikes.shape, noise)
+        spikes = (spikes + noise_spikes).clip(0,1)
             
     # last dim is 1 for number of synapse
     spike_trains.append(spikes.reshape(-1, 1))
@@ -183,7 +188,7 @@ def _graph_1nNs1a_tl(spikes, tl):
 
     return fig
     
-    
+
 def sim_lif_astro_net(cfg, spike_trains, name="snn_1n1s1a_rate-based-spikes"):
 
     db = ExpStorage()
@@ -213,6 +218,24 @@ def graph_lif_astro_net(db):
         fig.tight_layout()
         fig.savefig("{}_{}.svg".format(name, fig_idx))
         fig_idx += 1
+
+
+def graph_lif_astro_net_compare(dbs):
+    # Graph
+    fig_idx = 0
+    name = db.meta['name']
+    for spikes, by_spike in db.group_by('spikes').items():
+        assert len(by_spike) == 1
+        
+        d = by_spike[0]
+        tl = d['tl']
+
+        fig = _graph_1nNs1a_tl(spikes, tl)
+
+        fig.tight_layout()
+        fig.savefig("{}_{}.svg".format(name, fig_idx))
+        fig_idx += 1
+    
 
 
 def _parse_args():

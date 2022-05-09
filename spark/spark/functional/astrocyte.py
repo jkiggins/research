@@ -94,7 +94,7 @@ def astro_step_u_ordered_prod(state, params):
     return state
 
 
-def astro_step_u_stdp(state, params, z_pre=None, z_post=None):
+def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
     du = torch.zeros_like(state['u'])
 
     bool_ltd = torch.logical_and(
@@ -112,6 +112,11 @@ def astro_step_u_stdp(state, params, z_pre=None, z_post=None):
     # Peform LTP/LTD across astrocyte processes
     du[wh_ltd] = -state['i_post']
     du[wh_ltp] = state['i_pre']
+
+    # Apply reward
+    if reward is None:
+        reward = torch.ones_like(du)
+    du = du * reward
 
     state['u'] = state['u'] + du
     

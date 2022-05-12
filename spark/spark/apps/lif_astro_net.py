@@ -16,30 +16,46 @@ from matplotlib.gridspec import GridSpec
 from time import time
 import copy
 
-
-class LifAstroNet:
-    def __init__(self, cfg):
+class LifNet:
+    def __init__(self, cfg, mu=None):
         self.cfg = cfg
         self.dt = cfg['sim']['dt']
 
-        num_synapse = self.cfg['linear_params']['synapse']
+        if not (mu is None):
+            self.cfg['linear_params']['mu'] = mu
 
-        self.modules = {}
-        self.needs = {}
-        
+        self.num_synapse = self.cfg['linear_params']['synapse']
         self.neuron = LIFNeuron.from_cfg(cfg['lif_params'], self.dt)
-        self.astro = Astro.from_cfg(cfg['astro_params'], cfg['linear_params']['synapse'], self.dt)
-        self.linear = nn.Linear(num_synapse, 1, bias=False)
+
+        self.linear = nn.Linear(self.num_synapse, 1, bias=False)
         nn.init.normal_(
             self.linear.weight,
             mean=cfg['linear_params']['mu'],
             std=cfg['linear_params']['sigma'])
 
         self.neuron_state = None
+
+    def __call__(self, z):
+        z = z * 1.0
+        if not (type(z) == torch.Tensor):
+            z = torch.as_tensor(z)
+
+        z = self.linear(z)
+        z_post, self.neuron_state = self.neuron(z, self.neuron_state)
+
+        return z_post, self.neuron_state
+
+
+        
+class LifAstroNet(LifNet):
+    def __init__(self, cfg, *args, **kwargs):
+        super(LifAstroNet, self).__init__(cfg, *args, **kwargs)
+        
+        self.astro = Astro.from_cfg(cfg['astro_params'], cfg['linear_params']['synapse'], self.dt)
         self.astro_state = None
 
 
-    def __call__(self, z):
+    def __call__(self, z, gt=None):
         z = z * 1.0
         if not (type(z) == torch.Tensor):
             z = torch.as_tensor(z)
@@ -47,7 +63,12 @@ class LifAstroNet:
         z_pre = z
         z = self.linear(z)
         z_post, self.neuron_state = self.neuron(z, self.neuron_state)
-        eff, self.astro_state = self.astro(self.astro_state, z_pre=z_pre, z_post=z_post)
+
+        reward = None
+        if not (gt is None):
+            reward = (((z_post == gt) * 1.0) - 0.5)*2.0
+
+        eff, self.astro_state = self.astro(self.astro_state, z_pre=z_pre, z_post=z_post, reward=reward)
 
         self.linear.weight[0] = torch.clamp(
             self.linear.weight[0] * eff,
@@ -57,26 +78,27 @@ class LifAstroNet:
         return z_post, eff, self.neuron_state, self.astro_state, self.linear
 
 
-def _sim_snn(snn, spikes):
-    
-    tl = {
-        'u': torch.zeros_like(spikes),
-        'a': torch.zeros_like(spikes),
-        'dw': torch.zeros_like(spikes),
-        'i_pre': torch.zeros_like(spikes),
-        'i_post': torch.zeros_like(spikes),
-        'i_n': torch.zeros_like(spikes),
-        'v_n': torch.zeros_like(spikes),
-        'z_pre': torch.zeros_like(spikes),
-        'z_post': torch.zeros_like(spikes),
-        'w': torch.zeros_like(spikes)
-    }
+def _store_snn_step(tl, i, spikes, snn, snn_output, s):
+    if tl is None:
+        tl = {}
+        tl['z_pre'] = torch.zeros_like(spikes)
+        tl['i_n'] = torch.zeros_like(spikes)
+        tl['v_n'] = torch.zeros_like(spikes)
+        tl['z_post'] = torch.zeros_like(spikes)
+        
+        if len(snn_output) == 5:
+            tl['u'] = torch.zeros_like(spikes)
+            tl['a'] = torch.zeros_like(spikes)
+            tl['dw'] = torch.zeros_like(spikes)
+            tl['i_pre'] = torch.zeros_like(spikes)
+            tl['i_post'] = torch.zeros_like(spikes)
+            tl['w'] = torch.zeros_like(spikes)
+            tl['w'][0] = snn.linear.weight[:]
 
-    tl['w'][0] = snn.linear.weight[:]
-
-    for i, s in enumerate(spikes):
-        z, a, n_state, a_state, linear = snn(s)
-
+    if len(snn_output) == 2:
+        z, n_state = snn_output
+    elif len(snn_output) == 5:
+        z, a, n_state, a_state, linear = snn_output
         weight_update = torch.logical_not(torch.isclose(a, torch.as_tensor(1.0))).float()
 
         tl['u'][i] = a_state['u']
@@ -84,22 +106,41 @@ def _sim_snn(snn, spikes):
         tl['dw'][i] = a
         tl['i_pre'][i] = a_state['i_pre']
         tl['i_post'][i] = a_state['i_post']
-        tl['z_pre'][i] = s
-        tl['z_post'][i] = z
-        
-        tl['i_n'][i] = n_state['i']
-        tl['v_n'][i] = n_state['v']
         tl['w'][i] = linear.weight[:]
+        
+    tl['z_pre'][i] = s
+    tl['z_post'][i] = z
+    tl['i_n'][i] = n_state['i']
+    tl['v_n'][i] = n_state['v']
+
+    return tl
+    
+
+def _sim_snn(snn, spikes):
+    tl = None
+    for i, s in enumerate(spikes):
+        snn_output = snn(s)
+        tl = _store_snn_step(tl, i, spikes, snn, snn_output, s)
+
+    return tl
+
+def _sim_reward_snn(snn, spikes, gt):
+    tl = None
+    for i, s in enumerate(spikes):
+        snn_output = snn(s, gt=gt[i])
+        tl = _store_snn_step(tl, i, spikes, snn, snn_output, s)
 
     return tl
 
 
-def gen_rate_spikes(duration):
+def gen_rate_spikes(spec):
     spike_trains = []
+
+    print("spec: ", spec)
     
     torch.manual_seed(12343210938)
-    for r in [0.5]:
-        spike_trains.append(spiketrain.poisson([r], duration).transpose(1,0))
+    for r, steps in spec:
+        spike_trains.append(spiketrain.poisson([r], steps).transpose(1,0))
 
     return spike_trains
 
@@ -189,6 +230,22 @@ def _graph_1nNs1a_tl(spikes, tl):
     return fig
     
 
+def sim_lif_astro_reward_net(cfg, spike_trains, name="snn_1n1s1a_reward"):
+    db = ExpStorage()
+    db.meta['name'] = name
+
+    for spikes in spike_trains:
+        gt_snn = LifNet(cfg, mu=0.3)
+        tl = _sim_snn(gt_snn, spikes)
+        gt_spikes = tl['z_post']
+
+        snn = LifAstroNet(cfg, mu=0.7)
+        tl = _sim_reward_snn(snn, spikes, gt_spikes)
+        db.store({'spikes': spikes, 'tl': tl})
+
+    return db
+
+    
 def sim_lif_astro_net(cfg, spike_trains, name="snn_1n1s1a_rate-based-spikes"):
 
     db = ExpStorage()
@@ -220,7 +277,7 @@ def graph_lif_astro_net(db):
         fig_idx += 1
 
 
-def graph_lif_astro_net_compare(dbs):
+def graph_lif_astro_reward_net(db):
     # Graph
     fig_idx = 0
     name = db.meta['name']
@@ -255,7 +312,9 @@ def _exp_rate_learning(args):
         cfg['astro_params']['u_step_params']['ltd'] = 0.0
         cfg['astro_params']['u_step_params']['ltp'] = 0.0
 
-        spikes = gen_rate_spikes(cfg['sim']['steps'])
+        spikes = gen_rate_spikes([
+            (0.5, cfg['sim']['steps'])
+        ])
         sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_rp_no-band")
 
         # Sim w/ thresholds
@@ -264,7 +323,10 @@ def _exp_rate_learning(args):
         cfg['astro_params']['u_step_params']['ltd'] = -1.5
         cfg['astro_params']['u_step_params']['ltp'] = 1.5
 
-        spikes = gen_rate_spikes(cfg['sim']['steps'])
+        spikes = gen_rate_spikes([
+            (0.5, cfg['sim']['steps'])
+        ])
+
         sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_rp_band")
 
 

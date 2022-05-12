@@ -1,0 +1,53 @@
+#### Astrocyte Parameter sets
+classic_stdp: &classic_stdp
+  mode: plasticity
+  
+  tau_i_pre: 100.0
+  alpha_pre: 1.0
+  pre_reset_on_spike: False
+  
+  tau_i_post: 100.0
+  alpha_post: 1.0
+  post_reset_on_spike: False
+
+  tau_u: 10000.0
+  u_th: 1.0
+
+  u_step_params:
+    mode: u_ordered_prod
+    ltd: -1.5
+    ltp: 1.5
+
+astro_plasticity: &anti_stdp
+  __inherit__: *classic_stdp
+  alpha_pre: -1.0
+  alpha_post: -1.0
+
+#### LIF Parameter sets ####
+nice_lif_params: &nice_lif_params
+  v_reset: -0.5
+  v_leak: 0.0
+  v_th: 0.5
+  method: 'heaviside'
+  alpha: 1.0, # doesn't matter if ^ is heaviside, see threshold.py
+  tau_mem: 60.0
+  tau_syn: 500.0 # 1000 means no memory, since the entire value of i will decay each step
+
+nice_linear_params: &nice_linear_params
+  synapse: 1
+  mu: 0.7
+  sigma: 0.001
+  min: 0.0
+  max: 2.0
+
+### Topology ###
+topology:
+  lif: *nice_lif_params
+  astro:
+    0: *classic_stdp
+    1: *astro_plasticity
+  linear: *nice_linear_params
+
+sim:
+  dt: 0.001
+  steps: 200

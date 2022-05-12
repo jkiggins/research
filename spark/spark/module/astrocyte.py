@@ -74,6 +74,7 @@ class Astro:
 
 
     def __call__(self, state, z_pre=None, z_post=None, reward=None):
+        
         if self.params['mode'] == 'signal':
             return self._signal_respose_mode_step(state, z_pre=z_pre, z_post=z_post)
         elif self.params['mode'] == 'plasticity':

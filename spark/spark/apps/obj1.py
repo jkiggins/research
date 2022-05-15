@@ -2,13 +2,14 @@ import argparse
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import itertools
 
 import torch
 
 from ..module.astrocyte import Astro
 from ..utils import config, plot
 from ..data import spiketrain
-from .lif_astro_net import gen_rate_spikes, gen_group_spikes, sim_lif_astro_net, graph_lif_astro_net
+from .lif_astro_net import gen_rate_spikes, gen_group_spikes, sim_lif_astro_net, graph_lif_astro_net, sim_lif
 from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
 from ..experiment import ExpStorage, VSweep, seed_many, load_or_run
 
@@ -383,7 +384,7 @@ def _exp_rate_learning(cfg_path):
         cfg['astro_params']['u_step_params']['ltd'] = 0.0
         cfg['astro_params']['u_step_params']['ltp'] = 0.0
 
-        spikes = gen_rate_spikes(cfg['sim']['steps'])
+        spikes = gen_rate_spikes((0.5, cfg['sim']['steps']))
         db = sim_lif_astro_net(cfg, spikes, name="snn_1n1s1a_rp_no-band")
         dbs.append(db)
 
@@ -393,7 +394,7 @@ def _exp_rate_learning(cfg_path):
         cfg['astro_params']['u_step_params']['ltd'] = -1.5
         cfg['astro_params']['u_step_params']['ltp'] = 1.5
 
-        spikes = gen_rate_spikes(cfg['sim']['steps'])
+        spikes = gen_rate_spikes((0.5, cfg['sim']['steps']))
         db = sim_lif_astro_net(cfg, spikes, name="snn_1n1s1a_rp_band")
         dbs.append(db)
 
@@ -431,9 +432,79 @@ def _exp_average_pulse_pair(cfg_path):
     return dbs
 
 
+def _exp_lif_sample(cfg_path):
+
+    cfg = config.Config(cfg_path)
+    cfg['linear_params']['mu'] = 1.0
+    spikes = gen_rate_spikes([
+        (0.3, cfg['sim']['steps'])
+    ])
+
+    mem_tau_range = [cfg['lif_params']['tau_mem']]
+    mem_tau_range.append(mem_tau_range[0] * 0.5)
+    mem_tau_range.append(700)
+
+    syn_tau_range = [cfg['lif_params']['tau_syn']]
+    syn_tau_range.append(syn_tau_range[0] * 0.5)
+
+    params = itertools.product(mem_tau_range, syn_tau_range)
+
+    dbs = []
+    with torch.no_grad():
+        for tau_mem, tau_syn in params:
+            cfg['lif_params']['tau_mem'] = tau_mem
+            cfg['lif_params']['tau_syn'] = tau_syn
+            
+            db = sim_lif(
+                cfg,
+                spikes[0],
+                name='lif_sample_mem-{}_syn-{}'.format(tau_mem, tau_syn),
+            )
+
+            dbs.append(db)
+
+    return dbs
+
+
+def _graph_lif_sample(db):
+    name = db.meta['name']
+
+    assert len(db) == 1
+    tl = db[0]['tl']
+
+    fig = plt.Figure()
+    fig.suptitle("LIF Neuron Response")
+
+    # Traces
+    i_n = tl['i_n'].squeeze().tolist()
+    v_n = tl['v_n'].squeeze().tolist()
+    z_pre = tl['z_pre'].squeeze().int().tolist()
+    z_post = tl['z_post'].squeeze().int().tolist()
+
+    
+    ax = fig.add_subplot(211)
+    ax.set_title("Neuron Current and Membrane Voltage")
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Magnitude")
+    c1 = ax.plot(i_n, label='Synapse Current')[0].get_color()
+    c2 = ax.plot(v_n, label='Membrane Voltage')[0].get_color()
+    ax.legend()
+
+    # Spikes
+    ax = fig.add_subplot(212)
+    plot.plot_events(ax, [z_pre, z_post], colors=[c1,c2])
+    ax.legend(['z_pre', 'z_post'])
+
+    fig.tight_layout()
+    fig.savefig("{}.svg".format(name))
+
+    
+
+
 def _parse_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--lif', action='store_true')
     parser.add_argument('--astro-spike-pairs', action='store_true')
     parser.add_argument('--astro-param-sweep', action='store_true')
     parser.add_argument('--astro-lif-net', action='store_true')
@@ -447,6 +518,12 @@ def _main(args):
     os.makedirs('./obj1', exist_ok=True)
     os.chdir('./obj1')
 
+    if args.lif or args.all:
+        seed_many()
+        dbs = _exp_lif_sample('../../config/1n1s1a_net.yaml')
+        for db in dbs:
+            _graph_lif_sample(db)
+        
     if args.astro_param_sweep or args.all:
         seed_many()
         db = load_or_run(

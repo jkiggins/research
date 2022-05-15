@@ -5,7 +5,7 @@ plt_round_bbox = dict(
     ec=(1., 0.5, 0.5),
     fc=(1., 0.8, 0.8))
 
-def plot_events(ax, events, labels=[], colors=None, offset=0):
+def plot_events(ax, events, colors=None, offset=0):
     event_idxs = []
     max_x = 0
     for z in events:

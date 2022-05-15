@@ -260,6 +260,18 @@ def sim_lif_astro_net(cfg, spike_trains, name="snn_1n1s1a_rate-based-spikes"):
     return db
 
 
+def sim_lif(cfg, spikes, name='lif_sample'):
+    db = ExpStorage()
+    db.meta['name'] = name
+
+    # Sim
+    snn = LifNet(cfg)
+    tl = _sim_snn(snn, spikes)
+    db.store({'spikes': spikes, 'tl': tl})
+
+    return db
+
+
 def graph_lif_astro_net(db):
     # Graph
     fig_idx = 0
@@ -292,79 +304,3 @@ def graph_lif_astro_reward_net(db):
         fig.tight_layout()
         fig.savefig("{}_{}.svg".format(name, fig_idx))
         fig_idx += 1
-    
-
-
-def _parse_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-c', '--config', type=str)
-    parser.add_argument('-e', '--exp', type=str, nargs='+')
-
-    return parser.parse_args()
-
-
-def _exp_rate_learning(args):
-    with torch.no_grad():
-        # Sim w/ out ltd/ltp thresholds
-        cfg = config.Config(args.config)
-        cfg['astro_params'] = cfg['anti_stdp']
-        cfg['astro_params']['u_step_params']['ltd'] = 0.0
-        cfg['astro_params']['u_step_params']['ltp'] = 0.0
-
-        spikes = gen_rate_spikes([
-            (0.5, cfg['sim']['steps'])
-        ])
-        sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_rp_no-band")
-
-        # Sim w/ thresholds
-        cfg = config.Config(args.config)
-        cfg['astro_params'] = cfg['anti_stdp']
-        cfg['astro_params']['u_step_params']['ltd'] = -1.5
-        cfg['astro_params']['u_step_params']['ltp'] = 1.5
-
-        spikes = gen_rate_spikes([
-            (0.5, cfg['sim']['steps'])
-        ])
-
-        sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_rp_band")
-
-
-def _exp_average_pulse_pair(args):
-    """
-    Simulate an snn in the 1n1s1a configuration, and demonstrate how plasticity
-    triggered by a threshold on u can average multiple pulse pairs, and allow
-    for confident steps for plasticity, based on multiple events.
-    """
-    
-    with torch.no_grad():
-        cfg = config.Config(args.config)
-        cfg['astro_params'] = cfg['classic_stdp']
-
-        spikes = gen_group_spikes()
-
-        # Sim w/ baseline
-        sim_spike_trains(lambda: LifAstroNet(cfg), cfg, spikes, name="snn_1n1s1a_tp_pulse")
-
-        # Set u_thr, show that when an input is driving the firing of a downstream spike, it tends to increase the weight
-        cfg['astro_params']['u_th'] = 2.5
-        sim_spike_trains(
-            lambda: LifAstroNet(cfg),
-            cfg,
-            spikes,
-            name="snn_1n1s1a_stdp_u_thr-{}".format(cfg['astro_params']['u_th'])
-        )
-
-        
-def _main(args):
-    torch.manual_seed(12343210938)
-    if 'rate' in args.exp:
-        _exp_rate_learning(args)
-
-    if 'tp-pulse' in args.exp:
-        _exp_average_pulse_pair(args)
-    
-if __name__ == '__main__':
-    args = _parse_args()
-
-    _main(args)

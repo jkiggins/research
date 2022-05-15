@@ -13,3 +13,6 @@
 /writing/main.toc
 /writing/main.lo*
 /writing/main.idx
+/writing/svg-inkscape/*
+.#*
+*/#*#

@@ -20,15 +20,13 @@ classic_stdp: &classic_stdp
 
 
 astro_plasticity:
-  mode: plasticity
-
   tau_u: 50.0
   u_th: 2.5
-    
+
   tau_i_pre: 100.0
   alpha_pre: 1.0
   pre_reset_on_spike: False
-    
+
   tau_i_post: 100.0
   alpha_post: 1.0
   post_reset_on_spike: False
@@ -45,9 +43,9 @@ nice_lif_params: &nice_lif_params
   v_leak: 0.0
   v_th: 0.2
   method: 'heaviside'
-  alpha: 1.0, # doesn't matter if ^ is heaviside, see threshold.py
+  alpha: 1.0  # doesn't matter if ^ is heaviside, see threshold.py
   tau_mem: 60.0
-  tau_syn: 500.0 # 1000 means no memory, since the entire value of i will decay each step
+  tau_syn: 500.0  # 1000 means no memory, since the entire value of i will decay each step
 
 sim:
   dt: 0.001
@@ -57,7 +55,7 @@ linear_params:
   synapse: 1
   mu: 0.7
   sigma: 0.001
-  min: 0.0
+  min: -20.0
   max: 20.0
 
 astro_params: null

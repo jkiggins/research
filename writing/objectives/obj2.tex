@@ -1,0 +1,48 @@
+\chapter{Deployment of The Astrocyte Plasticity Model in A Single Synapse
+  Configuration} \label{chapter:obj2}
+
+\section{Pulse-Pair Integration}
+One unique property of the Astrocyte Plasticity model is the integration of
+plasticity signals over time. This differs from classic STDP, where weight
+updates are immediate in response to activity. The Astrocyte model can easily
+accomplish this integration effect through it's $Ca^{2+}$ state
+variable. Instead of driving a weight change in response to a pair of pre and
+post-synaptic spikes, the Astrocyte increases or decreases $Ca^{2+}$. Only once Ca2+
+reaches some threshold does the weight update occur. This is the behavior
+described in \ref{section:istp}.
+
+\subsection{Impulse Response}
+To test this behavior, Figure \ref{fig:ppi:impulse_istp} depicts the Astrocyte
+plasticity model with $Ca_{thr}=2.5$. In contrast, Figure
+\ref{fig:ppi:impuse_stp} shows the behavior of a classic STDP rule with the same
+inputs and configuration. The inputs themselves consist of successive spikes,
+with 1ms between each. These spikes form groups with enough time between for
+neuron and Astrocyte states to decay. Each group has an additional spike
+compared to the last.
+
+Comparing these graphs, it is clear that integrating
+behavior of the Astrocyte model effects the learning process significantly. In
+this case, resulting in more stable behavior, and increasing synaptic weight due
+to causal inputs. The key effect here, can be seen considering what happens when
+there are additional input spikes after a post-synaptic spike. In this case
+classic STDP would decrease the weight, the Astrocyte rule integrates this event
+into Ca2+. Those input spikes are eventually associated with an additional
+down-stream spike (showing those spikes were causal after all) and Ca2+ is
+increased. Eventually this leads to LTP, with the potential LTD events being
+smoothed out.
+
+%% TODO: Add ISTP Paths
+
+It would be equally interesting to explore the networks response to a group of
+spikes of the same length across a similar timescale. Figures
+\ref{fig:impulse_ss_stdp} and \ref{fig:impulse_ss_istp} outline the plasticity
+behavior for classic STDP and the Astrocyte model.
+
+%% TODO: is a steady-state reached
+
+
+
+Another situation where the Astrocyte model could have some functional benefit
+is reward-modulated STDP (R-STDP). Intuitively, integrating reward signals could
+help balance weight updates across multiple input, gt pairs, where the learning
+rule needs to distinguish between similar inputs.

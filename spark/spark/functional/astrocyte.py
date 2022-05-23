@@ -137,6 +137,22 @@ def astro_step_u_signal(state, params, dt):
     return state
         
 
+def astro_step_reward_effect(state, params, reward):
+    # reward is either 0.0, 1.0, or -1.0
+    dw_prop = state['u'] * reward
+    dw_prop = (dw_prop / params['u_th']) * 0.2 + 1.0
+
+    # where reward is not 0.0
+    wh_reward = torch.where(torch.logical_not(
+            torch.isclose(reward, torch.as_tensor(0.0))
+    ))
+
+    # Reset u when updating weight
+    state['u'][wh_reward] = torch.as_tensor(0.0)
+
+    return state, dw_prop
+
+
 # Apply a threshold
 def astro_step_thr(state, params):
     u_spike_low = state['u'] < -(params['u_th'])

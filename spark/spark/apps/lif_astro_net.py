@@ -75,6 +75,7 @@ class LifAstroNet(LifNet):
             self.cfg['linear_params']['min'],
             self.cfg['linear_params']['max'])
 
+
         return z_post, eff, self.neuron_state, self.astro_state, self.linear
 
 
@@ -145,7 +146,7 @@ def gen_rate_spikes(spec):
     return spike_trains
 
 
-def gen_group_spikes(noise=None):
+def gen_group_spikes(noise=None, pulse_len=None):
     spike_trains = []
 
     # Ramp-up spike impulse w/ gap
@@ -153,6 +154,8 @@ def gen_group_spikes(noise=None):
     gap_size = 100
     max_imp_len = 15
     for imp_size in range(1, max_imp_len):
+        if not (pulse_len is None):
+            imp_size = pulse_len
         impulse = torch.as_tensor([1,0]).repeat(imp_size)
 
         gap = torch.zeros((gap_size))
@@ -245,7 +248,27 @@ def sim_lif_astro_reward_net(cfg, spike_trains, name="snn_1n1s1a_reward"):
 
     return db
 
-    
+
+def sim_lif_astro_sparse_reward_net(
+    cfg,
+    spike_trains,
+    name="snn_1n1s1a_sparse_reward"
+):
+    db = ExpStorage()
+    db.meta['name'] = name
+
+    for spikes in spike_trains:
+        gt_snn = LifNet(cfg, mu=0.3)
+        tl = _sim_snn(gt_snn, spikes)
+        gt_spikes = tl['z_post']
+
+        snn = LifAstroNet(cfg, mu=0.7)
+        tl = _sim_reward_snn(snn, spikes, gt_spikes)
+        db.store({'spikes': spikes, 'tl': tl})
+
+    return db
+
+
 def sim_lif_astro_net(cfg, spike_trains, name="snn_1n1s1a_rate-based-spikes"):
 
     db = ExpStorage()

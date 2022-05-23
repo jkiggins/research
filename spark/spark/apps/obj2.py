@@ -61,20 +61,27 @@ def _exp_average_pulse_pair(cfg_path):
         dbs_sim = _sim_pulse_pair_classic_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_noise')
         dbs = dbs + dbs_sim
 
-        # Again with LTD bias
-        spikes = gen_group_spikes()
-        cfg['classic_stdp']['tau_i_post'] = 30
-        cfg['astro_plasticity']['tau_i_post'] = 30
-        dbs_sim = _sim_pulse_pair_classic_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_ltd_bias')
+        # Repeat, but with a fixed length for each impulse
+        spikes = gen_group_spikes(pulse_len=10)
+        dbs_sim = _sim_pulse_pair_classic_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_constant')
         dbs = dbs + dbs_sim
 
-        # Again with LTP bias
-        cfg = config.Config(cfg_path)
-        spikes = gen_group_spikes()
-        cfg['classic_stdp']['tau_i_pre'] = 30
-        cfg['astro_plasticity']['tau_i_pre'] = 30
-        dbs_sim = _sim_pulse_pair_classic_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_ltp_bias')
-        dbs = dbs + dbs_sim
+        # Nothing interesting happened here
+        if 0:
+            # Again with LTD bias
+            spikes = gen_group_spikes()
+            cfg['classic_stdp']['tau_i_post'] = 30
+            cfg['astro_plasticity']['tau_i_post'] = 30
+            dbs_sim = _sim_pulse_pair_classic_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_ltd_bias')
+            dbs = dbs + dbs_sim
+
+            # Again with LTP bias
+            cfg = config.Config(cfg_path)
+            spikes = gen_group_spikes()
+            cfg['classic_stdp']['tau_i_pre'] = 30
+            cfg['astro_plasticity']['tau_i_pre'] = 30
+            dbs_sim = _sim_pulse_pair_classic_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_ltp_bias')
+            dbs = dbs + dbs_sim
 
 
     return dbs
@@ -89,10 +96,18 @@ def _exp_reward_plasticity(cfg_path):
 
     with torch.no_grad():
         cfg['astro_params'] = cfg['classic_stdp']
-        db1 = sim_lif_astro_reward_net(cfg, spikes, name='snn_1n1s1a_reward')
+        cfg['astro_params']['u_step_params']['stdp'] = 'rstdp'
+        db = [sim_lif_astro_reward_net(cfg, spikes, name='snn_1n1s1a_reward')]
+        dbs = dbs + db
 
         cfg['astro_params'] = cfg['astro_plasticity']
-        db2 = sim_lif_astro_reward_net(cfg, spikes, name='snn_1n1s1a_reward_plastic')
+        db = [sim_lif_astro_reward_net(cfg, spikes, name='snn_1n1s1a_reward_plastic')]
+        dbs = dbs + db
+
+        # cfg['astro_params'] = cfg['astro_plasticity']
+        # cfg['astro_params']['u_step_params']['stdp'] = 'rstdp-sparse'
+        # db = [sim_lif_astro_reward_net(cfg, spikes, name='snn_1n1s1a_sparse_reward_plastic', sparse=True)]
+        # dbs = dbs + db
 
 
     return [db1, db2]

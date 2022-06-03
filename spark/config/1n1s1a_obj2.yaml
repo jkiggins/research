@@ -13,6 +13,8 @@ classic_stdp: &classic_stdp
   alpha_post: 1.0
   post_reset_on_spike: False
 
+  weight_update: thr
+
   u_step_params:
     mode: stdp
     ltd: 0.0
@@ -35,6 +37,9 @@ astro_plasticity:
     mode: stdp
     ltd: 0.0
     ltp: 0.0
+
+  weight_update: thr
+  ip3_kp_activity_thr: 0.2
 
 
 #### LIF Parameter sets ####

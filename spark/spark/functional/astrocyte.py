@@ -153,6 +153,34 @@ def astro_step_reward_effect(state, params, reward):
     return state, dw_prop
 
 
+# Apply activity
+def astro_step_activity(state, params):
+    # Detect when ip3 and k+ drop below a threshold, from above that same threshold
+    act_lt_thr = (state['i_pre'] + state['i_post']) < params['ip3_kp_activity_thr']
+    falling_edge = torch.logical_and(act_lt_thr, state['act_gt_thr'])
+
+    u_spike = torch.zeros_like(state['u'])
+    u_spike[falling_edge] = 1.0
+    state['act_gt_thr'][falling_edge] = False
+
+    return state, u_spike
+
+
+def astro_track_activity(state, params):
+    act_gt_thr = (state['i_pre'] + state['i_post']) > params['ip3_kp_activity_thr']
+
+    if not ('act_gt_thr' in state):
+        state['act_gt_thr'] = torch.logical_and(act_gt_thr, torch.as_tensor(False))
+    
+    rising_edge = torch.logical_and(
+        torch.logical_not(state['act_gt_thr']),
+        act_gt_thr)
+        
+    state['act_gt_thr'][rising_edge] = True
+
+    return state
+    
+
 # Apply a threshold
 def astro_step_thr(state, params):
     u_spike_low = state['u'] < -(params['u_th'])
@@ -182,6 +210,28 @@ def astro_step_effect_weight(u_spike, params):
     weight_mod[wh_ltp] = 1.05
 
     return weight_mod
+
+
+def astro_step_effect_weight_prop(u_spike, state, params):
+    # u_spike is 1.0 when conditions are such that weights
+    # should be updated
+
+    # Weight update magnitude and direction are proportional to ca
+    ca = state['u']
+    ca = ca / params['u_th']
+    ca = torch.clamp(ca, -1.0, 1.0)  # -1.0 to 1.0
+    ca = ca * 0.5  # -0.5 to 0.5
+    # 1.0 -> 0.5 to 1.5, 0.0 -> -0.5 to 0.5
+    weight_mod = u_spike + ca
+
+    wh_zero = torch.where(torch.isclose(u_spike, torch.as_tensor(0.0)))
+    wh_u_spike = torch.where(u_spike > 0.5)
+
+    state['u'][wh_u_spike] = 0.0
+    
+    weight_mod[wh_zero] = 1.0
+
+    return state, weight_mod
 
 
 ################### tests ######################

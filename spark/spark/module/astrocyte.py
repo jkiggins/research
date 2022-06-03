@@ -9,7 +9,10 @@ from ..functional.astrocyte import (
     astro_step_u_stdp,
     astro_step_thr,
     astro_step_effect_weight,
-    astro_step_reward_effect
+    astro_step_reward_effect,
+    astro_step_activity,
+    astro_step_effect_weight_prop,
+    astro_track_activity
 )
 
 class Astro:
@@ -44,6 +47,10 @@ class Astro:
         state = astro_step_z_pre(z_pre, state, self.params, self.dt)
         state = astro_step_z_post(z_post, state, self.params, self.dt)
 
+        if self.params['weight_update'] == 'ip3_k+_fall':
+            state = astro_track_activity(state, self.params)
+            # print("act_gt_thr: ", state['act_gt_thr'], end=' ')
+
         # Step changes to Ca2+
         # Ca is incremented by the product of ip3 and k+
         if self.params['u_step_params']['mode'] == 'u_prod':
@@ -52,22 +59,20 @@ class Astro:
         elif self.params['u_step_params']['mode'] == 'u_ordered_prod':
             state = astro_step_u_ordered_prod(state, self.params)
         # Ca is incremented according to an STDP-like rule
-        elif self.params['u_step_params']['mode'] in ['stdp', 'rstdp-sparse']:
+        elif self.params['u_step_params']['mode'] == 'stdp':
             state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
-        # Ca is incremented according to and STDP-like rule, with reward possibly flipping the sign
-        elif self.params['u_step_params']['mode'] == 'rstdp':
-            state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post, reward=reward)
 
         # Effect weight
-        # Update weights when a reward signal is provided, with the strength proportional to Ca
-        if self.params['u_step_params']['mode'] == 'rstdp-sparse':
-            state, eff = astro_step_reward_effect(state, self.params, reward)
         # Update weight when Ca > thr, by a fixed factor for LTD/LTP
-        else:
+        if self.params['weight_update'] == 'thr':
             state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
             eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
-        # print(", u_spike: {}, eff: {}".format(u_spike, eff))
+        elif self.params['weight_update'] == 'ip3_k+_fall':
+            state, u_spike = astro_step_activity(state, self.params)  # Detect falling edge on ip3/k+
+            state, eff = astro_step_effect_weight_prop(u_spike, state, self.params)  # Get effect based on u exceeding thr
+            # print("u_spike: {}, eff: {}".format(u_spike, eff))
+            
         return eff, state
 
 

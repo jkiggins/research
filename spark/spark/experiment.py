@@ -118,6 +118,8 @@ class ExpStorage:
             with open(path, 'rb') as fp:
                 self.experiments = pickle.load(fp)
 
+        self.prefix({})
+
         self.exp('main')
 
 
@@ -142,10 +144,19 @@ class ExpStorage:
             self.meta = self.experiments[self.exp_name]['meta']
 
 
+    def prefix(self, d={}):
+        self._prefix = d
+
+
     def store(self, v):
         if type(v) != dict:
             raise ValueError("Values to store must be dict, not ", type(v))
-        
+
+        for key in self._prefix:
+            if key in v:
+                raise ValueError("Provided key conflicts with prefix: {}".format(key))
+            v[key] = self._prefix[key]
+
         self.db.append(v)
 
 

@@ -87,7 +87,7 @@ with an additional down-stream spike, forming a causal relationship and \ca is
 increased. Eventually this leads to LTP, with the potential LTD events being
 smoothed out.
 
-\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_astro_plasticity_0.svg}{
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_astro_0.svg}{
   Astrocyte response to successive spikes, displaying temporal pulse-pair
   integration}{fig:ppi:impulse_istp}{0.5}
 
@@ -105,12 +105,12 @@ classic STDP decays slowly to $0.0$. Figure
 timescale, showing the divergent behavior.
 
 % Astrocyte response to fixed length impulse inputs
-\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_astro_plasticity_0.svg}{Astrocyte
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_astro_0.svg}{Astrocyte
   response to a series of fixed length spike impulse inputs showing
   convergence}{fig:ppi:impulse_fixed_istp}{0.4}
 
 % Classic STDP with fixed length impulse inputs
-\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_astro_plasticity_0.svg}{Classic
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_astro_0.svg}{Classic
   STDP response to a series of fixed length spike impulse
   inputs}{fig:ppi:impulse_fixed_stp}{0.4}
 
@@ -131,7 +131,7 @@ further, adding to the already unstable behavior.
   STD response to impulse inputs with uniformly random
   noise}{fig:ppi:impulse_noise_stp}{0.4}
 
-\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_noise_astro_plasticity_0.svg}{Astrocyte
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_noise_astro_0.svg}{Astrocyte
   response to impulse inputs with uniformly random
   noise}{fig:ppi:impulse_noise_istp}{0.4}
 
@@ -142,11 +142,11 @@ change from the Astrocyte model. In contrast, classic STDP shows instability and
 divergence. This is only a single configuration however, and there are many
 parameters to tune.
 \begin{itemize}
+\item Initial weight
 \item Spike association
 \item Time constants
 \item $dw$ factors, $\alpha_{ltp}$ and $\alpha_{ltd}$
 \item Neuron threshold
-\item Initial weight
 \end{itemize}
 
 % TODO: graph of noise response vs. noise percent and possibly type

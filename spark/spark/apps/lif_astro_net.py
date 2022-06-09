@@ -201,7 +201,7 @@ def gen_noisy_spikes(duration):
     return [spikes.transpose(1,0)]
 
 
-def _gen_1nNs1a_axes(
+def gen_1nNs1a_axes(
     num_synapse,
     graphs=[
         'spikes',
@@ -250,8 +250,7 @@ def _gen_1nNs1a_axes(
     return fig, axes
     
     
-def _graph_1nNs1a(
-    spikes,
+def graph_1nNs1a(
     tl,
     axes,
     prefix=''
@@ -260,7 +259,9 @@ def _graph_1nNs1a(
     # * Traces for the state values for a single neuron
     # * One plot each for the traces of an astrocyes process, for each synapse
     # * A plot of the spiking events, including weight update events
-    # * A single plot with the weight values of all synapses    
+    # * A single plot with the weight values of all synapses
+
+    spikes = tl['z_pre']
 
     for axis_spec in axes:
         g, ax = axis_spec
@@ -271,6 +272,9 @@ def _graph_1nNs1a(
 
         else:
             # Multiple Axes, one per synapse
+            if not (type(ax) == list):
+                ax = [ax]
+
             for i, a in enumerate(ax):
                 if g == 'astro':
                     a.plot(tl['i_pre'][:, i], label='{}Pre-synaptic Astrocyte Trace'.format(prefix))
@@ -291,10 +295,7 @@ def _graph_1nNs1a(
                     raise ValueError("Unknown graph type: {}".format(g))
 
 
-def sim_lif_astro_net(cfg, spike_trains):
-
-    db = ExpStorage()
-
+def sim_lif_astro_net(cfg, spike_trains, db):
     # Sim
     for spikes in spike_trains:
         snn = LifAstroNet(cfg)
@@ -316,47 +317,89 @@ def sim_lif(cfg, spikes, name='lif_sample'):
     return db
 
 
-def graph_lif_astro_net(dbs, name, graph_weight_only=False):
+def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''):
+    if graphs is None:
+        graphs = [
+            'weight',
+            'neuron',
+            'spikes',
+            'astro',
+        ]
+
+
+    # Build figure and axes if None
+    if (fig is None) and (axes is None):
+        fig = plt.Figure(figsize=(12, 10))
+                
+        nrows = len(graphs)
+        ncols = 1
+        gs = GridSpec(nrows, ncols)
+
+        graph_to_title = {
+            'spikes': "Astrocyte and Neuron Events Synapse {}",
+            'neuron': "Neuron Membrane Voltage",
+            'astro': "Astrocyte Traces, Synapse {}",
+            'weight': "Synapse {} Weight"
+        }
+
+        axes = {g: [] for g in graphs}
+
+        for gs_idx, g in enumerate(graphs):
+            ax = fig.add_subplot(gs[gs_idx, 0])
+            ax.set_title(graph_to_title[g].format(0))
+            axes[g].append(ax)
+
+    
+    # Graph
+    # Gather all the axes associated with idx
+    axes_arg = []
+    for g in axes:
+        axes_arg.append((g, axes[g][idx] ))
+    graph_1nNs1a(tl, axes_arg, prefix=prefix)
+
+    return fig, axes
+
+
+def graph_lif_astro_net(db, graphs=None, fig=None, axes=None, prefix=''):
+    """
+    Graph the data from db either
+    1. to newly created axes, as specified by graphs
+    2. to the axes specified by the axes key word argument
+
+    Also, apply prefix to traces
+    """
+    
     # Make it a list, if it isn't already
-    if not (type(dbs) == list):
-        dbs = [dbs]
-
-    graphs = []
-    graphs.append('weight')
-    if not graph_weight_only:
-        graphs.append('neuron')
-        graphs.append('spikes')
-        graphs.append('astro')
+    if graphs is None:
+        graphs = [
+            'weight',
+            'neuron',
+            'spikes',
+            'astro',
+        ]
 
 
-    # Gather prefixes and graphs from dbs
-    num_synapse = None
+    for i, (spikes, by_spike) in enumerate(db.group_by('spikes').items()):
+        pass
 
-    data = []
-    for db in dbs:
-        prefix = ''
-        if 'prefix' in db.meta:
-            prefix = db.meta['prefix']
+    assert i == 0
+    assert len(by_spike) == 1
+
+    num_synapse = torch.as_tensor(spikes).shape[-1]
             
-        for spikes, by_spike in db.group_by('spikes').items():
-            assert len(by_spike) == 1
-
-            if num_synapse is None:
-                num_synapse = torch.as_tensor(spikes).shape[-1]
-            elif not (num_synapse == torch.as_tensor(spikes).shape[-1]):
-                raise ValueError("Simulations must have the same architecture")
-            
-            d = by_spike[0]
-            tl = d['tl']
-        data.append((prefix, tl))
+    d = by_spike[0]
+    tl = d['tl']
 
     # Generate axes and the figure
-    fig, axes = _gen_1nNs1a_axes(num_synapse, graphs=graphs)
+    if fig is None and axes is None:
+        fig, axes = gen_1nNs1a_axes(num_synapse, graphs=graphs)
+    elif not ((fig is None) == (axes is None)):
+        raise ValueError("fig an axes kwargs must be mentioned together, or not at all")
 
     # Graph
     fig_idx = 0  # Keeping this for legacy naming
-    for prefix, tl in data:
-        _graph_1nNs1a(spikes, tl, axes, prefix=prefix)
+    graph_1nNs1a(tl, axes, prefix=prefix)
 
     fig.tight_layout()
-    fig.savefig("{}_{}.svg".format(name, fig_idx))
+
+    return fig

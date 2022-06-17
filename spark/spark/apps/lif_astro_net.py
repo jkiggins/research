@@ -354,7 +354,8 @@ def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''
     # Gather all the axes associated with idx
     axes_arg = []
     for g in axes:
-        axes_arg.append((g, axes[g][idx] ))
+        if idx < len(axes[g]):
+            axes_arg.append((g, axes[g][idx]))
     graph_1nNs1a(tl, axes_arg, prefix=prefix)
 
     return fig, axes

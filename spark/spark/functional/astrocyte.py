@@ -206,8 +206,8 @@ def astro_step_effect_weight(u_spike, params):
     wh_ltd = u_spike < 0.0
     wh_ltp = u_spike > 0.0
 
-    weight_mod[wh_ltd] = 0.95
-    weight_mod[wh_ltp] = 1.05
+    weight_mod[wh_ltd] = params['u_step_params']['dw_ltd']
+    weight_mod[wh_ltp] = params['u_step_params']['dw_ltp']
 
     return weight_mod
 
@@ -218,20 +218,20 @@ def astro_step_effect_weight_prop(u_spike, state, params):
 
     # Weight update magnitude and direction are proportional to ca
     ca = state['u']
-    ca = ca / params['u_th']
-    ca = torch.clamp(ca, -1.0, 1.0)  # -1.0 to 1.0
-    ca = ca * 0.5  # -0.5 to 0.5
+    dw = ca / params['u_th']
+    dw = torch.clamp(dw, -1.0, 1.0)  # -1.0 to 1.0
+    dw = dw * 0.5  # -0.5 to 0.5
     # 1.0 -> 0.5 to 1.5, 0.0 -> -0.5 to 0.5
-    weight_mod = u_spike + ca
+    dw = u_spike + dw
 
     wh_zero = torch.where(torch.isclose(u_spike, torch.as_tensor(0.0)))
     wh_u_spike = torch.where(u_spike > 0.5)
 
     state['u'][wh_u_spike] = 0.0
     
-    weight_mod[wh_zero] = 1.0
+    dw[wh_zero] = 1.0
 
-    return state, weight_mod
+    return state, dw
 
 
 ################### tests ######################

@@ -140,7 +140,9 @@ The established baseline thus far, is that given this repeating (possibly
 ramping up) spike impulse as an input, results in stable convergent weight
 change from the Astrocyte model. In contrast, classic STDP shows instability and
 divergence. This is only a single configuration however, and there are many
-parameters to tune.
+parameters that could be modified. An investigation into the following
+parameters can help determine if the convergent/divergent behavior is stable,
+and what other behaviors of the model may arise.
 \begin{itemize}
 \item Initial weight
 \item Spike association
@@ -148,5 +150,37 @@ parameters to tune.
 \item $dw$ factors, $\alpha_{ltp}$ and $\alpha_{ltd}$
 \item Neuron threshold
 \end{itemize}
+
+Figure \ref{fig:sweep:mu} shows a sweep of initial weight values, and
+demonstrates the effect on weight convergence. In both cases, if weight values
+are sufficiently low, the general lack of post-synaptic activity leads to little
+or no weight update. With higher initial weight values the Astrocyte model was
+able to converge as with previous simulations, while the STDP diverged towards a
+weight value of zero. The Astrocyte model converged to a weight value as a
+function of the initial weight, similar starting weights converging to the same,
+or a similar point. This indicates there are multiple stable configurations
+given these inputs and parameters. STDP on the other hand, doesn't exhibit the
+same stability.
+
+\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_mu_sweep_0.svg}{Classic STDP and
+  Astrocyte Response to Initial Weight}{fig:sweep:mu}{0.4}
+
+%% \asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_association_0.svg}{Classic
+%%   STDP and Astrocyte Response to Different Spike Associations}{fig:sweep:assoc}{0.4}
+
+\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_dw_factor_astro_0.svg}{Astrocyte
+Response to Different Values for Weight Update Factor}{fig:sweep:astro_dw_factor}{0.4}
+
+\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_dw_factor_classic_0.svg}{Classic
+STDP Response to Different Values for Weight Update Factor}{fig:sweep:stdp_dw_factor}{0.4}
+
+\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_lif_v_th_0.svg}{Classic STDP
+  and Astrocyte Response to Different LIF Neuron Voltage Threshold Values}{fig:sweep:v_th}{0.4}
+
+\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_tau_astro_0.svg}{Astrocyte
+  Response to Different Values for K+ and IP3 Pathway $\tau$}{fig:sweep:astro_tau}{0.4}
+
+\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_tau_classic_0.svg}{Classic
+  STDP Response to Different Values for Pre and Post-synaptic Trace $\tau$}{fig:sweep:stdp_tau}{0.4}
 
 % TODO: graph of noise response vs. noise percent and possibly type

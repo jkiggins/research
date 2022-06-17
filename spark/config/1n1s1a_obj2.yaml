@@ -3,22 +3,25 @@ classic_stdp: &classic_stdp
   mode: plasticity
     
   tau_u: 50.0
-  u_th: 0.0  # <- classic STDP, since weight updates happen with any ip3/k+ activity
-    
+  u_th: 2.5
+
   tau_i_pre: 100.0
   alpha_pre: 1.0
   pre_reset_on_spike: False
-    
+
   tau_i_post: 100.0
   alpha_post: 1.0
   post_reset_on_spike: False
 
-  weight_update: thr
+  weight_update: prop
 
   u_step_params:
     mode: stdp
     ltd: 0.0
+    dw_ltd: 0.95
+
     ltp: 0.0
+    dw_ltp: 1.05
 
 
 astro_plasticity:
@@ -36,7 +39,10 @@ astro_plasticity:
   u_step_params:
     mode: stdp
     ltd: 0.0
+    dw_ltd: 0.95
+
     ltp: 0.0
+    dw_ltp: 1.05
 
   weight_update: thr
   ip3_kp_activity_thr: 0.2

@@ -68,10 +68,18 @@ class Astro:
             state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
             eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
+        elif self.params['weight_update'] == 'prop':
+            ca = state['u']
+            u_spike = torch.ones_like(ca)
+            # print("ca: {}, ".format(ca), end='')
+            state, eff = astro_step_effect_weight_prop(torch.ones_like(ca), state, self.params)
+            # print("u_spike: {}, eff: {}".format(u_spike, eff))
+
+
         elif self.params['weight_update'] == 'ip3_k+_fall':
             state, u_spike = astro_step_activity(state, self.params)  # Detect falling edge on ip3/k+
             state, eff = astro_step_effect_weight_prop(u_spike, state, self.params)  # Get effect based on u exceeding thr
-            # print("u_spike: {}, eff: {}".format(u_spike, eff))
+
             
         return eff, state
 

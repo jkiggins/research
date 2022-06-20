@@ -11,11 +11,14 @@ classic_stdp: &classic_stdp
   post_reset_on_spike: False
   
   u_th: 100.0
+  weight_update: thr
 
   u_step_params:
     mode: u_ordered_prod
     ltd: 0.0
     ltp: 0.0
+    dw_ltd: 1.0
+    dw_ltp: 1.0
 
 anti_stdp: &anti_stdp
   __inherit__: *classic_stdp

@@ -9,7 +9,7 @@ import torch
 from ..module.astrocyte import Astro
 from ..utils import config, plot
 from ..data import spiketrain
-from .lif_astro_net import gen_rate_spikes, gen_group_spikes, sim_lif_astro_net, graph_lif_astro_net, sim_lif
+from .lif_astro_net import gen_rate_spikes, gen_ramp_impulse_spikes, graph_lif_astro_net, sim_lif
 from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
 from ..experiment import ExpStorage, VSweep, seed_many, load_or_run
 

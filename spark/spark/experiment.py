@@ -26,7 +26,36 @@ def load_or_run(fn, path, sim=False):
         db.save(path)
 
     return db
-    
+
+
+def lif_astro_name(astro_params):
+    mode = astro_params['mode']
+    weight_update = astro_params['weight_update']
+    u_step_mode = astro_params['u_step_params']['mode']
+
+    if u_step_mode == 'u_ordered_prod':
+        u_step_mode = 'ord'
+
+    return "m-{}_u-{}_w-{}".format(mode, u_step_mode, weight_update)
+
+
+def cfg_text(cfg, astro=True, linear=False):
+    text = ""
+    if astro:
+        astro_params = cfg['astro_params']
+        text += "U Tau :{:4.2f}\n".format(astro_params['tau_u'])
+
+        if np.isclose(cfg['tau_i_pre'], cfg['tau_i_post']):
+            text += "Pre/Post Tau: {:4.2f}\n".format(astro_params['tau_i_pre'])
+        else:
+            text += "Pre Tau: {:4.2f}\n".format(astro_params['tau_i_pre'])
+            text += "Post Tau: {:4.2f}\n".format(astro_params['tau_i_post'])
+
+        if np.isclose(cfg['alpha_pre'], cfg['alpha_post']):
+            text += "Pre/Post Alpha: {:4.2f}\n".format(astro_params['alpha_pre'])
+
+    return text
+
 
 class VSweep:
     def __init__(self, values=None, head=None):
@@ -182,6 +211,19 @@ class ExpStorage:
         return val
 
 
+    def filter(self, **kwargs):
+        def _has_keys(d):
+            return all([k in d for k in kwargs])
+
+        def _keys_match_val(d):
+            return all([d[k] == kwargs[k] for k in kwargs])
+            
+        return self.gather(
+            lambda x: _keys_match_val(x),
+            filter=lambda x: _has_keys(x)
+        )
+
+
     def flat(self):
         pivot_db = {}
 
@@ -240,9 +282,12 @@ class ExpStorage:
             if key in d:
                 arr.append(d[key])
 
+        if all([type(a) == torch.Tensor for a in arr]):
+            arr = torch.as_tensor(arr)
+
         return arr
 
-
+        
     def gather(self, match_fn, filter=None):
         """
         Build a new ExpStorage based on match_fn and filter functions

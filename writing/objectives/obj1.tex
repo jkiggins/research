@@ -3,541 +3,536 @@
 % Date Created : 01/31/2021
 %
 
-\chapter{Development of an Astrocyte Plasticity Model that Generalizes STDP} \label{chapter:obj1}
-    The first objective of this thesis, is to develop an Astrocyte-synapse model
-    that is capable of generalizing classic STDP along with common
-    variants, with a common set of parameters.
+\chapter{Development of an Astrocyte Model Sensitive to Spike Timing} \label{chapter:obj1}
+The first objective of this thesis, is to develop an Astrocyte-synapse model
+that is capable of responding to pre and post-synaptic spike timing, and
+explore how internal and external configuration affects this response. These
+internal signals will eventually be used to drive synaptic plasticity later in
+this work, and that theme will guide the experiments in Chapter \ref{chapter:obj1}.
 
-    Astrocytes have suspected involvement in synaptic plasticity in both the
-    long \cite{min_2012} and short term \cite{pitta_2012}. A variety of
-    bio-inspired astrocyte models have touched on short term plasticity, and
-    suggested modulation of classical Hebbian learning \cite{pitta_2016}. In
-    addition to the experimental evidence, astrocytes are well placed to control
-    synaptic plasticity at many levels. Drilling down to the level of the
-    synapse, astrocytes monitor synaptic activity chemically, and respond
-    quickly with a variety of gliotransmitters, some of which are known to be
-    critical for LTP/LTD \cite{min_2012}. This fast local activity, which takes
-    the form of Ca2+ transients in Astrocyte end-foot processes is integrated
-    into a cell-level response, and can travel to distant synapses.
+Though the many details of chemical signaling within Astrocytes are still unknown
+\cite{manninen_2018}. There is a common theme to what is known both chemically,
+and from bio-inspired models and this theme has potential to greatly improve upon
+existing STDP-like plasticity rules. Astrocytes behave as Master integrators of
+neural activity. They are capable of sensing activity across many thousands of
+synapses simultaneously. Integrating that activity quickly at the local level,
+and propagating signals to the entire cell body, integrating over a longer
+time-scale. Applying this multi-level integration approach to synaptic
+plasticity leads to many interesting questions and potential benefits beyond
+existing local learning rules to explore.
 
-    Though the specifics of chemical signaling are still a mystery
-    \cite{manninen_2018}. There is a common theme to what is known both
-    chemically, and from bio-inspired models. This theme has potential to
-    greatly improve upon existing STDP-like plasticity rules. Astrocytes behave
-    as Master integrators of neural activity. They are capable of sensing
-    activity across many thousands of synapses simultaneously. Integrating that
-    activity quickly at the local level, and propagating signals to the entire
-    cell body, integrating over a longer time-scale. Applying a similar approach
-    to plasticity would allow synaptic strength updates to be based upon a
-    timeline of recent activity, instead of a single event locally, and open the
-    door for coordinated learning, with signals being integrated across many
-    synapses, and signals traveling back to the local level.
+\section{Spiking Neuron Model}
+This work makes use of a Leaky Integrate and Fire (LIF) neuron model. LIF
+neurons are fairly simple computationally, relying on exponential functions
+and thresholds in the functional definition. While not the most
+bio-realistic (see Figure \ref{fig:sn_model_compare}), LIF neurons exhibit
+rich behavior with few parameters, and are easily extended. In addition, LIF
+neurons are the most widely used in SNN literature \cite{ponulak_2011}. The
+goal here, is to remain computationally simple, while still leveraging
+biology, which is the same approach used in the Astrocyte Model definition.
 
-    \section{Spiking Neuron Model}
-    This work makes use of a Leaky Integrate and Fire (LIF) neuron model. LIF
-    neurons are fairly simple computationally, relying on exponential functions
-    and thresholds in the functional definition. While not the most
-    bio-realistic (see Figure \ref{fig:sn_model_compare}), LIF neurons exhibit
-    rich behavior with few parameters, and are easily extended. In addition, LIF
-    neurons are the most widely used in SNN literature \cite{ponulak_2011}. The
-    goal here, is to remain computationally simple, while still leveraging
-    biology, which is the same approach used in the Astrocyte Model definition.
+Equations \ref{eq:lif:i}, and \ref{eq:lif:v} define the neuron current and
+voltage dynamics.
 
-    Equations \ref{eq:lif:i}, and \ref{eq:lif:v} define the neuron current and
-    voltage dynamics.
+\begin{align}
+d_{i} = -i(t) \tau_{syn} * d_t + z_{pre}(t) * w \label{eq:lif:i} \\
+d_{v} = -\tau_{mem} * (v(t) + i(t)) * d_t \label{eq:lif:v}
+\end{align}
+
+Here, $z_{pre}(t)$ represents the spiking activity on the synapse at time
+$t$ and has a value of either $0$ or $1$. $w$ is the synaptic
+weight. $\tau_{syn}$ and $\tau_{mem}$ are synapse and membrane decay
+time-constants.
+
+The neuron fires according to Equation \ref{eq:lif:fire}, where $H$ is the
+Heaviside step function.
+
+\begin{align}
+v'(t) = v(t) + dv \label{eq:lif:v_update} \\
+z_{post}(t) = H(v'(t) - thr_{mem}) \label{eq:lif:fire}
+\end{align}
+
+After firing the neuron membrane potential is reset to $v_{reset}$, which is
+generally a negative voltage $\leq thr_{mem}$, see Equation \ref{eq:lif:reset}.
+
+\begin{align}
+v(t) = v'(t) * (1 - z_{post}(t)) + z_{post}(t) * v_{reset} \label{eq:lif:reset}
+\end{align}
+
+Figure \ref{fig:1n1s1a_fn_diagram} depicts the LIF neuron described by
+equations above. Figures \ref{fig:lif:sample_1}, \ref{fig:lif:sample_2}, and
+\ref{fig:lif:sample_3} shows a sample of the LIF responses to a random
+Poisson input with various parameter values. Table \ref{table:lif_params} shows
+the baseline parameter values, with any differences being outlined in the
+figures.
+
+\begin{table}[!htp]\centering
+  \caption{LIF Neuron Baseline Parameters} \label{table:lif_params}
+  \scriptsize
+  \begin{tabular}{lrrrr}\toprule
+    Reset Voltage &Membrane Threshold &Membrane Tau &Synaptic Tau \\\midrule
+    -0.2 v &0.2 v &60 1/s &500 1/s \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-500.0.svg}{LIF Neuron
+Response To Poisson Input. $tau_{mem}=60$ and
+$tau_{syn}=500$}{fig:lif:sample_1}{0.7}
+
+\asvgf{figures/artifacts/obj1/lif_sample_mem-30.0_syn-500.0.svg}{LIF Neuron
+Response To Poisson Input. $tau_{mem}=30$ and
+$tau_{syn}=500$}{fig:lif:sample_2}{0.7}
+
+\asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-250.0.svg}{LIF Neuron
+Response To Poisson Input. $tau_{mem}=60$ and
+$tau_{syn}=250$}{fig:lif:sample_3}{0.7}
+
+Comparing Figures \ref{fig:lif:sample_1} and \ref{fig:lif:sample_2}, the
+neuron seems more excitable with a higher $\tau_{mem}$. This is initially
+counter-intuitive, since a higher value would result in increased decay,
+however this $\tau_{mem}$ is also scales the effect of the input current on
+membrane voltage by the input current (see Equation \ref{eq:lif:v}). In
+addition, a larger decay factor results in decreased recovery time for the
+neuron from reset. In contrast a lower value for $\tau_{syn?}$ causes the
+neuron to fire more often with the same input, due to the input current
+decaying more slowly.
+
+\section{Classic STDP} \label{obj1:sec:classic_stdp}
     
-    \begin{align}
-      d_{i} = -i(t) \tau_{syn} * d_t + z_{pre}(t) * w \label{eq:lif:i} \\
-      d_{v} = -\tau_{mem} * (v(t) + i(t)) * d_t \label{eq:lif:v}
-    \end{align}
+The proposed Astrocyte model, in the single-synapse configuration aims to
+generalize STDP, and offer some additional effects and features that are
+distinct from STDP. In order to have a point of comparison, an STDP
+implementation must be chosen to use in this capacity. The chosen model,
+referenced by \cite{song_2000} is outlined by Equation
+\ref{eq:song_classic_stdp}.
 
-    Here, $z_{pre}(t)$ represents the spiking activity on the synapse at time
-    $t$ and has a value of either $0$ or $1$. $w$ is the synaptic
-    weight. $\tau_{syn}$ and $\tau_{mem}$ are synapse and membrane decay
-    time-constants.
+\begin{align}
+  F(\delta t) =
+  \begin{cases} 
+    Ae^{- \frac{|t_{pre}-t_{post}|}{\tau}} & t_{pre} - t_{post} \leq 0, A > 0
+    \\ Ae^{- \frac{|t_{pre}-t_{post}|}{\tau}} & t_{pre} - t_{post} > 0, B < 0
+  \end{cases} \label{eq:song_classic_stdp}
+\end{align}
 
-    The neuron fires according to Equation \ref{eq:lif:fire}, where $H$ is the
-    Heaviside step function.
+This equation is evaluated for various $\delta t$ between $-50ms$ and
+$50ms$. The resulting curve is outlined in Figure \ref{fig:stdp_dw_dt}. This
+functional definition is not directly implemented since there is not timeline of
+spikes to work with, instead, the exponential function is approximated by
+integrating Equations \ref{eq:song_impl_pre}, \ref{eq:song_impl_post}, and
+\ref{eq:song_impl_dw} over time. Table \ref{table:classic_stdp_params} shows the
+parameters used during simulation.
 
-    \begin{align}
-      v'(t) = v(t) + dv \label{eq:lif:v_update} \\
-      z_{post}(t) = H(v'(t) - thr_{mem}) \label{eq:lif:fire}
-    \end{align}
+\begin{table}[!htp]\centering
+  \label{table:classic_stdp_params}
+  \scriptsize
+  \begin{tabular}{lrr}\toprule
+    A &Tau \\\midrule
+    1 &100 1/s \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-    After firing the neuron membrane potential is reset to $v_{reset}$, which is
-    generally a negative voltage $\leq thr_{mem}$, see Equation \ref{eq:lif:reset}.
+\asvgf{figures/artifacts/obj1/closed_form_stdp.svg}{Simulation of Charicteristic
+  STDP Equation}{fig:stdp_dw_dt}{0.4}
 
-    \begin{align}
-      v(t) = v'(t) * (1 - z_{post}(t)) + z_{post}(t) * v_{reset} \label{eq:lif:reset}
-    \end{align}
+\begin{align}
+  \delta trace_{pre} = -H(Z_{pre})*(\tau * trace_{pre}) +
+  A*Z_{pre} \label{eq:song_impl_pre} \\ 
+  \delta trace_{post} = -H(Z_{post})(\tau * trace_{post}) +
+  A*Z_{post} \label{eq:song_impl_post} \\
+  F = H(Z_{pre}) * trace_{post} + H(Z_{post}) *
+  trace_{pre} \label{eq:song_impl_dw}
+\end{align}
 
-    Figure \ref{fig:1n1s1a_fn_diagram} depicts the LIF neuron described by
-    equations above. Figures \ref{fig:lif:sample_1}, \ref{fig:lif:sample_2}, and
-    \ref{fig:lif:sample_3} shows a sample of the LIF responses to a random
-    Poisson input with various parameter values.
+Depending on the desired behavior, the $H(Z_*)$ term may be dropped from the
+update Equations, this is related to the spike associations outlined in Figure
+\ref{fig:astro:spike_associate}.
 
-    \asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-500.0.svg}{LIF Neuron
-      Response To Poisson Input. $tau_{mem}=60$ and
-      $tau_{syn}=500$}{fig:lif:sample_1}{0.7}
+Figure \ref{fig:stdp_dw_dt_impl} shows a sweep of spike pairs as before from
+$-50ms$ to $50ms$. This figure matches Figure \ref{fig:stdp_dw_dt}, showing that
+the implementation matches the theoretical equations.
 
-    \asvgf{figures/artifacts/obj1/lif_sample_mem-30.0_syn-500.0.svg}{LIF Neuron
-      Response To Poisson Input. $tau_{mem}=30$ and
-      $tau_{syn}=500$}{fig:lif:sample_2}{0.7}
-
-    \asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-250.0.svg}{LIF Neuron
-      Response To Poisson Input. $tau_{mem}=60$ and
-      $tau_{syn}=250$}{fig:lif:sample_3}{0.7}
-
-    Comparing Figures \ref{fig:lif:sample_1} and \ref{fig:lif:sample_2}, the
-    neuron seems more excitable with a higher $\tau_{mem}$. This is initially
-    counter-intuitive, since a higher value would result in increased decay,
-    however this $\tau_{mem}$ is also scales the effect of the input current on
-    membrane voltage by the input current (see Equation \ref{eq:lif:v}). In
-    addition, a larger decay factor results in decreased recovery time for the
-    neuron from reset. In contrast a lower value for $\tau_{syn?}$ causes the
-    neuron to fire more often with the same input, due to the input current
-    decaying more slowly.
+\asvgf{figures/artifacts/obj1/1n1s1a_tp_m-plasticity_u-stdp_w-thr_dwdt_classic_stdp.svg}{Simulation
+  of Classic STDP Implementation, Equations \ref{song_impl_pre} -
+  \ref{song_impl_dw}}{fig:stdp_dw_dt_impl}{0.4}
 
 
-    %%%%%%%%%%%%% SGNN Architecture %%%%%%%%%%%%%
-    \section{Model Development}
+%%%% Model Development Section %%%%
+\section{Model Development}
+Model development starts with a survey of current research, and
+understanding of the underlying biology of Astrocyte mediated
+plasticity. This portion of the process has been completed, see Chapter
+\ref{section:background}. Astrocyte models in the literature range from
+computationally simple models, which are generally paired with real-valued
+neurons. To complex mathematical models, which aim to mimic the calcium
+dynamics within an Astrocyte. The latter models are generally paired with
+spiking neural networks. From the neuroscience and engineering literature,
+it was possible to identify the common input and output pathways within the
+tripartite synapse.
+
+\begin{enumerate}
+  \item Pre-synaptic Glu $\implies$ IP3 Pathway $\implies$ Ca pathway
+  \item Post-synaptic depolarization K+ $\implies$ Ca pathway
+  \item Ca $\implies$ D-serine release (more generally, plasticity modulation)
+\end{enumerate}
+
+\asvgf{figures/1n1s1a_diagram.svg}{Astrocyte and Neuron Model Diagram For An LIF
+  Neuron with One Input}{fig:1n1s1a_fn_diagram}{0.4}
+
+Figure \ref{fig:1n1s1a_fn_diagram} outlines the developed tripartite synapse
+model, as well as the internal dynamics of the LIF neuron. Some aspects of
+this model will be interchanged depending on the operating mode. These
+blocks are the function blocks in darker blue. The portions of the model
+which are consistent across operating modes are described first, followed by
+a deeper dive into the remaining blocks. The two input pathways, which drive
+the state values $ip3$ and $k+$ are described by Equations
+\ref{eq:astro:spike-ip3} and \ref{eq:astro:spike-k+}.
+
+\begin{align}
+  d_{ip3} = d_t * (-ip3)\tau_{ip3} + \alpha_{ip3} z_{pre}(t) \label{eq:astro:spike-ip3} \\
+  d_{k+} = d_t * (-k+)\tau_{k+} + \alpha_{k+} z_{post}(t) \label{eq:astro:spike-k+}
+\end{align}
+
+Where $\tau_{ip3/k+}$ represents a time constant for a given pathway, $z_{pre}$
+is $1$ if there is a pre-synaptic spike at time $t$ ($0$ otherwise), and
+$z_{post}$ is $1$ when the post-synaptic neuron fires ($0$ otherwise). For all
+simulations (unless otherwise specified) $d_t = 0.001$ or $1ms$.
+
+The \emph{Update(ip3, k+)} and \emph{Effect(u)} blocks define the behavior
+of the Astrocyte at a local level, given input from the internal state
+values, which are representative of external activity. There are two main
+operating modes of the Astrocyte that have been explored for this
+objective. Though in this chapter only the internal state of the Astrocyte will
+be considered. \emph{Effect(u)} is then just considered a No-Op.
+
+%% TODO: put this somewhere in Obj2
+%% In general, \emph{Effect(u)} represents $d_w$ and takes the form outlined in
+%% Equation \ref{astro:dw}. Whenever the Astrocyte state variable reaches the
+%% pre-determined threshold the associated weight is scaled by some factor
+%% $\alpha$, which may be different, depending on the direction of weight
+%% change.
+
+%% \begin{align}
+%%   d_w = H(u - u_{thr}) * \alpha_{ltp} + H(-u - u_{thr}) * \alpha_{ltd} \label{astro:dw}
+%% \end{align}
+
+%% Here, $H$ is the heaviside step function, and $u_{thr}$ a constant threshold
+%% applied to $u$.
     
-    Model development starts with a survey of current research, and
-    understanding of the underlying biology of Astrocyte mediated
-    plasticity. This portion of the process has been completed, see Section
-    \ref{section:background}. Astrocyte models in the literature range from
-    computationally simple models, which are generally paired with real-valued
-    neurons. To complex mathematical models, which aim to mimic the calcium
-    dynamics within an Astrocyte. The latter models are generally paired with
-    spiking neural networks. From the neuroscience and engineering literature,
-    it was possible to identify the input and output pathways within the
-    tripartite synapse most likely to contribute to synaptic plasticity. These
-    are outlined below.
+\section{Exploring Input Pathways Responses}
 
-    \begin{enumerate}
-        \item Pre-synaptic Glu $\implies$ IP3 Pathway $\implies$ Ca pathway
-        \item Post-synaptic depolarization K+ $\implies$ Ca pathway
-        \item Ca $\implies$ D-serine release (more generally, plasticity modulation)
-    \end{enumerate}
+In order to get some general guidelines for valid parameter ranges, it is
+necessary to sweep parameters, and explore the model's response. The parameters
+used during simulation are outlined in Table \ref{table:astro_in_path_params},
+with any deviations mentioned in the graph.
 
-    \afigf{figures/1n1s1a_diagram.png}{Astrocyte and Neuron Model Diagram For An LIF Neuron with One Input}{fig:1n1s1a_fn_diagram}{}
+\begin{table}[!htp] \centering
+  \caption{Common Astrocyte Input Pathway Parameters} \label{table:astro_in_path_params}
+  \scriptsize
+  \begin{tabular}{lrrrrr}\toprule
+    dt &Alpha IP3 &Tau IP3 &Alpha K+ &Tau K+ \\\midrule
+    0.001 s &1 &100 1/s &1 &100 1/s \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-    Figure \ref{fig:1n1s1a_fn_diagram} outlines the developed tripartite synapse
-    model, as well as the internal dynamics of the LIF neuron. Some aspects of
-    this model will be interchanged depending on the operating mode. These
-    blocks are the function blocks in darker blue. The portions of the model
-    which are consistent across operating modes are described first, followed by
-    a deeper dive into the remaining blocks. The two input pathways, which drive
-    the state values $ip3$ and $k+$ are described by Equations
-    \ref{eq:astro:spike-ip3} and \ref{eq:astro:spike-k+}.
+\asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.265.svg}{Model
+Response to Sweeping Input pathway $\alpha$, and
+$\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_1}{0.6}
 
-    \begin{align}
-      d_{ip3} = d_t * (-ip3)\tau_{ip3} + \alpha z_{pre}(t) \label{eq:astro:spike-ip3} \\
-      d_{k+} = d_t * (-k+)\tau_{k+} + \alpha z_{post}(t) \label{eq:astro:spike-k+}
-    \end{align}
+\asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.055.svg}{Model Response to
+Sweeping Input pathway $\alpha$, and
+$\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_2}{0.6}
 
-    Where $\tau_{ip3/k+}$ represents a time constant for a given pathway, $z_{pre}$ is
-    1 if there is a pre-synaptic spike at time $t$ ($0$ otherwise), and
-    $z_{post}$ is $1$ when the post-synaptic neuron fires ($0$
-    otherwise).
+The group of similar plots in Figures \ref{fig:astro:sweep_alpha_ip3_tau_1} and
+\ref{fig:astro:sweep_alpha_ip3_tau_2} depict Astrocyte responses to a common
+spike pattern, with different values for $\alpha_{ip3}=\alpha_{k+}$. The
+curves in these plots are scale multiples of each-other, showing that
+$\alpha_{ip3/k+}$ does not effect timing, but only scale of the Astrocyte
+response. The figures also indicate that small values of
+$\tau_{ip3}=\tau_{k+}$ can lead to a response that doesn't reach a
+steady-state within a reasonable window, such as with $\tau_{ip3/k+} = 10$.
+%% TODO: add more detail about steady-state
 
-    The \emph{Update(ip3, k+)} and \emph{Effect(u)} blocks define the behavior
-    of the Astrocyte at a local level, given input from the internal state
-    values, which are representative of external activity. There are two main
-    operating modes of the Astrocyte that have been explored for this objective.
 
-    In general, \emph{Effect(u)} represents $d_w$ and takes the form outlined in
-    Equation \ref{astro:dw}. Whenever the Astrocyte state variable reaches the
-    pre-determined threshold the associated weight is scaled by some factor
-    $\alpha$, which may be different, depending on the direction of weight
-    change.
+\section{Signed Proportional Astrocyte State Change}
 
-    \begin{align}
-      d_w = H(u - u_{thr}) * \alpha_{ltp} + H(-u - u_{thr}) * \alpha_{ltd} \label{astro:dw}
-    \end{align}
+The first variant of the \emph{Update(ip3, k+)} function considers the
+magnitude of input pathway state variables $ip3$ and $k+$ as well as which
+variable is larger (the order). This gives a magnitude and sign to each
+update to the Astrocyte state variable $u$. The value of U eventually leading to LTP or
+LTD, which is explored in Chapter \ref{chapter:obj2}. This approach is outlined
+by Equations \ref{eq:astro:rate-u} and \ref{eq:astro:u-reset}, which define the
+change in \ca
 
-    Here, $H$ is the heaviside step function, and $u_{thr}$ a constant threshold
-    applied to $u$.
-    
-    \section{Exploring Input Pathways Responses}
+\begin{align}
+  T_{diff} = ip3 - k^+ \\
+  dca_{delta} = (H(T_{diff} - thr_{ltp}) - H(-T_{diff} - thr_{ltd})) * |ip3*k^+| \\
+  dca_{decay} = -ca * \tau_{ca} * d_t \\
+  dca = dca_{delta} + dca_{decay} \label{eq:astro:rate-u} \\
+  ca = ca * (1 - H(ca - ca_{thr})) \label{eq:astro:u-reset}
+\end{align}
 
-    In order to get some general guidelines for valid parameter ranges, it is
-    necessary to sweep parameters, and explore the model's response.
-    
-    \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.265.svg}{Model
-      Response to Sweeping Input pathway $\alpha$, and
-      $\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_1}{0.6}
+Where H is the Heaviside step function, $T_{diff}$ is the difference between
+$ip3$ and $K^+$ traces at some time $t$. $thr_{ltp}$ and $thr_{ltd}$ determine
+the valid ranges of $T_{diff}$ for an update to \ca to occur. $dca_{delta}$
+describes the change in \ca at a given time from external influence, while
+$dca_{decay}$ accounts for the leaking of \ca. Note that the threshold values
+determine the sign of $dca_{delta}$, and provide the ability to shift the \ca
+response, as shown in Figure \ref{fig:astro_ltd_shift}. Increasing the distance
+between the $ltp$ and $ltd$ thresholds also allow for varying degrees of
+tolerance to transient activity that would otherwise lead to a response by the
+Astrocyte. Simulations use the baseline parameter values outlined in Table
+\ref{table:ordered_prop_params}, with any variations or parameter sweeps
+outlined in graphs.
 
-    \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.055.svg}{Model Response to
-      Sweeping Input pathway $\alpha$, and
-      $\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_2}{0.6}
+\begin{table}[!htp]\centering
+  \caption{Signed Proportional Astrocyte Parameters} \label{table:ordered_prop_params}
+  \scriptsize
+  \begin{tabular}{lrrrrrr}\toprule
+    dt &Alphas &Tau IP3 &Tau K+ <P Threshold <D Threshold \\\midrule
+    0.001 s &1 &100 1/s &100 1/s &0 &0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-    The group of similar plots in Figures \ref{fig:astro:sweep_alpha_ip3_tau_1} and
-    \ref{fig:astro:sweep_alpha_ip3_tau_2} depict Astrocyte responses to a common
-    spike pattern, with different values for $\alpha_{ip3}=\alpha_{k+}$. The
-    curves in these plots are scale multiples of each-other, showing that
-    $\alpha_{ip3/k+}$ does not effect timing, but only scale of the Astrocyte
-    response. The figures also indicate that small values of
-    $\tau_{ip3}=\tau_{k+}$ can lead to a response that doesn't reach a
-    steady-state within a reasonable window, such as with $\tau_{ip3/k+} = 10$.
-    %% TODO: add more detail about steady-state
+\asvgf{figures/artifacts/obj1/sweep_u_tau_p0.1.svg}{Response of \ca to
+Poisson Distributed spikes applied to Pre and Post-Synaptic
+Pathways}{fig:astro:sweep_alpha_u_tau_1}{0.8}
 
-    
-    \section{Ordered Proportional Astrocyte State Change}
+\asvgf{figures/artifacts/obj1/sweep_u_tau_p0.7.svg}{Response of \ca to
+Poisson Distributed spikes applied to Pre and Post-Synaptic
+Pathways}{fig:astro:sweep_alpha_u_tau_2}{0.8}
 
-    The first variant of the \emph{Update(ip3, k+)} function considers the
-    magnitude of input pathway state variables $ip3$ and $k+$ as well as which
-    variable is larger (the order). This gives a magnitude and sign to each
-    update to the Astrocyte state variable $u$, eventually leading to LTP or
-    LTD.
+Figures \ref{fig:astro:sweep_alpha_u_tau_1} and
+\ref{fig:astro:sweep_alpha_u_tau_2} depict the response of \ca for
+different values of $tau_{ca}$ and different spiking events. In general,
+larger values of $\tau_{ca}$ result in smaller deviations in \ca overall, due
+to the value decaying more quickly. With smaller $\tau_{ca}$ more of the
+previous activity is integrated into the value of \ca and the response is
+more broad.
 
-    \begin{align}
-      T_{diff}(t) = ip3(t) - k^+(t) \\
-      T_{delta}(t) = (H(T_{diff}(t) - thr_{ltp}) - H(-T_{diff}(t) - thr_{ltd})) * |T_{diff}| \\
-      u(t+1) = -u(t) * \tau_{u} * d_t + T_{delta}(t) \label{eq:astro:rate-u} \\
-      u(t+1) = u(t+1) * (1 - H(u - u_{thr})) \label{eq:astro:u-reset}
-    \end{align}
+Expanding on the simpler timeline plots, Figure
+\ref{fig:astro:u_thr_heat_rate_vs_tau_u} shows the number of times \ca crosses a
+threshold of $2.5$ for a given $\tau_{ca}$ and $r$ spiking rate for the Poisson
+spike-train inputs. This graph can be used to tune either $thr_{ca}$ or $\tau_{ca}$
+for a given application, and gives an impression of the excitability of the
+model.
 
-    Where H is the Heaviside step function, $T_{diff}$ is the difference between
-    $ip3$ and $K^+$ traces at some time $t$. $thr_{ltp}$ and $thr_{ltd}$ determine the valid
-    ranges of $T_{diff}$ for depression or potentiation. $T_{delta}(t)$ describes
-    the change in $u$ at a given time from external influence. Note that the
-    threshold values determine the sign of $T_{diff}$, and provide the ability
-    to shift LTP into negative regions, or LTD into positive. Increasing the
-    distance between the $ltp$ and $ltd$ thresholds also allow for varying
-    degrees of tolerance to transient activity that would otherwise lead to
-    weight change.
+\asvgf{figures/artifacts/obj1/heatmap_spike-rate_tau_u.svg}{Rate of
+Astrocyte Effect on Synaptic Weight Given Different input Poisson spike
+rates, and different values of $\tau_{ca}$}{fig:astro:u_thr_heat_rate_vs_tau_u}{0.3}
 
-    \asvgf{figures/artifacts/obj1/sweep_u_tau_p0.1.svg}{Response of $u$ to
-      Poisson Distributed spikes applied to Pre and Post-Synaptic
-      Pathways}{fig:astro:sweep_alpha_u_tau_1}{0.8}
+\subsection{Classic-STDP and Variants} \label{sec:ordered_prop:stdp}
 
-    \asvgf{figures/artifacts/obj1/sweep_u_tau_p0.7.svg}{Response of $u$ to
-      Poisson Distributed spikes applied to Pre and Post-Synaptic
-      Pathways}{fig:astro:sweep_alpha_u_tau_2}{0.8}
+Using the Signed Proportional update rule the Astrocyte Plasticity Model is
+capable of implementing classic STDP, along with several variations.  Figure
+\ref{fig:astro:classic_stdp} shows the model's response to spike pairs with
+a variety of inter-spike-interval times (X-axis). This is a typical STDP
+curve.
 
-    Figures \ref{fig:astro:sweep_alpha_u_tau_1} and
-    \ref{fig:astro:sweep_alpha_u_tau_2} depict the response of $u$ for
-    different values of $u_{tau}$ and different spiking events. In general,
-    larger values of $\tau_u$ result in smaller deviations in $u$ overall, due
-    to the value decaying more quickly. With smaller $\tau_u$ more of the
-    previous activity is integrated into the value of $u$ and the response is
-    more broad.
+\asvgf{figures/artifacts/obj1/1n1s1a_tp_m-plasticity_u-stdp_w-thr_dwdt_classic_stdp.svg}{Astrocyte
+  and Neuron Model Response to Pulse Pairs:
+  Baseline}{fig:astro:classic_stdp}{0.4}
 
-    Expanding on the simpler timeline plots, Figure
-    \ref{fig:astro:u_thr_heat_rate_vs_tau_u} shows the number of times $u$ crosses its
-    threshold for a given $\tau_u$ and $r$ spiking rate for the Poisson
-    spike-train inputs. This graph can be used to tune either $u_{thr}$ or
-    $\tau_u$ for a given application, and gives an impression of the
-    excitability of the model.
+The model has additional parameters beyond what a traditional STDP rule
+would have, and this offers flexibility. By providing asymmetric
+$\tau_{ip3}$ and $\tau_{k+}$ the model can be bias toward LTD/LTP. Figure
+\ref{fig:astro:stdp_ltd_bias} shows this effect for LTD.
 
-    \asvgf{figures/artifacts/obj1/heatmap_spike-rate_tau_u.svg}{Rate of
-      Astrocyte Effect on Synaptic Weight Given Different input Poisson spike
-      rates, and different values of $\tau_u$}{fig:astro:u_thr_heat_rate_vs_tau_u}{0.3}
+\asvgf{figures/artifacts/obj1/1n1s1a_tp_m-plasticity_u-stdp_w-thr_dwdt_ltd_bias.svg}{Astrocyte-Neuron
+Model Response to Pulse Pairs: LTD Bias}{fig:astro:stdp_ltd_bias}{0.4}
 
-    \subsection{Classic-STDP and Variants} \label{sec:ordered_prop:stdp}
-    
-    Using the Ordered Proportional update rule the Astrocyte Plasticity Model is
-    capable of implementing classic STDP, along with several variations.  Figure
-    \ref{fig:astro:classic_stdp} shows the model's response to spike pairs with
-    a variety of inter-spike-interval times (X-axis). This is a typical STDP
-    curve.
+In addition, threshold parameters $thr_{ltp}$ and $thr_{ltd}$ can be used to
+shift activity from the LTP to LTD region, or vise versa. Figure
+\ref{fig:astro:stdp_ltd_shift} shows this shifting behavior.
 
-    \asvgf{figures/artifacts/obj1/astro_probe_dwdt-classic_stdp_rp.svg}{Astrocyte and
-      Neuron Model Response to Pulse Pairs: Baseline}{fig:astro:classic_stdp}{0.4}
+\asvgf{figures/artifacts/obj1/1n1s1a_tp_m-plasticity_u-stdp_w-thr_dwdt_ltd_dt_shift.svg}{Astrocyte-Neuron
+Model Response to Pulse Pairs: LTD Shift}{fig:astro:stdp_ltd_shift}{0.4}
 
-    The model has additional parameters beyond what a traditional STDP rule
-    would have, and this offers flexibility. By providing asymmetric
-    $\tau_{ip3}$ and $\tau_{k+}$ the model can be bias toward LTD/LTP. Figure
-    \ref{fig:astro:stdp_ltd_bias} shows this effect for LTD.
+%% Additional figures can be found in Appendix \ref{appendix:astro_figures}.
 
-    \asvgf{figures/artifacts/obj1/astro_probe_dwdt-ltd_bias_rp.svg}{Astrocyte-Neuron
-      Model Response to Pulse Pairs: LTD Bias}{fig:astro:stdp_ltd_bias}{0.4}
+One of the main features of this model is it's ability to generalize STDP,
+and capture a variety of variants that have been proposed an explored in the
+literature. Table \ref{table:astro_varient_params} maps specific values of
+model parameters to the corresponding STDP behavior. If that
+variant of STDP has a name from other research it is included.
 
-    In addition, threshold parameters $thr_{ltp}$ and $thr_{ltd}$ can be used to
-    shift activity from the LTP to LTD region, or vise versa. Figure
-    \ref{fig:astro:ltd_shift} shows this shifting behavior.
-    
-    \asvgf{figures/artifacts/obj1/astro_probe_dwdt-ltd_dt_shift_rp.svg}{Astrocyte-Neuron
-      Model Response to Pulse Pairs: LTD Shift}{fig:astro:stdp_ltd_shift}{0.4}
+\begin{table}[!htp]\centering
+\caption{Model Parameters Associated with STDP Variants} \label{table:astro_varient_params}
+\scriptsize
+\begin{tabular}{lrrrrrrrrrrr}\toprule
+STDP Variant &Name from Literature &$alpha_{ip3}$ &$tau_{ip3}$ &$alpha_{k+}$ &$tau_{k+}$ &$tau_u$ &$ltp_{thr}$ &$ltd_{thr}$ &$reset_{ip3}$ &$reset_{k+}$ \\\midrule
+Triplet STDP &Triplet STDP &1 &100 &1 &100 &10000 &0 &0 &Yes &Yes \\
+Classic & &1 &100 &1 &100 &10000 &0 &0 &No &No \\
+LTD Bias & &1 &100 &1 &30 &10000 &0 &0 &No &No \\
+LTP Bias & &1 &30 &1 &100 &10000 &0 &0 &No &No \\
+LTD Shift &Mirror STDP &1 &100 &1 &100 &10000 &0.5 &0.5 &No &No \\
+LTP Shift & &1 &100 &1 &100 &10000 &-0.5 &-0.5 &No &No \\
+Anti-STDP &Anti-STDP, Rev-STDP &-1 &100 &-1 &100 &10000 &0 &0 &No &No \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-    Additional figures can be found in Appendix \ref{appendix:astro_figures}.
+\section{Rate-based Response} \label{sec:rate_response}
 
-    One of the main features of this model is it's ability to generalize STDP,
-    and capture a variety of variants that have been proposed an explored in the
-    literature. Table \ref{table:astro_varient_params} maps specific values of
-    model parameters to the corresponding STDP behavior. If that
-    variant of STDP has a name from other research it is included.
+When input spiking activity is sparse in time, the model behaves as outlined
+in Section \ref{sec:ordered_prop:stdp} above. However, when more dense
+inputs are provided, the relationship between $ip3$ and $k+$ shifts from
+temporal, to activity-based. In the sparse case, $ip3 > k+$ implies that an
+incoming spike happened more recently then a post-synaptic spike. When
+incoming spikes are dense in time, $ip3 > k+$ would imply more activity on
+the input side (on average) than the output. What follows, is a Rate-based
+internal response, where \ca responds to a difference in average activity,
+subject to time constants. Equation \ref{eq:astro:rate-u} above describes \ca
+behavior. Equation \label{eq:astro:u-reset} outlines the reset of behavior \ca,
+the value reset to $0$ when $|ca| > thr_{ca}$.
 
-    \begin{table}[!htp]\centering
-      \caption{Model Parameters Associated with STDP Variants} \label{table:astro_varient_params}
-      \scriptsize
-      \begin{tabular}{lrrrrrrrrrrr}\toprule
-        STDP Variant &Name from Literature &$alpha_{ip3}$ &$tau_{ip3}$ &$alpha_{k+}$ &$tau_{k+}$ &$tau_u$ &$ltp_{thr}$ &$ltd_{thr}$ &$reset_{ip3}$ &$reset_{k+}$ \\\midrule
-        Triplet STDP &Triplet STDP &1 &100 &1 &100 &10000 &0 &0 &Yes &Yes \\
-        Classic & &1 &100 &1 &100 &10000 &0 &0 &No &No \\
-        LTD Bias & &1 &100 &1 &30 &10000 &0 &0 &No &No \\
-        LTP Bias & &1 &30 &1 &100 &10000 &0 &0 &No &No \\
-        LTD Shift &Mirror STDP &1 &100 &1 &100 &10000 &0.5 &0.5 &No &No \\
-        LTP Shift & &1 &100 &1 &100 &10000 &-0.5 &-0.5 &No &No \\
-        Anti-STDP &Anti-STDP, Rev-STDP &-1 &100 &-1 &100 &10000 &0 &0 &No &No \\
-        \bottomrule
-      \end{tabular}
-    \end{table}
-    
-    \section{Rate-based Plasticity}
+In Figure \ref{fig:astro:rp_many-w_tl}, the middle plot shows the internal
+response of an Astrocyte to a random Poisson across different weight values. In
+this case, there is significant response from the Astrocyte for weight values of
+$2.0$, with less of a response for $4.0$. This is due to a lower firing rate out
+of the LIF neuron compared to the input. Intuitively there should be a weight
+value where the difference between pre and post-synaptic firing rate is
+smallest. For the upper graph $w=10.0$ is close to that point, with only two
+regions in the timeline with any activity.
 
-    When input spiking activity is sparse in time, the model behaves as outlined
-    in Section \ref{sec:ordered_prop:stdp} above. However, when more dense
-    inputs are provided, the relationship between $ip3$ and $k+$ shifts from
-    temporal, to activity-based. In the sparse case, $ip3 > k+$ implies that an
-    incoming spike happened more recently then a post-synaptic spike. When
-    incoming spikes are dense in time, $ip3 > k+$ would imply more activity on
-    the input side (on average) than the output. What follows, is a Rate-based
-    plasticity rule, where weights are updated to bring pre-synaptic, and
-    post-synaptic firing rates to approximately the same value. Equations
-    \ref{eq:astro:rate-u} and \ref{astro:dw} above describe u, and
-    weight update behavior. Equation \label{eq:astro:u-reset} outlines the reset
-    of behavior of $u$, the value reset to $0$ when $|u| > u_thr$.
+\asvgf{figures/artifacts/obj1/astro_rp_many-w_tl.svg}{Astrocyte Response to Random
+  Poission Spike Train for Various Synaptic Weights}{fig:astro:rp_many-w_tl}{0.4}
 
-    Figure \ref{fig:rate:lif_net_1} shows a timeline of activity for a single
-    LIF neuron with a single synapse and single Astrocyte (1n1s1a
-    configuration). Figure \ref{fig:rate:lif_net_2} shows a timeline for the
-    same configuration, with $thr_{ltp}=1.5$ and $thr_{ltd}=-1.5$. The threshold
-    values create a band from $-1.5$ to $1.5$ where differences in pre and
-    post-synaptic activity are tolerated. This leniency results in fewer weight
-    updates and prevents oscillations when compared to Figure
-    \ref{fig:rate:lif_net_1}.
+Looking at the upper plot in Figure \ref{fig:astro:rp_many-w_tl}, the effect of
+$thr_{ltp}=1.75$ and $thr_{ltd}=-1.75$ can be seen. Those parameter values form
+a hysteresis band, where the Astrocyte does not respond with increased \ca for
+small deviations between \ipt and \kp. This leads to an increased range of
+weight values resulting in stable behavior. Sweeping synaptic weight in Figure
+\ref{fig:astro:rp_many-w_sweep} shows that weight values beyond $w \approx 3.0$
+result in no \ca activity.
 
-    \asvgf{figures/artifacts/obj1/snn_1n1s1a_rp_no-band_0.svg}{APM Response to
-      Poisson Input With $thr_{ltp}=thr_{ltd}=0.0$}{fig:rate:lif_net_1}{0.6}
-    
-    \asvgf{figures/artifacts/obj1/snn_1n1s1a_rp_band_0.svg}{APM response to
-      Possion Input With
-      $thr_{ltp}=1.5,thr_{ltd}=-1.5$}{fig:rate:lif_net_2}{0.6} 
-    
- 
-    \section{Integrated Spike Timing Plasticity} \label{section:istp}
-    
-    In the rate-based operating mode, sparse activity results in classic STDP,
-    or a variant depending on parameters. As activity levels increase though,
-    the relationship between ip3 and k+ becomes one of average activity, and not
-    timing. One approach to mitigate the averaging effect would be lowering
-    $\tau_{ip3}$ and $\tau_{k+}$, though this would reduce sensitivity to pulse
-    pairs occurring on larger time-scales. A more elegant approach would be to
-    modify \emph{Update(ip3, k+)}, combining the input traces in a way that
-    preserves timing. $u$ can then be used to integrate pulse-pair events over
-    time and drive weight change. Equation \ref{eq:astro:temp-u} describes the
-    update for $u$.
+\asvgf{figures/artifacts/obj1/astro_rp_many-w_sweep.svg}{Astrocyte Response to Random
+  Poission Spike Train for Various Synaptic Weights}{fig:astro:rp_w_sweep}{0.4}
 
-    $reset_{ip3}$ and $reset_{k+}$ parameters, determine if additional spikes
-    are added into the $ip3$ and $k+$ traces, or override them. These
-    parameters, along with the weight update behavior determine which groupings
-    of spike result in changes to $u$. Figure \ref{fig:astro:spike_associate}
-    outlines different possible spike association behaviors.
+%% One approach to mitigate the averaging effect would be lowering
+%% $\tau_{ip3}$ and $\tau_{k+}$, though this would reduce sensitivity to pulse
+%% pairs occurring on larger time-scales. A more elegant approach would be to
+%% modify \emph{Update(ip3, k+)}, combining the input traces in a way that
+%% preserves timing. $u$ can then be used to integrate pulse-pair events over
+%% time and drive weight change. Equation \ref{eq:astro:temp-u} describes the
+%% update for $u$.
 
-    \asvgf{figures/SpikeAssociation.svg}{A Variety of Spike Associations
-      Supported by the Neuron-Astrocyte model}{fig:astro:spike_associate}{0.5}
+\section{Integrated Spike Timing Response} \label{section:istp}
+Next, this work considers an variant of \emph{Update(ip3, k+)} that is sensitive
+to pre and post-synaptic spike timing, but not the rate of activity at each
+terminal. The previous Signed Proportional model outlined in Section
+\ref{sec:sign-prop} could exhibit sensitivity to spike timing. This was
+demonstrated in Figure \ref{fig:astro:classic_stdp}, where the characteristic
+STDP curve was reproduced by the Astrocyte model. As shown in Section
+\ref{sec:rate_response} the sensitivity to spike timing only holds for sparse
+inputs. With dense inputs, \ipt and \kp values represent average activity, and not
+timing.
 
-    \begin{align}
-      T_{delta} = sign_{ltd} * z_{pre}(t) * k^+ + sign_{ltp} * z_{post}(t) * ip3 \\
-      du = -u(t) * \tau_u + d_t + T_{delta} \label{eq:astro:temp-u}
-    \end{align}
+This new \emph{Update(ip3, k+)} function is define by Equation
+\ref{eq:astro:temp-u}. $reset_{ip3}$ and $reset_{k+}$ parameters, determine if
+additional spikes are added into the $ip3$ and $k+$ traces, or override
+them. These parameters, along with the weight update behavior determine which
+groupings of spike result in changes to $u$. Figure
+\ref{fig:astro:spike_associate} outlines different possible spike association
+behaviors.
 
-    In this case, $z_{post}$ and $z_{pre}$ are pre and post-synaptic spikes that
-    the Astrocyte is sensing. The sign $sign_{ip3/k+}$ values may be functions
-    of $k+$ and $ip3$ as well as some constants. For some experiments they will
-    simply be $sign_{ltd}=-1.0$ and $sign_{ltp}=1.0$. Equations
-    \ref{eq:astro:temp-sign-1} and \ref{eq:astro:temp-sign-2} show definitions
-    of $sign_{ltd}$ and $sign_{ltp}$ that would allow a region around $dt=0$
-    where weight updates were 0.
+%% TODO: Define reset behavior
 
-    \begin{align}
-      sign_{ltd} = -H(k+ + thr_{ltd}) \label{eq:astro:temp-sign-1}\\
-      sign_{ltp} = H(ip3 + thr_{ltd}) \label{eq:astro:temp-sign-2}
-    \end{align}
+\asvgf{figures/SpikeAssociation.svg}{A Variety of Spike Associations
+Supported by the Neuron-Astrocyte model}{fig:astro:spike_associate}{0.5}
 
-    Unlike with the rate-based variation, updates to $u$ happen only when spikes
-    occur on either pre or post-synaptic terminals, instead of continuously. As
-    in the rate-based model, these updates to $u$ are integrated, and weight
-    change occurs when $u$ exceeds its threshold.
+\begin{align}
+T_{delta} = sign_{ltd} * z_{pre} * k^+ + sign_{ltp} * z_{post} * ip3 \\
+dca = -ca * \tau_{ca} + d_t + T_{delta} \label{eq:astro:temp-u}
+\end{align}
 
-    Depending on requirements, ip3 or k+ traces may be reset when u is updated,
-    or reset when the weight is updated. This is similar to the one-to-many,
-    many-to-many, or one-to-one (nearest neighbor) configurations seen with
-    STDP.
+In this case, $z_{post}$ and $z_{pre}$ are pre and post-synaptic spikes that
+the Astrocyte is sensing. The sign $sign_{ip3/k+}$ values may be functions
+of $k+$ and $ip3$ as well as some constants. For some experiments they will
+simply be $sign_{ltd}=-1.0$ and $sign_{ltp}=1.0$. Equations
+\ref{eq:astro:temp-sign-1} and \ref{eq:astro:temp-sign-2} show definitions
+of $sign_{ltd}$ and $sign_{ltp}$ that would allow a region around $dt=0$
+where weight updates were 0.
 
-    Figure \ref{fig:astro:1n1s1a_impulse} shows the behavior of the temporal
-    integration model when a series of spike pulses are presented to the
-    network. Each pulse is a single spike longer than the last. This simulation
-    depicts the averaging effect of the model. With an impulse of 4 spikes, the
-    neuron is driven enough to output a single spike, this happens around
-    300ms. With 4 pre-synaptic spikes and 1 post-synaptic spike, the Astrocyte's
-    internal state $u$ is increased, exceeding the threshold of $2.5$, and the
-    synaptic weight is increased. Subsequent spike impulses have $>4$ spikes,
-    which leads to an LTD configuration. At each subsequent burst of input
-    activity past 300ms, $u$ can be seen to decrease. With traditional STDP,
-    this would result in a weight decrease, however since this model averages
-    the pulse-pair events, and the majority are LTP, no decrease in weight is
-    observed.
+\begin{align}
+sign_{ltd} = -H(k+ + thr_{ltd}) \label{eq:astro:temp-sign-1}\\
+sign_{ltp} = H(ip3 + thr_{ltd}) \label{eq:astro:temp-sign-2}
+\end{align}
 
-    \asvgf{figures/artifacts/obj1/snn_1n1s1a_tp_stdp_u_thr-2.5_0.svg}{Simulation of
-      Neuron-Astrocyte Model In 1S1N1A Configuration With Spike Pulses as
-      Inputs}{fig:astro:1n1s1a_impulse}{0.5}
-    
+Unlike with the rate-based variation, updates to \ca happen only when spikes
+occur on either pre or post-synaptic terminals, instead of continuously. As
+in the rate-based model, these updates to \ca are integrated, and reset when \ca
+exceeds a threshold $thr_{ca}$. The baseline parameter values for simulation are
+outlined in Table \ref{table:istp_params}.
 
-    %%%%%%%%%%%%% Extending STDP w/ in 1N1S Case %%%%%%%%%%%%%
-    %% \section{Computational benefits of Synapically-mediated plasticity: Single Neuron Single Synapse}
+\begin{table}[!htp] \centering
+  \caption{Integrated Spike Timing Astrocyte Parameters} \label{table:istp_params}
+  \scriptsize
+  \begin{tabular}{lrrrrr}\toprule
+    dt &Alphas &Tau IP3 &Tau K+ &Ca Threshold \\\midrule
+    0.001 s &1 &100 1/s &100 1/s &2.5 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-    %% One of the key challenges holding back full-scale deployment of SNNs in
-    %% industry, or their use for more complex models, is the availability of
-    %% end-to-end supervised training rules.
-    
-    %% \subsection{Overview of Learning Rules}
-    %% Learning rules for SNNs fall into one of a few catagories.
-    %% \begin{enumerate}
-    %%     \item Unsupervised, local, temporal based rules
-    %%     \item Supervised rules attempting to emulate back-propagation
-    %%     \item Supervised teaching-signal rules, such as ReSuMe
-    %%     \item Supervised, reward-signal based rules, usually coupled with a
-    %%       local-learning rule, such as STDP.
-    %% \end{enumerate}
-    
-    %% Temporal learning rules are generally variants on STDP, with the differences
-    %% being in the specifics of the equations mapping a time delay (between pre
-    %% and post-synaptic spikes) to a weight update. Research has been done to
-    %% couple STDP with a reward signal, providing a supervised approach
-    %% \cite{rstdp_mnist}. In this specific implementation, supervised learning was
-    %% restricted to the last two layers, with others being unsupervised. One
-    %% advantage of a reward-modulated STDP approach, is the inherit support for
-    %% recurrent spiking neural networks. This approach, or one similar to this
-    %% will be used as a starting point for this research.
-    
-    %% Back-propagation has shown wide success in CNNs, achieving high performance
-    %% in a variety of tasks. It then makes sense to at least attempt to apply this
-    %% approach to SNNs. In the context of spiking neural networks,
-    %% back-propagation has a few fundamental problems, making a successful
-    %% algorithm difficult. First, the activation function many spiking neurons is
-    %% generally a sum of dirac delta functions, which aren't differentiable. Some
-    %% frameworks, such as Multi-SpikeProp are able to get around this first issue
-    %% by using a continuous activation function \cite{deep_spike}. Other SNN-BP
-    %% algorithms exist, such as spatio-temporal back-propagaion
-    %% \cite{snn_stbp}. In this approach, an approximation of membrane potential is
-    %% used instead of spike (essentially ignoring the activation function). This
-    %% membrane potential quickly decays, and increases due to incoming
-    %% spikes. Equation \ref{eq:snn_stbp:eq2} governs this behavior. A set of
-    %% iterative equations (which take the place of a continuous solution to the
-    %% O.D.E) govern membrane potential updates, only needing to be computed when a
-    %% spike is generated. Using equations like this greatly reduces complexity
-    %% when deriving back-propagation.
-    
-    %% \begin{align}
-    %%     u(t) = u(t_{i-1})e^{\frac{t_{i-1} - 1}{\tau}} + I(t) \label{eq:snn_stbp:eq2}
-    %% \end{align}
-    
-    %% A third approach to training was considered, called ReSuMe (remote
-    %% supervised learning). This approach and its derivatives make use of a
-    %% teaching signal, and update weights based on the difference between real
-    %% output and the teaching signal. Unfortunately, all of the methods reviewed
-    %% restrict neuron outputs to having 0 or 1 spikes within some time-interval,
-    %% and received input from many-spiking neurons. This is too restricting for
-    %% the goals of this research \cite{deep_spike}.
-    
-    %% Many of the gradient based learning approaches, while able to achieve good
-    %% performance under specific conditions, and can circumvent the obvious
-    %% roadblocks, still have significant drawbacks. First, they don't scale well
-    %% to many-layer architectures, meaning these learning approaches couldn't
-    %% train networks to match or exceed traditional CNN performance. Second, the
-    %% learning approaches generally don't lend themselves to an feasible hardware
-    %% implementation, removing the possibility for on-chip learning
-    %% \cite{bp_stdp}. BP-STDP takes traditional back-propagation, and shows how it
-    %% can be implemented in spiking networks as local STDP updates. Using some
-    %% teaching signal, an error function is defined at the output, this error is
-    %% then propagated backward through the network, using the forward weights to
-    %% scale STDP (or anti-STDP) weight updates.
-    
-    %% \subsection{Selection of Bio-Inspired Rules}
-    %% From the considered approaches two will be used, and adapted for use in this
-    %% research. First, is the reward-modulated STDP. This approach has a few
-    %% distinct advantages. It is independent of a specific neuron model, and can
-    %% be used in conjunction with recurrent connections. Its simplicity provides
-    %% flexibility for integration with an Astrocyte element, where Astrocyte
-    %% dynamics can exist along side the learning rule. In addition, this learning
-    %% rule is independent of neuron model, allowing for fast prototyping when
-    %% selecting a neuron model. The rule will be adapted to allow for full-network
-    %% training, likely using spike history to correlate an output at one time,
-    %% with activity within the network in the past.
-    
-    %% Second the spatio-temporal update back-propagation will be evaluated and
-    %% adapted for this research. The main advantage here is precise control over
-    %% the activity of the network, since weights are updated according to spike
-    %% timing throughout the network. This approach also supports end-to-end
-    %% training as is. The approach will need to be adapted to support a more
-    %% bio-inspired neuron model, if such a model is desired. This approach seemed
-    %% the best of the back-propagation with SNN implementations, and can be used
-    %% as a comparison to local, time-based learning rules such as R-STDP.
-    
-    %% \section{Develop the Foundation of a Scale-able FPGA Implementation}
-    %% In an attempt to package the conclusions of this research into a usable
-    %% implementation, both for industry and future research, an FPGA
-    %% implementation will be developed. The goal is to develop the building blocks
-    %% for an SGNN along with a small example proving these elements can work
-    %% together. A large-scale implementation may not be possible given hardware
-    %% constraints, but calculations showing scalability either on FPGA or
-    %% neuromorphic hardware will be included instead.
-    
-    %% There are many examples in the literature of spiking networks being
-    %% implemented in FPGA, however many of these employ simple LIF neurons, and
-    %% don't have the added complexity of an Astrocyte element. Fortunately, there
-    %% is at least one example for which to reference in attempting a digital
-    %% implementation of complex SGNN dynamics. \cite{fpga_sgnn} develops a digital
-    %% implementation of an Izhikevich spiking neuron, modeling the complex
-    %% dynamics using piece-wise linear equations. Calcium dynamics within the
-    %% Astrocyte are modeled similarly. Their use of the Izhikevich is especially
-    %% helpful, since that is the upper limit for complexity as far as neuron
-    %% models are concerned, that will likely be employed in this research. If it
-    %% can be implemented in FPGA in an efficient way, then an efficient
-    %% implementation of the neuron model which is eventually chosen is guaranteed
-    %% to be feasible on FPGA.
-    
-    %% One of the key building blocks for an FPGA implementation will be the
-    %% piece-wise-linear approximations of complex neuron and neuron-astrocyte
-    %% dynamics. The approach in \cite{fpga_sgnn} can be generalized to any
-    %% non-linear function of a single variable. The approach searches a space of
-    %% possible linear approximations, consisting of 3 - 7 linear functions. For
-    %% each of 3 - 7, 2 - 6 points are chosen, dividing the function into 3 - 7
-    %% sections. For each section Least-Squares is used to find a linear
-    %% best-fit. Combining error values from each of the sections provides an
-    %% overall approximation error. Numerical methods are used to find the best
-    %% points to divide up the function (for a given segment count). Comparing MSE
-    %% from each of the specified segment counts, an optimum solution is chosen. A
-    %% complex system is modeled this way, by approximating the fundamental pieces.
-    
-    %% As an example, consider Equations \ref{eq:fpga_sgnn_15} and
-    %% \ref{eq:fpga_sgnn_16}.
-    %% \begin{align}
-    %%   0.04v^2 + 5v + 140 - u = 0 \label{eq:fpga_sgnn_15} \\
-    %%   0.02(0.2v - u) = 0 \label{eq:fpga_sgnn_16}
-    %% \end{align}
-    
-    %% Using the linear approximation steps above \cite{fpga_sgnn} presented
-    %% approximations
-    
-    %% \begin{align*}
-    %%   v = 0.5|v+68| + 0.5|v+57| - 22 - u + I \\
-    %%   u = 0.02(0.2v - u)
-    %% \end{align*}
-    
-    %% These equations are then discretized for simulation on FPGA using the Euler
-    %% method, with $h=\frac{1}{2^6}$.
-    
-    %% \begin{align*}
-    %%     v[n+1] = (0.5 * |v[n] + 68| + 0.5 * |v[n] + 57| - 22 - u[n] + I)h + v[n] \\
-    %%     u[n+1] = (0.02(0.2v[n] - u[n]))h + u[n]
-    %% \end{align*}
-    
-    %% Choosing h as a power of 2, and approximating 0.02 and 0.2 as powers of 2,
-    %% the equations can be implemented on FPGA without a single multiplier, using
-    %% only shifters and adders. This general approach, linear approximation then
-    %% discritization with powers of 2 will be used to develop efficient scaleable
-    %% neuron and Astrocyte implementations that can be used at scale.
+Figure \ref{fig:astro:tp_many_w_tl} shows the behavior of temporal
+integration model when a series of spike pulses are presented to the
+network. Each pulse is a fixed number of spikes, and the resulting \ca activity
+is depicted for a given synaptic weight. This simulation depicts the averaging
+effect of the model spike timing model, With an impulse of 4 spikes, the
+neuron is driven enough to output a single spike, this happens around
+300ms. With 4 pre-synaptic spikes and 1 post-synaptic spike, the Astrocyte's
+internal state $u$ is increased, exceeding the threshold of $2.5$. Subsequent
+spike impulses have $>4$ spikes, which leads to a drop in \ca, due to
+anti-causal pairing (transiently) of pre-synaptic spikes. Regardless of these
+transient drops, \ca consistently exceeds $thr_{ca}$ throughout the simulation.
+
+Figure \ref{fig:astro:tp_many_w_sweep} graphs the number of times $thr_{ca}$ is
+exceeded during a fixed length simulation, for a few different values of
+$thr_{ca}$. For $Ca^{2+}=2.5$, regions of the graph around $0.8$ and $1.2$ show
+weight values that result in a stable configuration, where $thr_{ca}$ is not
+exceeded for the length of simulation. Figure \ref{fig:astro:tp_many_w_tl} shows
+a timeline of Astrocyte activity for three different weight values, and
+$thr_{ca}=2.5$.
+
+%% TODO: generate weight sweep graphs, with fixed spiking impulse input
+
+\asvgf{figures/artifacts/obj1/astro_tp_many-w_sweep.svg}{Aggregate Astrocyte
+  Response to Input from a single synapse, with various synaptic weight and
+  $thr_{ca}$}{fig:astro:tp_many_w_sweep}{0.5}
+
+\asvgf{figures/artifacts/obj1/astro_tp_many-w_tl.svg}{Timeline of Astrocyte
+  Activity With Input from a single synapse, given
+  $thr_{ca}=2.5$}{fig:astro:tp_many_w_tl}{0.5}
+
+\section{Summary}
+This chapter introduces a computationally efficient and intuitive Astrocyte
+model. This model was derived from the many works outlined in Chapter
+\ref{chapter:backround}, leaning heavily towards Engineering applications,
+while taking inspiration from the Neuroscience and many highly bio-realistic
+models. A relatively small number of parameters are used to define the
+Astrocyte model's behavior, and the effects of varying this behavior is
+explored in two different configurations of the model, with an emphasis on
+signals internal to the Astrocyte. Figure \ref{fig:1n1s1a_fn_diagram} shows
+an ``Update FN'' block, which represents how the input traces \ipt and \kp
+effect Astrocyte \ca. With \ca concentration driving the mechanisms
+identified for the Astrocyte to influence things external to
+itself. Considering a variant of the model where \ca responds to a
+difference in the magnitude between \ipt and \kp, it was found that \ca
+response varied widely given a random Poisson input for some weight values.
+For other weight values, where a quick response from the neuron was
+observed, \ca was relatively stable. Switching the input to be a pair
+of pre and post-synaptic spikes with variable inter-spike-interval, a graph
+very similar to the characteristic STDP curve was observed (Figure
+\ref{fig:astro:classic_stdp}).
+
+Since the first variation of the Astrocyte model exhibited sensitivity to
+the general firing rates at pre and post-synaptic terminals, it was logical
+to explore a variation sensitive to spike timing. This ``Integrated Spike-Timing''
+model, similarly, exhibited an STDP-like \ca response given a single spiking
+pair with variable timing. With dense inputs this model maintained sensitivity
+to recent spike timing, and exhibited bi-modal stability with respect to
+synaptic weights.

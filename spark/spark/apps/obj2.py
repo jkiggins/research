@@ -347,6 +347,9 @@ def _exp_average_pulse_pair_baseline(cfg_path):
         # Repeat, but with a fixed length for each impulse
         spikes = gen_impulse_spikes(10, num_impulses=15)
         dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const')
+        import code
+        code.interact(local=dict(globals(), **locals()))
+        exit(1)
         dbs = dbs + dbs_sim
 
         # Sim just STDP, with longer spikes to show divergence

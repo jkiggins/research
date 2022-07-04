@@ -14,7 +14,7 @@ from time import time
 import copy
 
 # Astro Sim With pulse pair spikes
-def sim_astro_probe(cfg, spikes, db):
+def sim_astro_probe(cfg, spikes, db, weight=1.0):
     astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
 
     state = None
@@ -31,7 +31,7 @@ def sim_astro_probe(cfg, spikes, db):
     
     # Simulate
     for i, (z_pre, z_post) in enumerate(spikes):
-        eff, state = astro(state, z_pre=z_pre, z_post=z_post)
+        eff, state = astro(state, z_pre=z_pre*weight, z_post=z_post)
         
         timeline['u'][i] = state['u']
         timeline['eff'][i] = eff
@@ -52,13 +52,12 @@ def sim_astro_probe(cfg, spikes, db):
     return db
 
 
-def graph_dw_dt(cfg, db, title=""):
+def graph_dw_dt(db, title="", graph_text=""):
     # Graph
     points = []
     
     for i, (delta_t, by_spike_delta) in enumerate(db.group_by('delta_t').items()):
-        tl = by_spike_delta[0]['timeline']
-        weight_change = tl['max_u']            
+        weight_change = by_spike_delta[0]['dw']
 
         points.append(
             (float(delta_t), float(weight_change))
@@ -90,7 +89,7 @@ def graph_dw_dt(cfg, db, title=""):
 
     ax.text(
         -0.05, 0.8,
-        plot.astro_params_text(cfg['astro_params']),
+        graph_text,
         bbox=plot.plt_round_bbox)
 
     fig.tight_layout()
@@ -158,59 +157,3 @@ def sim_spike_pairs(cfg):
     _astro_sim(astro, spike_deltas, pulse_pair_spikes, db)
 
     return db
-
-
-def graph_sim_db(db, name, title):
-    # Graph
-    fig = _graph_astro_tl_by_key(db, "delta_t", title=title)
-    fig.savefig("{}.svg".format(name))
-
-
-def _exp_pulse_pairs(args):
-    cfg_variants = [
-        ('Classic STDP', 'classic_stdp'),
-        ('Anti STDP', 'anti_stdp'),
-        ('LTP Bias', 'ltp_bias'),
-        ('LTD Bias', 'ltd_bias'),
-        ('LTD dt Shift', 'ltd_dt_shift'),
-        ('LTP dt Shift', 'ltp_dt_shift'),
-    ]
-
-    # Rate-based plasticity
-    for title, name in cfg_variants:
-        cfg = config.Config(args.config)
-        cfg['astro_params'] = cfg[name]
-
-        db = sim_spike_pairs(cfg)
-
-        name = "spike-pair_rp_{}".format(name)
-        graph_sim_db(db, name, title)
-
-    # Temporal plasticity
-    for title, name in cfg_variants:
-        cfg = config.Config(cfg_path)
-        cfg['astro_params'] = cfg[name]
-        cfg['astro_params']['u_step_params']['mode'] = 'stdp'
-
-        db = sim_spike_pairs(cfg)
-
-        name = "spike-pair_tp_{}".format(name)
-        graph_sim_db(db, name, title)
-
-
-def _parse_args():
-    parser = argparse.ArgumentParser()
-    
-    parser.add_argument('-c', '--config', type=str)
-
-    return parser.parse_args()
-
-
-def _main(args):
-    with torch.no_grad():
-        _exp_pulse_pairs(args)
-
-
-if __name__ == '__main__':
-    args = _parse_args()
-    _main(args)

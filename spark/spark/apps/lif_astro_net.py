@@ -55,7 +55,7 @@ class LifAstroNet(LifNet):
         self.astro_state = None
 
 
-    def __call__(self, z):
+    def __call__(self, z, dw=True):
         z = z * 1.0
         if not (type(z) == torch.Tensor):
             z = torch.as_tensor(z)
@@ -66,10 +66,11 @@ class LifAstroNet(LifNet):
 
         eff, self.astro_state = self.astro(self.astro_state, z_pre=z_pre, z_post=z_post)
 
-        self.linear.weight[0] = torch.clamp(
-            self.linear.weight[0] * eff,
-            self.cfg['linear_params']['min'],
-            self.cfg['linear_params']['max'])
+        if dw:
+            self.linear.weight[0] = torch.clamp(
+                self.linear.weight[0] * eff,
+                self.cfg['linear_params']['min'],
+                self.cfg['linear_params']['max'])
 
 
         return z_post, eff, self.neuron_state, self.astro_state, self.linear
@@ -98,6 +99,8 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
         z, a, n_state, a_state, linear = snn_output
         weight_update = torch.logical_not(torch.isclose(a, torch.as_tensor(1.0))).float()
 
+        assert torch.all(a_state['u'] <= torch.as_tensor(2.5))
+
         tl['u'][i] = a_state['u']
         tl['a'][i] = weight_update
         tl['dw'][i] = a
@@ -113,11 +116,21 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
     return tl
     
 
-def _sim_snn(snn, spikes):
+def _sim_snn_step(snn, tl, spikes, s, i, dw=True):
+    snn_output = snn(s, dw=dw)
+    tl = _store_snn_step(tl, i, spikes, snn, snn_output, s)
+
+    assert torch.all(torch.abs(tl['u']) <= torch.as_tensor(2.5))
+
+    return tl
+
+
+def _sim_snn(snn, spikes, dw=True):
     tl = None
     for i, s in enumerate(spikes):
-        snn_output = snn(s)
-        tl = _store_snn_step(tl, i, spikes, snn, snn_output, s)
+        tl = _sim_snn_step(snn, tl, spikes, s, i, dw=dw)
+        # snn_output = snn(s)
+        # tl = _store_snn_step(tl, i, sim_len, snn, snn_output, s)
 
     return tl
 
@@ -279,7 +292,10 @@ def graph_1nNs1a(
                 if g == 'astro':
                     a.plot(tl['i_pre'][:, i], label='{}Pre-synaptic Astrocyte Trace'.format(prefix))
                     a.plot(tl['i_post'][:, i], label='{}Post-synaptic Astrocyte Trace'.format(prefix))
-                    a.plot(tl['u'][:, i], label='{}Astrocyte State'.format(prefix))
+                    a.plot(tl['u'][:, i], label='{} Astrocyte Ca'.format(prefix))
+
+                elif g == 'astro-ca':
+                    a.plot(tl['u'][:, i], label='{}'.format(prefix))
 
                 elif g == 'spikes':
                     plot.plot_events(
@@ -295,11 +311,14 @@ def graph_1nNs1a(
                     raise ValueError("Unknown graph type: {}".format(g))
 
 
-def sim_lif_astro_net(cfg, spike_trains, db):
+def sim_lif_astro_net(cfg, spike_trains, db, dw=True):
     # Sim
     for spikes in spike_trains:
         snn = LifAstroNet(cfg)
-        tl = _sim_snn(snn, spikes)
+        tl = _sim_snn(snn, spikes, dw=dw)
+        
+        assert torch.all(tl['u'] <= torch.as_tensor(2.5))
+        
         db.store({'spikes': spikes, 'tl': tl})
 
     return db
@@ -324,8 +343,8 @@ def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''
             'neuron',
             'spikes',
             'astro',
+            'astro-ca',
         ]
-
 
     # Build figure and axes if None
     if (fig is None) and (axes is None):
@@ -339,6 +358,7 @@ def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''
             'spikes': "Astrocyte and Neuron Events Synapse {}",
             'neuron': "Neuron Membrane Voltage",
             'astro': "Astrocyte Traces, Synapse {}",
+            'astro-ca': "Astrocyte Calcium Concentration, Synapse {}",
             'weight': "Synapse {} Weight"
         }
 
@@ -348,7 +368,6 @@ def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''
             ax = fig.add_subplot(gs[gs_idx, 0])
             ax.set_title(graph_to_title[g].format(0))
             axes[g].append(ax)
-
     
     # Graph
     # Gather all the axes associated with idx
@@ -404,3 +423,113 @@ def graph_lif_astro_net(db, graphs=None, fig=None, axes=None, prefix=''):
     fig.tight_layout()
 
     return fig
+
+
+def gen_dw_dt_axes(n_plots):
+    gs = GridSpec(n_plots, 1)
+
+    fig = plt.Figure(figsize=(16, 8))
+    axes = []
+
+    for i in range(n_plots):
+        ax = fig.add_subplot(gs[i])
+        ax.spines['left'].set_position('zero')
+        ax.spines['right'].set_color('none')
+        ax.spines['bottom'].set_position('zero')
+        ax.spines['top'].set_color('none')
+
+        ax.set_xlabel("Pulse Pair Delta t")
+        ax.xaxis.set_label_coords(0.7, 0.4)
+
+        ax.set_ylabel("Weight Change")
+        ax.yaxis.set_label_coords(0.47, 0.67)
+        ax.grid(True)
+
+        axes.append(ax)
+
+    return fig, axes
+
+
+def _graph_dw_dt(points, ax, text):
+    spike_deltas = points[:, 0].tolist()
+    
+    ax.plot(points[:, 0], points[:, 1])
+    ax.set_xticks(
+        spike_deltas[::2],
+        labels=["{:2.4f}".format(d) for d in spike_deltas[::2]],
+        rotation=45)
+
+    ax.text(
+        -0.05, 0.8,
+        text,
+        bbox=plot.plt_round_bbox)
+
+
+def graph_dw_dt(db, title="", graph_text=""):
+    # Graph
+    points = []
+
+    # Only one plot for now
+    fig, axes = gen_dw_dt_axes(1)
+
+    # Gather dw, dt pairs from sim results
+    for i, (delta_t, by_spike_delta) in enumerate(db.group_by('delta_t').items()):
+        weight_change = by_spike_delta[0]['dw']
+
+        print("dw: ", weight_change)
+
+        points.append(
+            (float(delta_t), float(weight_change))
+        )
+
+    points = np.array(points)
+    _graph_dw_dt(points, axes[0], graph_text)
+
+    axes[0].set_title("{}: Weight Change vs. Pulse Pair Spike Delta".format(title))
+    
+    fig.tight_layout()
+
+    return fig
+
+
+def gen_dw_w_axes(n_plots, spikes=False):
+    gs = GridSpec(n_plots, 1)
+
+    fig = plt.Figure(figsize=(16, 8))
+    axes = []
+
+    for i in range(n_plots):
+        ax = fig.add_subplot(gs[i])
+        ax.set_ylabel("Number of Ca Threshold Events")
+        ax.set_xlabel("Synaptic Weight")
+        ax.grid(True)
+
+        axes.append(ax)
+
+    return fig, axes
+    
+
+def graph_dw_w(db, fig=None, axes=None):
+
+    if (fig is None) or (axes is None):
+        fig, axes = gen_dw_w_axes(1)
+
+    points = []
+    for d in db:
+        ca = d['tl']['u']
+        points.append([d['w'], d['ca-act'], 0.0, 0.0])
+
+        # Error bars where Ca Threshold is not crossed
+        points[-1][2:4] = [ca.min(), ca.max()]
+
+    points = torch.as_tensor(points)
+
+    axes[0].errorbar(
+        points[:, 0],
+        points[:, 1],
+        marker='.',
+        yerr=torch.abs(points[:, 2:4].t()),
+        ecolor='tab:orange'
+    )
+
+    return fig, axes

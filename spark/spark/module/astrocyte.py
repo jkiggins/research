@@ -75,12 +75,11 @@ class Astro:
             state, eff = astro_step_effect_weight_prop(torch.ones_like(ca), state, self.params)
             # print("u_spike: {}, eff: {}".format(u_spike, eff))
 
-
         elif self.params['weight_update'] == 'ip3_k+_fall':
             state, u_spike = astro_step_activity(state, self.params)  # Detect falling edge on ip3/k+
             state, eff = astro_step_effect_weight_prop(u_spike, state, self.params)  # Get effect based on u exceeding thr
 
-            
+        assert torch.all(torch.abs(state['u']) <= torch.as_tensor(2.5))
         return eff, state
 
 

@@ -102,7 +102,9 @@ def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
         torch.isclose(z_post, torch.tensor(0.0))
     )        
     wh_ltd = torch.where(bool_ltd)
-
+    # TODO: Support shifting STDP curve
+    # ltd_sign = -state['i_post']
+    
     bool_ltp = torch.logical_and(
         z_post > 0.0,
         torch.isclose(z_pre, torch.tensor(0.0))

@@ -1,13 +1,26 @@
-\chapter{Deployment of The Astrocyte Plasticity Model in A Single Synapse
+\chapter{Synaptic Plasticity Using the Astrocyte Model in A Single Synapse
   Configuration} \label{chapter:obj2}
 
-The goal of objective two in this work is to explore features of Astrocytes
-found in Engineering and Neuroscience literature, in the context of the
-simplified Model developed in Chapter \ref{chapter:obj1}. Table
-\ref{able:obj2_astro_features} outlines specific features of Astrocyte and
-Neuron-Astrocyte interactions that were common threads in background and related
-work (see Chapter \ref{chapter:background}). These features are then tied back
-to a specific configuration or operating mode of the developed Astrocyte model,
+Astrocytes have suspected involvement in synaptic plasticity in both the
+long \cite{min_2012} and short term \cite{pitta_2012}. A variety of
+bio-inspired astrocyte models have touched on short term plasticity, and
+suggested modulation of classical Hebbian learning \cite{pitta_2016}. In
+addition to the experimental evidence, astrocytes are well placed to control
+synaptic plasticity at many levels. Drilling down to the level of the
+synapse, astrocytes monitor synaptic activity chemically, and respond
+quickly with a variety of gliotransmitters, some of which are known to be
+critical for LTP/LTD \cite{min_2012}. This fast local activity, which takes
+the form of Ca2+ transients in Astrocyte end-foot processes is integrated
+into a cell-level response, and can travel to distant synapses.
+
+The goal in Chapter \ref{chapter:obj2} is to explore Astrocyte mediated synaptic
+plasticity in a single synapse configuration, with a single LIF neuron. Existing
+literature outlines many ways that Astrocytes are shown to, are suspected to, or
+have been modeled to affect their external environment. Table
+\ref{able:obj2_astro_features} outlines these features of Astrocyte and
+Neuron-Astrocyte interactions that were common threads in background and related 
+work (see Chapter \ref{chapter:background}). Within this chapter a number of
+these features have equivalent configurations in the developed Astrocyte model,
 and the effects of that configuration are explored further.
 
 %If the table is too wide, replace \begin{table}[!htp]...\end{table} with
@@ -33,33 +46,30 @@ Working Memory &Gordleeva &Gordleeva2021 &Lin and Rizel or Variation &Astrocyte 
 
 \section{Pulse-Pair Integration}
 
-One of the key features of the Astrocyte model developed in Section
-\ref{section:obj1} is the detection and integration of coincident \ipt and \kp
-activity. Once detected co-incident activity results in a change in Astrocyte
-\ca (pulse-pair integration). Keeping that portion of the model constant on the
-input side, there are a variety of effects Astrocytes are known or theorized to
-have based on their internal \ca levels, which can be explored in the context of
-the model developed in this work. The two main effects to be explored here are
-\ca mediated synaptic plasticity and synaptic current.
-
-Considering a situation where \ca levels are driving weight updates, pulse-pair
-integration then differs from classic STDP in a few key ways. Firstly, weight
-updates are delayed, and determined by the value of \ca, possibly in conjunction
-with \ipt and \kp. Any weight update will depend on a series of causal or
-anti-causal spiking events instead of a single event. It may also be that
-plasticity is delayed until some internal criteria are met, with weigh updates
-being proportional to the internal state. These types of effects are
+One of the key features of the Astrocyte model developed in chapter
+\ref{chapter:obj1} is the detection and integration of coincident spikes
+effecting \ipt and \kp activity. In fact, looking at the calcium response alone
+gives a response equivalent to the weight change associated with STDP (see
+Section \ref{obj1:sec:classic_stdp}). With a simple threshold on \ca, the
+Astrocyte model can implement classic STDP, and extend it, requiring multiple
+pulse-pair events before weights change. This ``pulse-pair 
+integration'' approach differs from classic STDP in a few key ways. Firstly,
+weight updates are delayed, and determined by the value of \ca, possibly in
+conjunction with \ipt and \kp. Any weight update will depend on a series of
+causal or anti-causal spiking events instead of a single event. It may also be
+that plasticity is delayed until some internal criteria are met, with weight
+updates being proportional to the internal state. These types of effects are
 hypothesized to increase stability of the plasticity rule, and add some
-protection against noise.
-
+protection against noise. Furthermore an approach like this has support from
+existing Neuroscience and Engineering literature, and is similar to CICR, where
+calcium levels like and cause a release of gliotransmitters locally.
 
 \subsection{Impulse Response}
-A simple approach, to driving weight updates is to apply a threshold to \ca in
-order to determine when weight updates occur. This approach has precedent in
-both Neuroscience and Engineering literature, and is the behavior described in
-\ref{section:istp}. Equations \ref{eq:obj2:dw} and \ref{eq:obj2:ca_reset}
-describe the weight update and \ca reset behavior.
-
+Equations \ref{eq:obj2:dw} and \ref{eq:obj2:ca_reset}
+describe the weight update and \ca reset behavior. To evaluate the Astrocyte
+model in this configuration a series of spike impulses are used. These are
+groups of regularly firing inputs in a $1010101$ pattern, with sufficient space
+between these groups for Astrocyte and Neuron states to settle.
 
 \begin{align}
   d_w = H(ca - ca_{thr}) * \alpha_{ltp} + H(-ca - ca_{thr}) *
@@ -67,14 +77,20 @@ describe the weight update and \ca reset behavior.
   ca = ca * (1 - H(ca - ca_{thr}) +  H(-ca - ca_{thr})) \label{eq:obj2:ca_reset}
 \end{align}
 
+A slight variation allows the Astrocyte model to implement STDP, outlined in
+Equations \ref{eq:obj2:stdp_dw}. In this case ca is reset every time-step.
+
+\begin{align}
+  d_w = ca / ca_{thr} \label{eq:obj2:stdp_dw} \\
+\end{align}
 
 Figure \ref{fig:ppi:impulse_istp} depicts the Astrocyte plasticity model with
 $Ca_{thr}=2.5$, $\alpha_{ltp}=1.05$ and $\alpha_{ltd}=0.95$. In contrast, Figure
-\ref{fig:ppi:impulse_stp} shows the behavior of a classic STDP rule with the
-same inputs and configuration. The inputs themselves consist of successive
-spikes, with 1ms between each. These spikes form groups with enough time between
-for neuron and Astrocyte states to decay. Each group has an additional spike
-compared to the last.
+\ref{fig:ppi:impulse_stp} shows the behavior of a classic STDP (implemented by
+the Astrocyte) with the same inputs and time-constant. The inputs themselves
+consist of successive spikes, with 1ms between each. These spikes form groups
+with enough time between for neuron and Astrocyte states to decay. Each group
+has an additional spike compared to the last.
 
 Comparing these graphs, it is clear that integrating
 behavior of the Astrocyte model effects the learning process
@@ -100,9 +116,9 @@ will converge, and compare that to classic STDP. Figures
 responses to a similar series of spike impulses, but in this case each group of
 spikes is the same length. There is a significant difference between the
 behavior in this case, with the Astrocyte model quickly converging, while
-classic STDP decays slowly to $0.0$. Figure
-\ref{fig:ppi:impulse_fixed_stp_diverge} shows the same simulation on a longer
-timescale, showing the divergent behavior.
+classic STDP appears to overshoot a stable configuration, oscillating back and
+forth. Figure \ref{fig:ppi:impulse_fixed_stp_diverge} shows the same simulation
+on a longer timescale, showing that these oscillations continue.
 
 % Astrocyte response to fixed length impulse inputs
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_astro_0.svg}{Astrocyte
@@ -122,15 +138,19 @@ timescale, showing the divergent behavior.
 % Comparison with noisy inputs
 Figures \ref{fig:ppi:impulse_noise_stp} and \ref{fig:ppi:impulse_noise_istp}
 show the results of similar simulations, with the addition of uniformly random
-noise in both cases. Observing the weight updates associated with the Astrocyte
-model, there isn't a significant impact from the noise on the progression of
-weight modulation. In the case of classic STDP, weight values fluctuate even
-further, adding to the already unstable behavior.
+noise in both cases. The probability specified, is the probability that a noisy
+spike is received on the input side during any single time-step. Observing the
+weight updates associated with the Astrocyte model, there isn't a significant
+impact from the noise on the progression of weight modulation. In the case of
+classic STDP, weight values fluctuate even further, adding to the already
+unstable behavior.
 
+% STDP response to impulse + uniform noise
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_noise_classic_0.svg}{Classic
   STD response to impulse inputs with uniformly random
   noise}{fig:ppi:impulse_noise_stp}{0.4}
 
+% Astro response to impulse + uniform noise
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_noise_astro_0.svg}{Astrocyte
   response to impulse inputs with uniformly random
   noise}{fig:ppi:impulse_noise_istp}{0.4}
@@ -138,11 +158,12 @@ further, adding to the already unstable behavior.
 % Exploration of Weight update behavior with different parameters
 The established baseline thus far, is that given this repeating (possibly
 ramping up) spike impulse as an input, results in stable convergent weight
-change from the Astrocyte model. In contrast, classic STDP shows instability and
-divergence. This is only a single configuration however, and there are many
+change from the Astrocyte model. In contrast, classic STDP shows instability
+oscillation. This is only a single configuration however, and there are many
 parameters that could be modified. An investigation into the following
-parameters can help determine if the convergent/divergent behavior is stable,
+parameters can help determine if the convergent/noisy behavior is stable,
 and what other behaviors of the model may arise.
+
 \begin{itemize}
 \item Initial weight
 \item Spike association
@@ -161,6 +182,7 @@ function of the initial weight, similar starting weights converging to the same,
 or a similar point. This indicates there are multiple stable configurations
 given these inputs and parameters. STDP on the other hand, doesn't exhibit the
 same stability.
+
 
 \asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_mu_sweep_0.svg}{Classic STDP and
   Astrocyte Response to Initial Weight}{fig:sweep:mu}{0.4}

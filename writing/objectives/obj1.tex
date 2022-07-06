@@ -479,16 +479,20 @@ outlined in Table \ref{table:istp_params}.
 \end{table}
 
 Figure \ref{fig:astro:tp_many_w_tl} shows the behavior of temporal
-integration model when a series of spike pulses are presented to the
-network. Each pulse is a fixed number of spikes, and the resulting \ca activity
-is depicted for a given synaptic weight. This simulation depicts the averaging
-effect of the model spike timing model, With an impulse of 4 spikes, the
-neuron is driven enough to output a single spike, this happens around
+integration model when a series of spike impulses are presented to the
+network. Each successive pulse has an additional spike from the last and the
+resulting \ca activity s depicted for a given synaptic weight. This simulation
+exposes the averaging effect of the spike timing model. With an impulse of 4
+spikes, the neuron is driven enough to output a single spike, this happens around
 300ms. With 4 pre-synaptic spikes and 1 post-synaptic spike, the Astrocyte's
-internal state $u$ is increased, exceeding the threshold of $2.5$. Subsequent
-spike impulses have $>4$ spikes, which leads to a drop in \ca, due to
-anti-causal pairing (transiently) of pre-synaptic spikes. Regardless of these
-transient drops, \ca consistently exceeds $thr_{ca}$ throughout the simulation.
+\ca is increased, exceeding the threshold of $2.5$. Subsequent spike impulses
+have $>4$ spikes, which leads to a drop in \ca, due to anti-causal pairing
+(transiently) of pre-synaptic spikes. Regardless of these transient drops, \ca
+consistently exceeds $thr_{ca}$ throughout the simulation.
+
+\asvgf{figures/artifacts/obj1/astro_tp_impulse.svg}{Astrocyte Response to
+  Ramping Impulse Input: Demonstrating pulse-pair averaging
+  feature}{fig:astro:ramp_impulse}{0.5}
 
 Figure \ref{fig:astro:tp_many_w_sweep} graphs the number of times $thr_{ca}$ is
 exceeded during a fixed length simulation, for a few different values of
@@ -498,8 +502,6 @@ exceeded for the length of simulation. Figure \ref{fig:astro:tp_many_w_tl} shows
 a timeline of Astrocyte activity for three different weight values, and
 $thr_{ca}=2.5$.
 
-%% TODO: generate weight sweep graphs, with fixed spiking impulse input
-
 \asvgf{figures/artifacts/obj1/astro_tp_many-w_sweep.svg}{Aggregate Astrocyte
   Response to Input from a single synapse, with various synaptic weight and
   $thr_{ca}$}{fig:astro:tp_many_w_sweep}{0.5}
@@ -507,6 +509,10 @@ $thr_{ca}=2.5$.
 \asvgf{figures/artifacts/obj1/astro_tp_many-w_tl.svg}{Timeline of Astrocyte
   Activity With Input from a single synapse, given
   $thr_{ca}=2.5$}{fig:astro:tp_many_w_tl}{0.5}
+
+To better explore the activity surrounding a stable configuration, Figure
+\ref{fig:astro:tp_many_w_tl_zoom} shows a blown-up region of Astrocyte activity
+with $w=1.2$.
 
 \section{Summary}
 This chapter introduces a computationally efficient and intuitive Astrocyte

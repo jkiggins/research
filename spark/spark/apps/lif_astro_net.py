@@ -99,8 +99,6 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
         z, a, n_state, a_state, linear = snn_output
         weight_update = torch.logical_not(torch.isclose(a, torch.as_tensor(1.0))).float()
 
-        assert torch.all(a_state['u'] <= torch.as_tensor(2.5))
-
         tl['u'][i] = a_state['u']
         tl['a'][i] = weight_update
         tl['dw'][i] = a
@@ -119,8 +117,6 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
 def _sim_snn_step(snn, tl, spikes, s, i, dw=True):
     snn_output = snn(s, dw=dw)
     tl = _store_snn_step(tl, i, spikes, snn, snn_output, s)
-
-    assert torch.all(torch.abs(tl['u']) <= torch.as_tensor(2.5))
 
     return tl
 
@@ -317,8 +313,6 @@ def sim_lif_astro_net(cfg, spike_trains, db, dw=True):
         snn = LifAstroNet(cfg)
         tl = _sim_snn(snn, spikes, dw=dw)
         
-        assert torch.all(tl['u'] <= torch.as_tensor(2.5))
-        
         db.store({'spikes': spikes, 'tl': tl})
 
     return db
@@ -492,28 +486,28 @@ def graph_dw_dt(db, title="", graph_text=""):
     return fig
 
 
-def gen_dw_w_axes(n_plots, spikes=False):
+def gen_dw_w_axes(n_plots, titles=None, spikes=False, size=(16, 8)):
     gs = GridSpec(n_plots, 1)
 
-    fig = plt.Figure(figsize=(16, 8))
+    fig = plt.Figure(figsize=size)
     axes = []
 
     for i in range(n_plots):
+
         ax = fig.add_subplot(gs[i])
         ax.set_ylabel("Number of Ca Threshold Events")
         ax.set_xlabel("Synaptic Weight")
         ax.grid(True)
+
+        if titles:
+            ax.set_title(titles[i])
 
         axes.append(ax)
 
     return fig, axes
     
 
-def graph_dw_w(db, fig=None, axes=None):
-
-    if (fig is None) or (axes is None):
-        fig, axes = gen_dw_w_axes(1)
-
+def graph_dw_w(db, fig, axes, prefix=None, title=None, sp=0):
     points = []
     for d in db:
         ca = d['tl']['u']
@@ -524,12 +518,19 @@ def graph_dw_w(db, fig=None, axes=None):
 
     points = torch.as_tensor(points)
 
-    axes[0].errorbar(
+    axes[sp].errorbar(
         points[:, 0],
         points[:, 1],
         marker='.',
         yerr=torch.abs(points[:, 2:4].t()),
-        ecolor='tab:orange'
+        ecolor='tab:orange',
+        label=prefix
     )
+
+    if title:
+        axes[sp].set_title(title)
+
+    if prefix:
+        axes[sp].legend()
 
     return fig, axes

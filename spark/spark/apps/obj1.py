@@ -19,6 +19,7 @@ from .lif_astro_net import (
     gen_impulse_spikes,
     sim_lif_astro_net,
     graph_lif_astro_compare,
+    gen_dw_w_axes,
     graph_dw_w
 )
 
@@ -412,13 +413,43 @@ def _graph_heatmap_alpha_thr_events(db):
     fig.savefig("heatmap_spike-rate_alpha.svg")
 
 
-def _graph_exp_w_sweep(db):
-    fig, axes = None, None
+def _graph_exp_tp_w_sweep(db):
+    records_by_ca_thr = db.group_by('ca_th')
+    if len(records_by_ca_thr) == 0:
+        raise ValueError("No records found when grouping by ca_th")
 
-    fig, axes = graph_dw_w(db)
+    fig, axes = gen_dw_w_axes(len(records_by_ca_thr), size=(10, 10))
+
+    for i, (ca_thr, by_ca_thr) in enumerate(records_by_ca_thr.items()):
+        fig, axes = graph_dw_w(
+            by_ca_thr, fig, axes,
+            title='Ca Threshold = {:4.2f}'.format(ca_thr),
+            sp=i
+        )
+            
+    fig_path = "{}_sweep.svg".format(db.meta['descr'])
+    print("Saving: ", fig_path)
+    fig.tight_layout()
+    fig.savefig(fig_path)
+
+
+def _graph_exp_rp_w_sweep(db):
+    records_by_band = db.group_by('band')
+    if len(records_by_band) == 0:
+        raise ValueError("No records found when grouping by ltp/ltd band")
+
+    fig, axes = gen_dw_w_axes(len(records_by_band), size=(10, 10))
+
+    for i, (band, by_band) in enumerate(records_by_band.items()):
+        fig, axes = graph_dw_w(
+            by_band, fig, axes,
+            title='Tolerance Band = {:4.2f}'.format(band),
+            sp=i)
 
     fig_path = "{}_sweep.svg".format(db.meta['descr'])
     print("Saving: ", fig_path)
+
+    fig.tight_layout()
     fig.savefig(fig_path)
 
 
@@ -522,6 +553,8 @@ def _exp_rate_w_impulse(cfg_path):
         tl_graphs = torch.as_tensor([2, 4, 10])
         tl_graph_idx = torch.argmin(torch.abs(all_w.reshape(-1, 1) - tl_graphs), axis=0).tolist()
 
+        all_band = torch.linspace(1.5, 2.0, 3)
+
         db = ExpStorage()
         db.meta['descr'] = "astro_rp_many-w"
         db.meta['title'] = "Astrocyte Response to Different Weight Values, with No Tolerance"
@@ -537,9 +570,22 @@ def _exp_rate_w_impulse(cfg_path):
         db.meta['descr'] = "astro_rp_many-w"
         db.meta['title'] = "Astrocyte Response to Different Weight Values, with Tolerance Band"
 
-        _sim_rate_w_impulse(cfg, spikes, db, tl_graph_idx, all_w, 'Astro Sweep W (tol)')
+        for i, w in enumerate(tqdm(all_w, desc='Astro w/band sweep')):
+            cfg['linear_params']['mu'] = w
+            for j, band in enumerate(all_band):
+                cfg['astro_params']['u_step_params']['ltd'] = -band
+                cfg['astro_params']['u_step_params']['ltp'] = band
+
+                if i in tl_graph_idx and band == 1.75:
+                    db.prefix({'w': w, 'band': band, 'tl_graph': True})
+                else:
+                    db.prefix({'w': w, 'band': band})
+
+                sim_lif_astro_net(cfg, spikes, db, dw=False)
+                db.last()['ca-act'] = db.last()['tl']['u'].sum()
+
         dbs.insert(0, db)
-        
+
     return dbs
 
 
@@ -558,7 +604,21 @@ def _exp_astro_impulse(cfg_path):
 
     return db
 
-    
+
+def _sim_pulse_pair_w_impulse(cfg, db, spikes, all_w, all_ca_thr, tl_graph_idx, tl_ca):
+    for i, w in enumerate(tqdm(all_w, desc='Astro Sweep W (thr)')):
+        for j, ca_thr in enumerate(all_ca_thr):
+            if (i in tl_graph_idx) and ca_thr == tl_ca:
+                db.prefix({'w': w, 'ca_th': ca_thr, 'tl_graph': True})
+            else:
+                db.prefix({'w': w, 'ca_th': ca_thr})
+
+            cfg['linear_params']['mu'] = w
+            cfg['astro_params']['u_th'] = ca_thr
+            sim_lif_astro_net(cfg, spikes, db, dw=False)
+            db.last()['ca-act'] = db.last()['tl']['a'].sum()
+            
+
 def _exp_pulse_pair_w_impulse(cfg_path):
     """
     Simulate an snn in the 1n1s1a configuration, and demonstrate how plasticity
@@ -571,49 +631,29 @@ def _exp_pulse_pair_w_impulse(cfg_path):
     with torch.no_grad():
         cfg = config.Config(cfg_path)
         cfg['astro_params'] = cfg['astro_plasticity']
-        # cfg['astro_params']['u_th'] = 10000.0
 
         spikes = gen_impulse_spikes(10, num_impulses=15)
         all_w = torch.linspace(0.75, 2.0, 100)
         tl_graphs = torch.as_tensor([0.8112, 1.0, 1.2])
-        tl_graph_idx = torch.argmin(torch.abs(all_w.reshape(-1, 1) - tl_graphs), axis=0).tolist()
 
-        # # Sim w/ baseline
-        # if False:
-        #     db = ExpStorage()
-        #     db.meta['descr'] = "astro_tp_many-w"
-        #     db.meta['title'] = "Astrocyte Response to Impulse inputs for Different weight Values with inf Ca Threshold"
+        all_ca_thr = torch.linspace(2.0, 3.0, 3)
+        tl_ca = 2.5
 
-        #     for i, w in enumerate(tqdm(all_w, desc='Astro Sweep W (no thr)')):
-        #         if i in tl_graph_idx:
-        #             db.prefix({'w': w, 'tl_graph': True})
-        #         else:
-        #             db.prefix({'w': w})
+        w_graph_idx = torch.argmin(torch.abs(all_w.reshape(-1, 1) - tl_graphs), axis=0).tolist()
 
-        #         cfg['linear_params']['mu'] = w
-
-        #         sim_lif_astro_net(cfg, spikes, db, dw=False)
-        #     dbs.append(db)
-
-        # Set u_thr
-        cfg['astro_params']['u_th'] = 2.5
         db = ExpStorage()
         db.meta['descr'] = "astro_tp_many-w"
         db.meta['title'] = "Astrocyte Response to Impulse inputs for Different weight Values with {:4.2f} Ca Threshold".format(cfg['astro_params']['u_th'])
 
-        for i, w in enumerate(tqdm(all_w, desc='Astro Sweep W (thr)')):
-            if i in tl_graph_idx:
-                db.prefix({'w': w, 'tl_graph': True})
-            else:
-                db.prefix({'w': w})
-                
-            cfg['linear_params']['mu'] = w
-            sim_lif_astro_net(cfg, spikes, db, dw=False)
-            db.last()['ca-act'] = db.last()['tl']['a'].sum()
-            
-        dbs.append(db)
+        _sim_pulse_pair_w_impulse(
+            cfg,
+            db,
+            spikes,
+            all_w, all_ca_thr,
+            w_graph_idx, tl_ca
+        )
 
-    return dbs
+    return db
 
 
 def _exp_lif_sample(cfg_path):
@@ -718,6 +758,7 @@ def _main(args):
         
         for db in dbs:
             fig = graph_dw_dt(db)
+            fig.tight_layout()
             fig.savefig("{}.svg".format(db.meta['descr']))
 
     if args.astro_param_sweep or args.all:
@@ -742,6 +783,7 @@ def _main(args):
         dbs = _exp_dw_dt_sweep(cfg_path)
         for db in dbs:
             fig = graph_dw_dt(db)
+            fig.tight_layout()
             fig.savefig("{}.svg".format(db.meta['descr']))
 
 
@@ -751,20 +793,22 @@ def _main(args):
         
         dbs = _exp_rate_w_impulse(cfg_path)
         _graph_exp_w_tl(dbs)
-        _graph_exp_w_sweep(dbs[0])
+        _graph_exp_rp_w_sweep(dbs[0])
 
-        dbs = _exp_pulse_pair_w_impulse(cfg_path)
-        _graph_exp_w_tl(dbs)
-        _graph_exp_w_sweep(dbs[0])
+        # db = _exp_pulse_pair_w_impulse(cfg_path)
+        # _graph_exp_w_tl([db])
+        # _graph_exp_tp_w_sweep(db)
 
     if args.astro_impulse or args.all:
         _print_sim("LIF/Astro Impulse, No Dw")
         seed_many()
 
-        dbs = _exp_astro_impulse(cfg_path)
-        for db in dbs:
-            fig = graph_lif_astro_net(db)
-            fig.savefig("{}.svg".foramt(db.meta['descr']))
+        db = _exp_astro_impulse(cfg_path)
+        fig = graph_lif_astro_net(db)
+        fig_path = "{}.svg".format(db.meta['descr'])
+        print("Saving: ", fig_path)
+        fig.tight_layout()
+        fig.savefig(fig_path)
 
 
 if __name__ == '__main__':

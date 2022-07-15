@@ -627,6 +627,8 @@ def _main(args):
     os.makedirs('./obj2', exist_ok=True)
     os.chdir('./obj2')
 
+    cfg_path = '../../config/1n1s1a_obj2.yaml'
+
     if args.astro_impulse or args.all:
         dbs = _exp_average_pulse_pair_baseline('../../config/1n1s1a_obj2.yaml')
         for db in dbs:

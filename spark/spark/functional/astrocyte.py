@@ -102,8 +102,6 @@ def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
         torch.isclose(z_post, torch.tensor(0.0))
     )        
     wh_ltd = torch.where(bool_ltd)
-    # TODO: Support shifting STDP curve
-    # ltd_sign = -state['i_post']
     
     bool_ltp = torch.logical_and(
         z_post > 0.0,
@@ -114,6 +112,12 @@ def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
     # Peform LTP/LTD across astrocyte processes
     du[wh_ltd] = -state['i_post']
     du[wh_ltp] = state['i_pre']
+
+    # Apply band
+    du = torch.where(
+        torch.abs(du) > params['dca_max'],
+        torch.as_tensor(0.0),
+        du)
 
     # Apply reward
     if reward is None:

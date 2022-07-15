@@ -5,7 +5,8 @@ import numpy as np
 
 from ..module.astrocyte import Astro
 from ..module.neuron import LIFNeuron
-from ..utils import config, plot
+from ..utils import config
+from ..utils import plot as uplot
 from ..data import spiketrain
 from ..experiment import VSweep, ExpStorage
 
@@ -35,7 +36,9 @@ class LifNet:
 
         self.neuron_state = None
 
-    def __call__(self, z):
+    def __call__(self, z, dw=False):
+        # Ignore dw, kept for compatibility with LifAstroNet
+
         z = z * 1.0
         if not (type(z) == torch.Tensor):
             z = torch.as_tensor(z)
@@ -76,6 +79,89 @@ class LifAstroNet(LifNet):
         return z_post, eff, self.neuron_state, self.astro_state, self.linear
 
 
+class LifAxis:
+    def __init__(self, ax, offset=False):
+        self.ax = ax
+        self.offset = 0
+        self.event_offset = 0
+
+        self.offset_ticks = []
+        self.offset_labels = []
+        self.enable_offset = offset
+
+
+    def _step_offset(self, y):
+        if self.offset != 0:
+            self.offset += max(-y.min(), 0.25)
+
+        y = torch.as_tensor(y)
+        y_max = y.max()
+        y = y + self.offset
+
+        print("Adding Offset: ", self.offset)
+
+        # Tick locations, and labels for offset graphs
+        max_extent = y[(y-self.offset).abs().argmax()]
+        self.offset_ticks += [float(self.offset), float(max_extent)]
+        self.offset_labels += ["0.0", "{:4.2f}".format(float(max_extent-self.offset))]
+        
+        # Add the max amount above the y=0 point, so the next graph clears that
+        # Minimum offset is 0.25
+        self.offset += max(y_max, 0.5)
+
+        return y
+
+
+    # Pass-throug methods
+    def legend(self, *args, **kwargs):
+        self.ax.legend(*args, **kwargs)
+
+    def set_title(self, *args, **kwargs):
+        self.ax.set_title(*args, **kwargs)
+
+    def set_xlabel(self, *args, **kwargs):
+        self.ax.set_xlabel(*args, **kwargs)
+
+    def set_ylabel(self, *args, **kwargs):
+        self.ax.set_ylabel(*args, **kwargs)
+
+    def set_xlim(self, *args, **kwargs):
+        self.ax.set_xlim(*args, **kwargs)
+
+
+    def plot(self, *args, **kwargs):
+        # Assume args[0] contains the data to plot
+        if self.enable_offset:
+            args = list(args)
+            args[0] = self._step_offset(args[0])
+            args = tuple(args)
+            self.ax.set_yticks(self.offset_ticks)
+            self.ax.set_yticklabels(self.offset_labels)
+        self.ax.plot(*args, **kwargs)
+
+
+    def plot_events(self, events, colors=None):
+        event_idxs = []
+        max_x = 0
+        for z in events:
+            if type(z) != np.ndarray:
+                z = np.array(z)
+
+            event_idx = np.where(z > 0)[0]
+            max_x = max(len(z), max_x)
+            event_idxs.append(event_idx.tolist())
+
+        line_offsets = [i + self.event_offset for i in range(len(event_idxs))]
+
+        self.ax.eventplot(event_idxs,
+                     lineoffsets=line_offsets,
+                     linelengths=0.5,
+                     colors=colors)
+        self.ax.set_xlim((0, max_x))
+
+        self.event_offset = line_offsets[-1]
+        
+    
 def _store_snn_step(tl, i, spikes, snn, snn_output, s):
     if tl is None:
         tl = {}
@@ -210,7 +296,7 @@ def gen_noisy_spikes(duration):
     return [spikes.transpose(1,0)]
 
 
-def gen_1nNs1a_axes(
+def gen_sgnn_axes(
     num_synapse,
     graphs=[
         'spikes',
@@ -219,50 +305,57 @@ def gen_1nNs1a_axes(
         'weight']
 ):
     # Validate graphs
-    possible_graphs = ['spikes', 'neuron', 'astro', 'weight']
+    possible_graphs = ['spikes', 'neuron', 'astro', 'astro-ca', 'weight']
     for g in graphs:
         if not (g in possible_graphs):
             raise ValueError("Graph: {} is not supported, must be one of {}".format(g, possible_graphs))
 
     # Dynamic height ratios
-    possible_height_ratios=dict(zip(possible_graphs, [0.6,1,1,1]))
+    possible_height_ratios=dict(zip(possible_graphs, [0.6,1,1,1,1]))
     height_ratios = [possible_height_ratios[k] for k in graphs]
     
     # Figure out the gridspec
     nrows = len(graphs)
     ncols = num_synapse
-    gs = GridSpec(nrows, ncols, height_ratios=height_ratios)
+    gs = GridSpec(nrows, ncols)
 
     fig = plt.Figure(figsize=(12, 10))
-    axes = []
 
     graph_to_title = {
-        'spikes': "Astrocyte and Neuron Events Synapse {}",
+        'spikes': "Astrocyte and Neuron Events for Synapse {}",
         'neuron': "Neuron Membrane Voltage",
         'astro': "Astrocyte Traces, Synapse {}",
+        'astro-ca': "Astrocyte Calcium Response, Synapse {}",
         'weight': "Synapse {} Weight"
     }
 
+    axes = {g: [] for g in graphs}
+    
     for gs_idx, g in enumerate(graphs):
         if g == "neuron":
             ax = fig.add_subplot(gs[gs_idx, 0:ncols])
             ax.set_title(graph_to_title[g])
+            ax = LifAxis(ax, offset=True)
         else:
             ax = []
             for i in range(num_synapse):
                 a = fig.add_subplot(gs[gs_idx, i])
-                ax.append(a)
                 a.set_title(graph_to_title[g].format(i))
+                a = LifAxis(a, offset=True)
+                ax.append(a)
 
-        axes.append((g, ax))
+        axes[g].append(ax)
 
     return fig, axes
     
     
-def graph_1nNs1a(
+def plot_1nNs1a(
     tl,
     axes,
-    prefix=''
+    idx,
+    plot=None,
+    prefix=None,
+    title=None,
 ):
     # Build a figure with the following
     # * Traces for the state values for a single neuron
@@ -270,41 +363,57 @@ def graph_1nNs1a(
     # * A plot of the spiking events, including weight update events
     # * A single plot with the weight values of all synapses
 
+    if prefix is None:
+        prefix = ''
+
+    if plot is None:
+        plot = ['neuron', 'astro', 'spikes', 'weight']
+
     spikes = tl['z_pre']
 
-    for axis_spec in axes:
-        g, ax = axis_spec
+    for g, g_axes in axes.items():
+        # if g is not in graphs (None -> match all)
+        if not (plot is None) and not (g in plot):
+            continue
 
         # Neuron plot
-        if g == 'neuron':
+        if g == 'neuron' and 'neuron' in plot:
+            ax = g_axes[idx]
             ax.plot(tl['v_n'].squeeze().tolist(), label='{}Neuron Membrane Voltage'.format(prefix))
 
-        else:
-            # Multiple Axes, one per synapse
-            if not (type(ax) == list):
-                ax = [ax]
+            if len(prefix) > 0:
+                a.legend()
 
-            for i, a in enumerate(ax):
-                if g == 'astro':
+        else:
+            if idx >= len(g_axes):
+                continue
+
+            axs = g_axes[idx]
+
+            for i, a in enumerate(axs):
+
+                if g == 'astro' and ('astro' in plot):
                     a.plot(tl['i_pre'][:, i], label='{}Pre-synaptic Astrocyte Trace'.format(prefix))
                     a.plot(tl['i_post'][:, i], label='{}Post-synaptic Astrocyte Trace'.format(prefix))
                     a.plot(tl['u'][:, i], label='{} Astrocyte Ca'.format(prefix))
 
-                elif g == 'astro-ca':
+                elif g == 'astro-ca' and ('astro-ca' in plot):
                     a.plot(tl['u'][:, i], label='{}'.format(prefix))
 
-                elif g == 'spikes':
-                    plot.plot_events(
-                        a,
+                elif g == 'spikes' and 'spikes' in plot:
+                    a.plot_events(
                         [tl['z_pre'][:,i], tl['z_post'][:,i], tl['a'][:,i]],
                         colors=['tab:blue', 'tab:orange', 'tab:red'])
-                    a.legend(['{}Pre Spikes', '{}Post Spikes', '{}Astro dw'])
+                    a.legend([l.format(i) for l in ['{}Pre Spikes', '{}Post Spikes', '{}Astro dw']])
 
-                elif g == 'weight':
+                elif g == 'weight' and 'weight' in plot:
                     a.plot(tl['w'][:,i], marker='.', label='{}'.format(prefix))
 
                 else:
                     raise ValueError("Unknown graph type: {}".format(g))
+
+                if len(prefix) > 0:
+                    a.legend()
 
 
 def sim_lif_astro_net(cfg, spike_trains, db, dw=True):
@@ -369,12 +478,17 @@ def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''
     for g in axes:
         if idx < len(axes[g]):
             axes_arg.append((g, axes[g][idx]))
-    graph_1nNs1a(tl, axes_arg, prefix=prefix)
+
+    plot_1nNs1a(tl, axes_arg, prefix=prefix)
 
     return fig, axes
 
 
-def graph_lif_astro_net(db, graphs=None, fig=None, axes=None, prefix=''):
+def graph_sgnn(
+    db_rec,
+    fig, axes,
+    idx, plot=None,
+    prefix=None, titles=None):
     """
     Graph the data from db either
     1. to newly created axes, as specified by graphs
@@ -384,37 +498,19 @@ def graph_lif_astro_net(db, graphs=None, fig=None, axes=None, prefix=''):
     """
     
     # Make it a list, if it isn't already
-    if graphs is None:
-        graphs = [
+    if plot is None:
+        plot = [
             'weight',
             'neuron',
             'spikes',
             'astro',
         ]
 
-
-    for i, (spikes, by_spike) in enumerate(db.group_by('spikes').items()):
-        pass
-
-    assert i == 0
-    assert len(by_spike) == 1
-
-    num_synapse = torch.as_tensor(spikes).shape[-1]
-            
-    d = by_spike[0]
-    tl = d['tl']
-
-    # Generate axes and the figure
-    if fig is None and axes is None:
-        fig, axes = gen_1nNs1a_axes(num_synapse, graphs=graphs)
-    elif not ((fig is None) == (axes is None)):
-        raise ValueError("fig an axes kwargs must be mentioned together, or not at all")
+    spikes = db_rec['spikes']
+    tl = db_rec['tl']
 
     # Graph
-    fig_idx = 0  # Keeping this for legacy naming
-    graph_1nNs1a(tl, axes, prefix=prefix)
-
-    fig.tight_layout()
+    plot_1nNs1a(tl, axes, idx, prefix=prefix, plot=plot)
 
     return fig
 
@@ -456,7 +552,7 @@ def _graph_dw_dt(points, ax, text):
     ax.text(
         -0.05, 0.8,
         text,
-        bbox=plot.plt_round_bbox)
+        bbox=uplot.plt_round_bbox)
 
 
 def graph_dw_dt(db, title="", graph_text=""):

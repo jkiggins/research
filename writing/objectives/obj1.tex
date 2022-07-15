@@ -256,7 +256,7 @@ steady-state within a reasonable window, such as with $\tau_{ip3/k+} = 10$.
 %% TODO: add more detail about steady-state
 
 
-\section{Signed Proportional Astrocyte State Change}
+\section{Signed Proportional Astrocyte State Change} \label{sec:sign_prop}
 
 The first variant of the \emph{Update(ip3, k+)} function considers the
 magnitude of input pathway state variables $ip3$ and $k+$ as well as which
@@ -280,7 +280,7 @@ the valid ranges of $T_{diff}$ for an update to \ca to occur. $dca_{delta}$
 describes the change in \ca at a given time from external influence, while
 $dca_{decay}$ accounts for the leaking of \ca. Note that the threshold values
 determine the sign of $dca_{delta}$, and provide the ability to shift the \ca
-response, as shown in Figure \ref{fig:astro_ltd_shift}. Increasing the distance
+response, as shown in Figure \ref{fig:astro:stdp_ltd_shift}. Increasing the distance
 between the $ltp$ and $ltd$ thresholds also allow for varying degrees of
 tolerance to transient activity that would otherwise lead to a response by the
 Astrocyte. Simulations use the baseline parameter values outlined in Table
@@ -406,11 +406,11 @@ $thr_{ltp}=1.75$ and $thr_{ltd}=-1.75$ can be seen. Those parameter values form
 a hysteresis band, where the Astrocyte does not respond with increased \ca for
 small deviations between \ipt and \kp. This leads to an increased range of
 weight values resulting in stable behavior. Sweeping synaptic weight in Figure
-\ref{fig:astro:rp_many-w_sweep} shows that weight values beyond $w \approx 3.0$
+\ref{fig:astro:rp_many_w_sweep} shows that weight values beyond $w \approx 3.0$
 result in no \ca activity.
 
 \asvgf{figures/artifacts/obj1/astro_rp_many-w_sweep.svg}{Astrocyte Response to Random
-  Poission Spike Train for Various Synaptic Weights}{fig:astro:rp_w_sweep}{0.4}
+  Poission Spike Train for Various Synaptic Weights}{fig:astro:rp_many_w_sweep}{0.4}
 
 %% One approach to mitigate the averaging effect would be lowering
 %% $\tau_{ip3}$ and $\tau_{k+}$, though this would reduce sensitivity to pulse
@@ -424,7 +424,7 @@ result in no \ca activity.
 Next, this work considers an variant of \emph{Update(ip3, k+)} that is sensitive
 to pre and post-synaptic spike timing, but not the rate of activity at each
 terminal. The previous Signed Proportional model outlined in Section
-\ref{sec:sign-prop} could exhibit sensitivity to spike timing. This was
+\ref{sec:sign_prop} could exhibit sensitivity to spike timing. This was
 demonstrated in Figure \ref{fig:astro:classic_stdp}, where the characteristic
 STDP curve was reproduced by the Astrocyte model. As shown in Section
 \ref{sec:rate_response} the sensitivity to spike timing only holds for sparse
@@ -458,8 +458,8 @@ of $sign_{ltd}$ and $sign_{ltp}$ that would allow a region around $dt=0$
 where weight updates were 0.
 
 \begin{align}
-sign_{ltd} = -H(k+ + thr_{ltd}) \label{eq:astro:temp-sign-1}\\
-sign_{ltp} = H(ip3 + thr_{ltd}) \label{eq:astro:temp-sign-2}
+sign_{ltd} = -(1 - H(k+ + thr_{ltd})) \label{eq:astro:temp-sign-1}\\
+sign_{ltp} = 1 - H(ip3 + thr_{ltp}) \label{eq:astro:temp-sign-2}
 \end{align}
 
 Unlike with the rate-based variation, updates to \ca happen only when spikes
@@ -510,9 +510,30 @@ $thr_{ca}=2.5$.
   Activity With Input from a single synapse, given
   $thr_{ca}=2.5$}{fig:astro:tp_many_w_tl}{0.5}
 
+
 To better explore the activity surrounding a stable configuration, Figure
-\ref{fig:astro:tp_many_w_tl_zoom} shows a blown-up region of Astrocyte activity
-with $w=1.2$.
+\ref{fig:astro:tp_many_w_tl_xlim} shows a blown-up region of Astrocyte activity
+with $w=1.2$. This graphs shows simulation with three synaptic weights. This
+shows how stable configurations are linked to synchronous activity, where the
+downstream neuron fires in time with the upstream. This is a result of a
+convention used in this work that synchronous spikes don't result in any change
+in \ca.
+
+\asvgf{figures/artifacts/obj1/astro_tp_many-w_xlim_tl.svg}{Restricted Timeline of Astrocyte
+  Activity with input from a single synapse, given
+  $thr_{ca}=2.5$}{fig:astro:tp_many_w_tl_xlim}{0.5}
+
+Using values $thr_{ltd}=thr_{ltp}=1.0$ (see Equation \ref{eq:astro:temp-sign-1})
+results in a slight change in the model behavior, which adds the condition in
+Equation \ref{eq:dca_band}, resulting in different behavior, outlined in Figure
+\ref{fig:astro:tp_many_w_sweep}. In general, there are greater regions of
+stability when compared to the previous simulation without the
+change. For $thr_{ca}=3.0$ there are no threshold events within the range of
+synaptic weights used. Essentially, this change increases the tolerance for
+Astrocyte response, and for what is considered synchronous activity.
+
+\asvgf{figures/artifacts/obj1/astro_tp_many-w_sweep_dca-max.svg}{Number of \ca
+  events with different synaptic weights.}{fig:astro:tp_many_w_sweep}{0.5}
 
 \section{Summary}
 This chapter introduces a computationally efficient and intuitive Astrocyte

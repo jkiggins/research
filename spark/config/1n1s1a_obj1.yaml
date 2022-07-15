@@ -13,6 +13,8 @@ classic_stdp: &classic_stdp
   alpha_post: 1.0
   post_reset_on_spike: False
 
+  dca_max: 100000.0
+
   weight_update: thr
 
   u_step_params:
@@ -34,6 +36,8 @@ astro_plasticity:
   tau_i_post: 100.0
   alpha_post: 1.0
   post_reset_on_spike: False
+
+  dca_max: 100000.0
 
   u_step_params:
     mode: stdp

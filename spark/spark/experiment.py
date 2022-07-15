@@ -3,10 +3,30 @@ import numpy as np
 import torch
 import random
 import pickle
+import copy
 
 from pathlib import Path
 
 from collections import OrderedDict
+
+def try_load_dbs(base_name, many=False):
+    if many:
+        dbs = []
+        i = 0
+        while many:
+            path = Path(base_name.format(i))
+            i += 1
+            if path.exists():
+                dbs.append(ExpStorage(path=path))
+            else:
+                break
+
+        return dbs
+    else:
+        path = Path(base_name)
+        if path.exists():
+            return ExpStorage(path=path)
+
 
 def seed_many():
     seed = 2340234234
@@ -141,36 +161,31 @@ class VSweep:
 
 class ExpStorage:
     def __init__(self, path=None):
-        self.experiments = {}
-        
         if not (path is None):
             with open(path, 'rb') as fp:
-                self.experiments = pickle.load(fp)
+                self.db, self.meta = pickle.load(fp)
+        else:
+            self.meta = {}
+            self.db = []
 
         self.prefix({})
-
-        self.exp('main')
 
 
     def __iter__(self):
         return self.db.__iter__()
 
+
     def __len__(self):
         return len(self.db)
 
+
     def __getitem__(self, idx):
-        return self.db[idx]
+        return self.db[idx]        
+
 
     def save(self, path):
         with open(path, 'wb') as fp:
-            pickle.dump(self.experiments, fp)
-        
-    def exp(self, name):
-        self.exp_name = name
-        if not (self.exp_name in self.experiments):
-            self.experiments[self.exp_name] = {'db': [], 'meta': {}}
-            self.db = self.experiments[self.exp_name]['db']
-            self.meta = self.experiments[self.exp_name]['meta']
+            pickle.dump([self.db, self.meta], fp)
 
 
     def prefix(self, d={}):

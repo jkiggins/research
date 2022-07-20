@@ -1,6 +1,7 @@
 import argparse
 import os
 from tqdm import tqdm
+from pathlib import Path
 import matplotlib.pyplot as plt
 
 import torch
@@ -13,11 +14,18 @@ from .lif_astro_net import (
     gen_ramp_impulse_spikes,
     gen_impulse_spikes,
     sim_lif_astro_net,
-    graph_lif_astro_net,
-    graph_lif_astro_compare,
+    gen_sgnn_axes,
+    graph_sgnn
 )
+
 from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
-from ..experiment import ExpStorage, VSweep, seed_many, load_or_run
+from ..experiment import (
+    ExpStorage,
+    VSweep,
+    seed_many,
+    try_load_dbs,
+    try_load_dbs_pairs
+)
 
 def _print_sim(name):
     print("##### Simulation: {} #####".format(name))
@@ -30,7 +38,7 @@ def _sim_stdp_and_astro(cfg, spikes, db_astro, db_stdp, descr):
     return [db_stdp, db_astro]
 
 
-def _exp_average_pulse_pair_sweep(cfg_path):
+def _exp_average_pulse_pair_sweep(cfg_path, sim=False):
     """
     Simulate an snn in the 1n1s1a configuration, and demonstrate how plasticity
     triggered by a threshold on u can average multiple pulse pairs, and allow
@@ -40,7 +48,16 @@ def _exp_average_pulse_pair_sweep(cfg_path):
     * mu for synaptic weight initialization
     """
 
+    db_name = '_exp_average_pulse_pair_sweep_{}_{}.db'
     dbs = []
+    all_dbs_types = ['mu', 'assoc', 'tau', 'dw_factor', 'v_th', 'ca_th']
+                     
+    if not sim:
+        dbs = try_load_dbs_pairs(db_name, all_dbs_types, ['astro', 'stdp'])
+
+    if len(dbs) > 0:
+        return dbs
+
 
     with torch.no_grad():
         cfg = config.Config(cfg_path)
@@ -53,9 +70,9 @@ def _exp_average_pulse_pair_sweep(cfg_path):
 
         # Create db objects
         db_stdp = ExpStorage()
-        db_stdp.meta['descr'] = 'snn_1n1a1s_tp_mu_sweep'
+        db_stdp.meta['descr'] = 'snn_1n1s1a_tp_mu_sweep'
         db_astro = ExpStorage()
-        db_astro.meta['descr'] = 'snn_1n1a1s_tp_mu_sweep'
+        db_astro.meta['descr'] = 'snn_1n1s1a_tp_mu_sweep'
 
         for mu in tqdm(all_mu, desc="mu: "):
             cfg['linear_params']['mu'] = mu
@@ -75,9 +92,9 @@ def _exp_average_pulse_pair_sweep(cfg_path):
         cfg = config.Config(cfg_path)
 
         db_stdp = ExpStorage()
-        db_stdp.meta['descr'] = 'snn_1n1a1s_tp_sweep_association'
+        db_stdp.meta['descr'] = 'snn_1n1s1a_tp_sweep_association'
         db_astro = ExpStorage()
-        db_astro.meta['descr'] = 'snn_1n1a1s_tp_sweep_association'
+        db_astro.meta['descr'] = 'snn_1n1s1a_tp_sweep_association'
         cfg['astro_params'] = cfg['classic_stdp']
 
         # Nearest Neighbor
@@ -117,7 +134,7 @@ def _exp_average_pulse_pair_sweep(cfg_path):
         db_astro.prefix({'assoc': 'many-many'})
         _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-        dbs.append(('assoc', db_stdp, db_astro))
+        dbs.append(('assoc', db_astro, db_stdp))
 
 
         ## Simulate with different values for tau_ip3 and tau_k+
@@ -129,9 +146,9 @@ def _exp_average_pulse_pair_sweep(cfg_path):
 
         # Different descr only needed when each db will result in a separate graph
         db_stdp = ExpStorage()
-        db_stdp.meta['descr'] = 'snn_1n1a1s_tp_sweep_tau_classic'
+        db_stdp.meta['descr'] = 'snn_1n1s1a_tp_sweep_tau_classic'
         db_astro = ExpStorage()
-        db_astro.meta['descr'] = 'snn_1n1a1s_tp_sweep_tau_astro'
+        db_astro.meta['descr'] = 'snn_1n1s1a_tp_sweep_tau_astro'
 
         # Same both tau together
         for tau in tqdm(all_tau, desc="tau"):
@@ -164,7 +181,7 @@ def _exp_average_pulse_pair_sweep(cfg_path):
             db_astro.prefix({'tau': tau, 'sweep': 'k+'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-        dbs.append(('tau', db_stdp, db_astro))
+        dbs.append(('tau', db_astro, db_stdp))
 
 
         ## Simulate with different values for alpha_ip3 and alpha_k+
@@ -176,9 +193,9 @@ def _exp_average_pulse_pair_sweep(cfg_path):
         all_dw = torch.linspace(0.1, 0.5, 5)
 
         db_stdp = ExpStorage()
-        db_stdp.meta['descr'] = 'snn_1n1a1s_tp_sweep_dw_factor_classic'
+        db_stdp.meta['descr'] = 'snn_1n1s1a_tp_sweep_dw_factor_classic'
         db_astro = ExpStorage()
-        db_astro.meta['descr'] = 'snn_1n1a1s_tp_sweep_dw_factor_astro'
+        db_astro.meta['descr'] = 'snn_1n1s1a_tp_sweep_dw_factor_astro'
         
 
         # Same both tau together
@@ -206,7 +223,7 @@ def _exp_average_pulse_pair_sweep(cfg_path):
             db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-        dbs.append(('dw_factor', db_stdp, db_astro))
+        dbs.append(('dw_factor', db_astro, db_stdp))
 
 
         ## Simulate with different values for lif neuron threshold
@@ -214,9 +231,9 @@ def _exp_average_pulse_pair_sweep(cfg_path):
         all_thr = torch.linspace(0.01, 0.4, 10)
 
         db_stdp = ExpStorage()
-        db_stdp.meta['descr'] = 'snn_1n1a1s_tp_sweep_lif_v_th'
+        db_stdp.meta['descr'] = 'snn_1n1s1a_tp_sweep_lif_v_th'
         db_astro = ExpStorage()
-        db_astro.meta['descr'] = 'snn_1n1a1s_tp_sweep_lif_v_th'
+        db_astro.meta['descr'] = 'snn_1n1s1a_tp_sweep_lif_v_th'
 
         for thr in tqdm(all_thr, desc="v_th"):
             cfg['lif_params']['v_th'] = thr
@@ -224,7 +241,7 @@ def _exp_average_pulse_pair_sweep(cfg_path):
             db_astro.prefix({'v_th': thr})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-        dbs.append(('v_th', db_stdp, db_astro))
+        dbs.append(('v_th', db_astro, db_stdp))
 
 
         ## Simulate, sweeping ca threshold
@@ -232,9 +249,9 @@ def _exp_average_pulse_pair_sweep(cfg_path):
         all_thr = torch.linspace(0.1, 3.0, 10)
 
         db_stdp = ExpStorage()
-        db_stdp.meta['descr'] = 'snn_1n1a1s_tp_sweep_ca_th'
+        db_stdp.meta['descr'] = 'snn_1n1s1a_tp_sweep_ca_th'
         db_astro = ExpStorage()
-        db_astro.meta['descr'] = 'snn_1n1a1s_tp_sweep_ca_th'
+        db_astro.meta['descr'] = 'snn_1n1s1a_tp_sweep_ca_th'
 
         for thr in tqdm(all_thr, desc="ca_th"):
             cfg['classic_stdp']['u_th'] = thr
@@ -243,8 +260,15 @@ def _exp_average_pulse_pair_sweep(cfg_path):
             db_astro.prefix({'ca_th': thr})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-        dbs.append(('ca_th', db_stdp, db_astro))
+        dbs.append(('ca_th', db_astro, db_stdp))
         
+
+        for dbt in dbs:
+            path = Path(db_name.format(dbt[0], 'astro'))
+            dbt[1].save(path)
+
+            path = Path(db_name.format(dbt[0], 'stdp'))
+            dbt[2].save(path)
 
         return dbs
 
@@ -322,14 +346,73 @@ def _sim_stdp_and_astro(
     return dbs
 
 
-def _exp_average_pulse_pair_baseline(cfg_path):
+def _exp_rate_plasticity(cfg_path, sim=False):
+    db_name = '_exp_rate_plasticity_{}.db'
+
+    dbs = []
+    if not sim:
+        dbs = try_load_dbs(db_name, many=True)
+        if len(dbs) > 0:
+            return dbs
+
+    with torch.no_grad():
+        cfg = config.Config(cfg_path)
+        
+        cfg['astro_params'] = cfg['anti_stdp']
+        cfg['astro_params']['u_step_params']['mode'] = 'u_ordered_prod'
+        cfg['astro_params']['weight_update'] = 'thr'
+        cfg['astro_params']['u_th'] = 2.5
+
+        cfg['astro_params']['u_step_params']['ltd'] = -1.5
+        cfg['astro_params']['u_step_params']['ltp'] = 1.5
+
+        spikes = gen_rate_spikes([
+            (0.3, cfg['sim']['steps'])
+        ])
+        
+        db = ExpStorage()
+        db.meta['descr'] = 'snn_1n1s1a_rp'
+        sim_lif_astro_net(
+            cfg,
+            spikes,
+            db
+        )
+        dbs.append(db)
+
+        cfg['astro_params']['u_step_params']['ltd'] = -0.8
+        cfg['astro_params']['u_step_params']['ltp'] = 0.8
+        db = ExpStorage()
+        db.meta['descr'] = 'snn_1n1s1a_rp_thr'
+        sim_lif_astro_net(
+            cfg,
+            spikes,
+            db
+        )
+        dbs.append(db)
+
+
+    for i, db in enumerate(dbs):
+        db.save(db_name.format(i))
+
+    return dbs
+
+
+def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
     """
     Simulate an snn in the 1n1s1a configuration, and demonstrate how plasticity
-    triggered by a threshold on u can average multiple pulse pairs, and allow
+    triggered by a threshold on Ca can average multiple pulse pairs, and allow
     for confident steps for plasticity, based on multiple events.
     """
 
+    db_name = '_exp_average_pulse_pair_baseline_{}.db'
+
     dbs = []
+    if not sim:
+        dbs = try_load_dbs(db_name, many=True)
+
+        if len(dbs) > 0:
+            return dbs
+    
 
     with torch.no_grad():
         cfg = config.Config(cfg_path)
@@ -347,9 +430,6 @@ def _exp_average_pulse_pair_baseline(cfg_path):
         # Repeat, but with a fixed length for each impulse
         spikes = gen_impulse_spikes(10, num_impulses=15)
         dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const')
-        import code
-        code.interact(local=dict(globals(), **locals()))
-        exit(1)
         dbs = dbs + dbs_sim
 
         # Sim just STDP, with longer spikes to show divergence
@@ -394,119 +474,55 @@ def _exp_average_pulse_pair_baseline(cfg_path):
         dbs = dbs + dbs_sim
 
 
+    for i, db in enumerate(dbs):
+        db.save(db_name.format(i))
+
     return dbs
 
 
-def _graph_sweep_mu(v):
+def _graph_sweep_param(v, suffix, prefix_key):
     db_astro, db_stdp = v
 
     descr = db_astro.meta['descr']
 
     graphs=['weight']*2
-    graphs.append('spikes')
+    graphs.append('pre-spikes')
+
+    fig, axes = gen_sgnn_axes(1, graphs=graphs, offset=False)
+
+    axes['weight'][0][0].set_title("Astrocyte Plasticity Response to Various {}".format(suffix))
+    axes['weight'][1][0].set_title("Classic STDP Response to Spike Impulses for Various {}".format(suffix))
 
     for i, d in enumerate(db_astro):
-        tl = d['tl']
-        prefix = str(float(d['mu']))
-        if i == 0:
-            fig, axes = graph_lif_astro_compare(tl, 0, graphs=graphs, prefix=prefix)
-            axes['weight'][0].set_title("Astrocyte Plasticity Response to Various mu")
-            axes['weight'][1].set_title("Classic STDP Response to Spike Impulses for Various mu")
-        else:
-            fig, axes = graph_lif_astro_compare(tl, 0, fig=fig, axes=axes, prefix=prefix)
+        prefix = d[prefix_key]
+        graph_sgnn(d, fig, axes, 0, prefix=prefix, plot=graphs)
 
     for d in db_stdp:
-        prefix = str(float(d['mu']))
-        tl = d['tl']
-        fig, axes = graph_lif_astro_compare(tl, 1, fig=fig, axes=axes, prefix=prefix)
+        prefix = d[prefix_key]
+        graph_sgnn(d, fig, axes, 1, prefix=prefix, plot=graphs)
 
     return ("{}_0.svg".format(descr), fig, axes)
 
 
-def _graph_sweep_assoc(v):
-    db_stdp, db_astro = v[0], v[1]
-    descr = db_stdp.meta['descr']
-
-    graphs = ['weight']*2
-    graphs.append('spikes')
-
-    # Graph stdp traces on subplot 0
-    for i, d in enumerate(db_stdp):
-        prefix = d['assoc']
-        tl = d['tl']
-
-        if i == 0:
-            fig, axes = graph_lif_astro_compare(tl, 0, graphs=graphs, prefix=prefix)
-            axes['weight'][0].set_title("Classic STDP Response to Various Spike Associations")
-            axes['weight'][1].set_title("Astrocyte Response to Various Spike Associations")
-        else:
-            prefix = d['assoc']
-            fig, axes = graph_lif_astro_compare(tl, 0, fig=fig, axes=axes, prefix=prefix)
-
-    # Graph astrocyte traces on subplot 1
-    for d in db_astro:
-        prefix = d['assoc']
-        fig, axes = graph_lif_astro_compare(tl, 1, fig=fig, axes=axes, prefix=prefix)
-
-    return ("{}_0.svg".format(descr), fig, axes)
-
-
-def _graph_sweep_tau(db, title):
+def _graph_sweep_param_sp(db, db_by_key, prefix_key, title):
     """
     Generate a figure for a single db
     """
-
-    fig, axes = None, None
+    num_subplots = len(db_by_key)
+    graphs = ['weight']*num_subplots
+    graphs.append('pre-spikes')
+    
+    fig, axes = gen_sgnn_axes(1, graphs=graphs, offset=False)
     descr = db.meta['descr']
 
-    # Generate one weight subplot plot per sweep type, which is one of [ip3, k+, both]
-    db_by_sweep = db.group_by('sweep')
-    num_subplots = len(db_by_sweep)
-
-    graphs = ['weight']*num_subplots
-    graphs.append('spikes')
-
-    for i, (sweep, by_sweep) in enumerate(db_by_sweep.items()):
+    for i, (key, by_key) in enumerate(db_by_key.items()):
         # graph each timeline
-        for d in by_sweep:
-            prefix = d['tau']
-            tl = d['tl']
-
-            if fig is None or axes is None:
-                fig, axes = graph_lif_astro_compare(tl, i, graphs=graphs, prefix=prefix)
-            else:
-                fig, axes = graph_lif_astro_compare(tl, i, fig=fig, axes=axes, prefix=prefix)
-
+        for d in by_key:
+            prefix = d[prefix_key]
+            graph_sgnn(d, fig, axes, i, prefix=prefix, plot=graphs)
+            
         # for each plot, set the title
-        axes['weight'][i].set_title("{} Response to Sweeping {} Time Constant (tau)".format(title, sweep))
-
-    return ("{}_0.svg".format(descr), fig, axes)
-
-
-def _graph_sweep_dw_factor(db, title):
-    descr = db.meta['descr']
-    fig, axes = None, None
-
-    # Generate one weight subplot plot per sweep type, which is one of [ip3, k+, both]
-    db_by_sweep = db.group_by('sweep')
-    num_subplots = len(db_by_sweep)
-
-    graphs = ['weight']*num_subplots
-    graphs.append('spikes')
-
-    for i, (sweep, by_sweep) in enumerate(db_by_sweep.items()):
-        # graph each timeline
-        for d in by_sweep:
-            prefix = d['dw']
-            tl = d['tl']
-
-            if fig is None or axes is None:
-                fig, axes = graph_lif_astro_compare(tl, i, graphs=graphs, prefix=prefix)
-            else:
-                fig, axes = graph_lif_astro_compare(tl, i, fig=fig, axes=axes, prefix=prefix)
-
-        # for each plot, set the title
-        axes['weight'][i].set_title("{} Response to Sweeping dw Factor for {}".format(title, sweep))
+        axes['weight'][i][0].set_title(title)
 
     return ("{}_0.svg".format(descr), fig, axes)
 
@@ -567,6 +583,24 @@ def _graph_sweep_ca_th(v):
     return ("{}_0.svg".format(descr), fig, axes)
 
 
+def _graph_average_pulse_pair(dbs):
+
+    for db in dbs:
+        assert len(db) == 1
+
+        graphs = None
+        if 'graphs' in db.meta:
+            graphs = db.meta['graphs']
+        
+        fig, axes = gen_sgnn_axes(1, graphs=graphs)
+
+        db_rec = db[0]
+        graph_sgnn(db_rec, fig, axes, 0)
+
+        fig.tight_layout()
+        fig.savefig("{}_0.svg".format(db.meta['descr']))
+
+
 def _graph_average_pulse_pair_sweep(sim_results):
     figures = []
 
@@ -577,37 +611,27 @@ def _graph_average_pulse_pair_sweep(sim_results):
         print("graphing: ", k)
 
         # If Sweeping mu
-        if k == 'mu':
-            figures.append(_graph_sweep_mu(v))
+        if k in ['mu', 'assoc', 'v_th', 'ca_th']:
+            suffix = k
+            prefix_key = k
 
-        # If sweeping different spike associations
-        elif k == 'assoc':
-            figures.append(_graph_sweep_assoc(v))
+            if k == 'assoc':
+                suffix = "Spike Association"
 
-        # If sweeping tau
-        elif k == 'tau':
-            db_stdp, db_astro = v[0], v[1]
-            figures.append(_graph_sweep_tau(db_stdp, 'Classic STDP'))
-            figures.append(_graph_sweep_tau(db_astro, 'Astrocyte'))
+            figures.append(_graph_sweep_param(v, suffix, prefix_key))
 
-        elif k == 'dw_factor':
-            db_stdp, db_astro = v[0], v[1]
-            figures.append(_graph_sweep_dw_factor(db_stdp, 'Classic STDP'))
-            figures.append(_graph_sweep_dw_factor(db_astro, 'Astrocyte'))
+        elif k in ['tau', 'dw_factor']:
+            db_stdp, db_astro = v[0:2]
 
-        elif k == 'v_th':
-            figures.append(_graph_sweep_v_th(v))
-
-        elif k == 'ca_th':
-            figures.append(_graph_sweep_ca_th(v))
+            if k == 'dw_factor':
+                k = 'dw'
+            
+            figures.append(_graph_sweep_param_sp(db_stdp, db_stdp.group_by('sweep'), k, "Classic STDP"))
+            figures.append(_graph_sweep_param_sp(db_astro, db_astro.group_by('sweep'), k, "Astrocyte"))
 
 
     for fig_path, fig, axes in figures:
         print("saving: ", fig_path)
-        # draw legend for all axes
-        for k, axs in axes.items():
-            for ax in axs:
-                ax.legend()
 
         fig.savefig(fig_path)
 
@@ -630,16 +654,14 @@ def _main(args):
     cfg_path = '../../config/1n1s1a_obj2.yaml'
 
     if args.astro_impulse or args.all:
-        dbs = _exp_average_pulse_pair_baseline('../../config/1n1s1a_obj2.yaml')
-        for db in dbs:
-            if 'graphs' in db.meta:
-                fig = graph_lif_astro_net(db, graphs=db.meta['graphs'])
-            else:
-                fig = graph_lif_astro_net(db)
-            fig.savefig("{}_0.svg".format(db.meta['descr']))
+        dbs = _exp_rate_plasticity(cfg_path, sim=args.sim)
+        _graph_average_pulse_pair(dbs)
+
+        dbs = _exp_average_pulse_pair_baseline(cfg_path, sim=args.sim)
+        _graph_average_pulse_pair(dbs)
 
     if args.astro_impulse_sweep or args.all:
-        dbs = _exp_average_pulse_pair_sweep('../../config/1n1s1a_obj2.yaml')
+        dbs = _exp_average_pulse_pair_sweep(cfg_path, sim=args.sim)
         _graph_average_pulse_pair_sweep(dbs)
 
 

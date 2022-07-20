@@ -89,6 +89,8 @@ class LifAxis:
         self.offset_labels = []
         self.enable_offset = offset
 
+        self.plot_count = 0
+
 
     def _step_offset(self, y):
         if self.offset != 0:
@@ -138,6 +140,7 @@ class LifAxis:
             self.ax.set_yticks(self.offset_ticks)
             self.ax.set_yticklabels(self.offset_labels)
         self.ax.plot(*args, **kwargs)
+        self.plot_count += 1
 
 
     def plot_events(self, events, colors=None):
@@ -159,7 +162,8 @@ class LifAxis:
                      colors=colors)
         self.ax.set_xlim((0, max_x))
 
-        self.event_offset = line_offsets[-1]
+        self.event_offset = line_offsets[-1] + 1
+        self.plot_count += 1
         
     
 def _store_snn_step(tl, i, spikes, snn, snn_output, s):
@@ -298,20 +302,24 @@ def gen_noisy_spikes(duration):
 
 def gen_sgnn_axes(
     num_synapse,
-    graphs=[
-        'spikes',
-        'neuron',
-        'astro',
-        'weight']
+    graphs=None,
+    offset=True,
 ):
+    if graphs is None:
+        graphs=[
+            'spikes',
+            'neuron',
+            'astro',
+            'weight']
+
     # Validate graphs
-    possible_graphs = ['spikes', 'neuron', 'astro', 'astro-ca', 'weight']
+    possible_graphs = ['spikes', 'pre-spikes', 'neuron', 'astro', 'astro-ca', 'weight']
     for g in graphs:
         if not (g in possible_graphs):
             raise ValueError("Graph: {} is not supported, must be one of {}".format(g, possible_graphs))
 
     # Dynamic height ratios
-    possible_height_ratios=dict(zip(possible_graphs, [0.6,1,1,1,1]))
+    possible_height_ratios=dict(zip(possible_graphs, [0.6,1,1,1,1,1]))
     height_ratios = [possible_height_ratios[k] for k in graphs]
     
     # Figure out the gridspec
@@ -323,6 +331,7 @@ def gen_sgnn_axes(
 
     graph_to_title = {
         'spikes': "Astrocyte and Neuron Events for Synapse {}",
+        'pre-spikes': "Pre-synaptic Spikes for Synapse {}",
         'neuron': "Neuron Membrane Voltage",
         'astro': "Astrocyte Traces, Synapse {}",
         'astro-ca': "Astrocyte Calcium Response, Synapse {}",
@@ -335,13 +344,13 @@ def gen_sgnn_axes(
         if g == "neuron":
             ax = fig.add_subplot(gs[gs_idx, 0:ncols])
             ax.set_title(graph_to_title[g])
-            ax = LifAxis(ax, offset=True)
+            ax = LifAxis(ax, offset=offset)
         else:
             ax = []
             for i in range(num_synapse):
                 a = fig.add_subplot(gs[gs_idx, i])
                 a.set_title(graph_to_title[g].format(i))
-                a = LifAxis(a, offset=True)
+                a = LifAxis(a, offset=offset)
                 ax.append(a)
 
         axes[g].append(ax)
@@ -365,7 +374,15 @@ def plot_1nNs1a(
 
     if prefix is None:
         prefix = ''
+    elif type(prefix) == torch.Tensor:
+        prefix = float(prefix)
 
+    if type(prefix) == float:
+        prefix = "{:4.2f}".format(prefix)
+    elif type(prefix) != str:
+        prefix = str(prefix)
+        
+    
     if plot is None:
         plot = ['neuron', 'astro', 'spikes', 'weight']
 
@@ -405,6 +422,12 @@ def plot_1nNs1a(
                         [tl['z_pre'][:,i], tl['z_post'][:,i], tl['a'][:,i]],
                         colors=['tab:blue', 'tab:orange', 'tab:red'])
                     a.legend([l.format(i) for l in ['{}Pre Spikes', '{}Post Spikes', '{}Astro dw']])
+
+                elif g == 'pre-spikes' and 'pre-spikes' in plot:
+                    if a.plot_count == 0:
+                        a.plot_events(
+                            [tl['z_pre'][:,i]],
+                            colors=['tab:blue'])
 
                 elif g == 'weight' and 'weight' in plot:
                     a.plot(tl['w'][:,i], marker='.', label='{}'.format(prefix))
@@ -489,6 +512,7 @@ def graph_sgnn(
     fig, axes,
     idx, plot=None,
     prefix=None, titles=None):
+
     """
     Graph the data from db either
     1. to newly created axes, as specified by graphs

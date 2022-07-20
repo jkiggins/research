@@ -57,23 +57,21 @@ today.
 %% used Spike Timing Defendant Plasticity rule, and offers improvements and
 %% increased flexibility in the single and multi-synapses cases.
 
-The overarching goal of this thesis is to extend the bio-inspiration of
-spiking networks by introducing an Astrocyte-like element, and forming a
-tri-partied synapse. This Astrocyte element will drive synaptic plasticity;
-First implementing, then extending the widely used STDP rule. Benefits of
-Astrocyte-like control of synaptic plasticity will be demonstrated in the
-single synapse, single neuron configuration (1S1N) as well as select
-multi-synapse configurations (i.e. 2S1N, 3S2N, etc...). Inputs will mostly
+The overarching goal of this thesis is to develop a bio-inspired Astrocyte
+model, and more broadly an Astrocyte-Neuron interaction model. This model will
+be computationally simple, scalable, and captures common themes within
+Neuroscience literature. To direct this research, the developed Astrocyte
+element will drive synaptic plasticity; First generalizing, then diverging from
+the widely used STDP rule. Benefits of Astrocyte-like control of synaptic
+plasticity will be demonstrated in the single synapse, single neuron
+configuration (1S1N) as well as select multi-synapse configurations. Inputs will
 consist of procedurally generated spiking inputs. This would include poisson
 rate-coded spike trains, spiking inputs representing Boolean variables, and
-temporal inputs that follow specific patterns. In general, for each
-experiment there will be some comparison necessary between the Astrocyte
-driven plasticity and classical STDP. To evaluate each approach
-convergence/divergence of weights or speed of convergence may be
-used. Statistical analysis of various intermediate signals, or the weights
-may be useful as well, depending on the experiment. If it is difficult to
-compare an experiment to classical STDP, it should instead be possible to
-compare to another astrocyte driven experiment.
+temporal inputs that follow specific patterns. To evaluate each experiment
+different intrinsic properties will be observed, such as convergence/divergence
+of weights, speed of convergence, stable points across a parameter space, and
+lastly performance on any task driven experiments. Statistical analysis of
+various intermediate signals, and weights may be employed as well.
 
 More specific objectives.
 \begin{enumerate}
@@ -87,7 +85,8 @@ More specific objectives.
     configuration.
 
   \item Extend the Developed Astrocyte-Synapse Model to include coordination of
-    plasticity rules across multiple synapses. Show how this novel approach has
-    features not found with classic STDP.
+    plasticity rules across multiple synapses. Show how an additional synapse
+    effects the model response, and how coordination can give the Astrocyte
+    model an edge on a given task.
 
 \end{enumerate}

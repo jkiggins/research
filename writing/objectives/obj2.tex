@@ -44,25 +44,67 @@ Working Memory &Gordleeva &Gordleeva2021 &Lin and Rizel or Variation &Astrocyte 
 % how other models follow that basic approach, but that this work need not make
 % a distinction between them.
 
+\section{Rate-Based Plasticity}
+On of the most well established features outlined in Table
+\ref{table:obj2_astro_features} is the \ipt \ca mediated release of
+Glutamate. This release of Glu is thought to increase the PR, which is
+equivalent to synaptic weight in this work. This $pre-spike \implies IP3
+\implies Ca^{2+} \implies Glu$ pathway has many interesting effects that are
+explored in other works, including things like self-repair (see Chapter
+\ref{chapter:background}). In this work however, the idea of coordinating pre
+and post-synaptic activity into an Astrocyte mediated plasticity rules is the
+overarching goal. With this in mind, an extension of the Signed-proportional
+update rule (See Chapter \ref{chapter:obj1}) with a simple weight update rule,
+outlined in Equation \ref{eq:dw-prop} is employed. This essentially uses the \ca
+response directly to scale the synaptic weight.
+
+\begin{align}
+  d_w = ca / thr_{ca}  \label{eq:dw-prop}
+\end{align}
+
+With this approach, what emerges is a rate-based plasticity rule that responds
+to differences in average firing rate between input and output. Simulation shows
+that this simple plasticity rule is able to drive the synaptic weight to one of
+the stable configurations specified in Section \ref{sec:rate_response}. Figure
+\ref{fig:astro:rp} shows the progression of the Rate-Based Plasticity rule with a random
+Poisson input.
+
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_rp_0.svg}{
+  Astrocyte response to random Poisson input with rate-based plasticity
+  rule. $thr_{ltp}=-thr_{ltd}=1.5$}{fig:astro:rp}{0.5}
+
+Figure \ref{fig:astro:rp_thr} show how changing the LTP/LTD threshold can lead to a tighter
+coupling between pre and post-synaptic activity, though at the cost of system
+stability.
+
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_rp_thr_0.svg}{
+  Astrocyte response to random Poisson input with rate-based plasticity
+  rule. $thr_{ltp}=-thr_{ltd}=0.8$}{fig:astro:rp_thr}{0.5}
+
 \section{Spike-Timing Integration Plasticity}
 
-One of the key features of the Astrocyte model developed in chapter
-\ref{chapter:obj1} is the detection and integration of coincident spikes
-effecting \ipt and \kp activity. In fact, looking at the calcium response alone
-gives a response equivalent to the weight change associated with STDP (see
-Section \ref{obj1:sec:classic_stdp}). With a simple threshold on \ca, the
-Astrocyte model can implement classic STDP, and extend it, requiring multiple
-pulse-pair events before weights change. This ``pulse-pair 
-integration'' approach differs from classic STDP in a few key ways. Firstly,
-weight updates are delayed, and determined by the value of \ca, possibly in
-conjunction with \ipt and \kp. Any weight update will depend on a series of
-causal or anti-causal spiking events instead of a single event. It may also be
-that plasticity is delayed until some internal criteria are met, with weight
-updates being proportional to the internal state. These types of effects are
-hypothesized to increase stability of the plasticity rule, and add some
-protection against noise. Furthermore an approach like this has support from
-existing Neuroscience and Engineering literature, and is similar to CICR, where
-calcium levels like and cause a release of gliotransmitters locally.
+Other features both experimentally verified, and those modeled based on
+hypothesized behavior, point towards a sensitivity to pre and post-synaptic
+spike timing. These responses are suspected to occur at a level local to a
+synapse, with a much quicker response then what is observed at within the
+Astrocyte body. This local response has been coupled STDP in some models,
+extending and enhancing the classic learning rule. One of the key features of
+the Astrocyte model developed in chapter \ref{chapter:obj1} is the detection and
+integration of coincident spikes effecting \ipt and \kp activity. In fact,
+looking at calcium alone gives a response equivalent to the weight change
+associated with STDP for some a particular parameters (see Section
+\ref{obj1:sec:classic_stdp}). With a simple threshold on \ca, the Astrocyte
+model can implement classic STDP, and extend it, requiring multiple pulse-pair
+events before weights change. This ``pulse-pair integration'' approach differs
+from classic STDP in a few key ways. Firstly, weight updates are delayed, and
+determined by the value of \ca, possibly in conjunction with \ipt and \kp. Any
+weight update will depend on a series of causal or anti-causal spiking events
+instead of a single event. The hypothesized is that this approach will increase
+stability of the plasticity rule, and add some protection against
+noise. Furthermore the approach has support from existing Neuroscience and
+Engineering literature, and is similar to CICR, where calcium levels crossing
+some threshold lead to a release of gliotransmitters locally. In the case of
+this work, that Gliotransmitter release is modeled as a change in synaptic weight.
 
 Equations \ref{eq:obj2:dw} and \ref{eq:obj2:ca_reset}
 describe the weight update and \ca reset behavior. To evaluate the Astrocyte
@@ -77,14 +119,10 @@ between these groups for Astrocyte and Neuron states to settle.
 \end{align}
 
 A slight variation allows the Astrocyte model to implement STDP, outlined in
-Equations \ref{eq:obj2:stdp_dw}. In this case ca is reset every time-step.
-
-\begin{align}
-  d_w = ca / ca_{thr} \label{eq:obj2:stdp_dw} \\
-\end{align}
+Equations \ref{eq:obj2:dw-prop}. In this case ca is reset every time-step.
 
 Since the \ca response was already shown to mimic Classic STDP in \ref{chapter:obj1}
-Equation \ref{eq:obj2:stdp_dw} will as well.
+Equation \ref{eq:dw-prop} will as well.
 
 \subsection{Impulse Response}
 Figure \ref{fig:ppi:impulse_istp} depicts the Astrocyte plasticity model with
@@ -100,7 +138,7 @@ behavior of the Astrocyte model effects the learning process
 significantly. Resulting in more stable behavior, and increasing synaptic weight
 due to causal, correlated inputs. The key effect here can be seen considering
 what happens when there are additional input spikes after a post-synaptic
-spike. In this case classic STDP would decrease the weight, the Astrocyte rule
+spike. In this case classic STDP would decrease the weight, while the Astrocyte
 integrates this event into \ca. Those input spikes are eventually associated
 with an additional down-stream spike, forming a causal relationship and \ca is
 increased. Overall this leads to LTP, with the potential LTD events being
@@ -181,31 +219,56 @@ are sufficiently low, the general lack of post-synaptic activity leads to little
 or no weight update. With higher initial weight values the Astrocyte model was
 able to converge as with previous simulations, while the STDP diverged towards a
 weight value of zero. The Astrocyte model converged to a weight value as a
-function of the initial weight, similar starting weights converging to the same,
-or a similar point. This indicates there are multiple stable configurations
-given these inputs and parameters. STDP on the other hand, doesn't exhibit the
-same stability.
+function of the initial weight, specifically the next stable configuration from
+Figure \ref{fig:astro:tp_many_w_sweep} that can be reached by LTP. This is a key
+property of the weight update mechanics, in that the system seeks a stable
+configuration.
 
-
-\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_mu_sweep_0.svg}{Classic STDP and
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_mu_sweep_0.svg}{Classic STDP and
   Astrocyte Response to Initial Weight}{fig:sweep:mu}{0.4}
 
-%% \asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_association_0.svg}{Classic
+%% \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_association_0.svg}{Classic
 %%   STDP and Astrocyte Response to Different Spike Associations}{fig:sweep:assoc}{0.4}
 
-\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_dw_factor_astro_0.svg}{Astrocyte
-Response to Different Values for Weight Update Factor}{fig:sweep:astro_dw_factor}{0.4}
+Figure \ref{fig:sweep:astro_dw_factor} shows the effect of varying the weight
+update factor $\alpha_{ltp}=\alpha_{ltd}$. In general, a very low factor results
+in a lack of movement in the synaptic weight, whereas a high weight factor leads
+to some stable regions being skipped over, but in each case some stable
+configuration is found.
 
-\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_dw_factor_classic_0.svg}{Classic
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_dw_factor_astro_0.svg}{Astrocyte
+Response to Different Values for Weight Update
+Factor}{fig:sweep:astro_dw_factor}{0.4}
+
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_dw_factor_classic_0.svg}{Classic
 STDP Response to Different Values for Weight Update Factor}{fig:sweep:stdp_dw_factor}{0.4}
 
-\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_lif_v_th_0.svg}{Classic STDP
+Figure \ref{fig:sweep:stdp_dw_factor} shows the response of Classic STDP to
+different $\alpha_{ltp}=\alpha_{ltd}$. In general the response mimics the form
+of the astrocyte weight progression, but exhibits significant instability, and
+does not converge to a stable configuration. Figure \ref{fig:sweep:v_th} depicts
+synaptic weight progression given different values for LIF neuron membrane
+voltage threshold $v_{th}$. This experiment, meant to rule out a potential
+avenue for increasing stability of Classic STDP further supports the unique
+stability offered by an Astrocyte plasticity approach.
+
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_lif_v_th_0.svg}{Classic STDP
   and Astrocyte Response to Different LIF Neuron Voltage Threshold Values}{fig:sweep:v_th}{0.4}
 
-\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_tau_astro_0.svg}{Astrocyte
+Figures \ref{fig:sweep:astro_tau} and \ref{fig:sweep:stdp_tau} show various
+weight progressions across three different subplots, with the Figures
+depicting Astrocyte and Classic STDP behavior respectively. In general,
+modifying the tau parameters, whether $\tau_{ip3}$, $\tau_{k+}$, or both leads
+to the synaptic weight settling on the stable configuration around $w=1.1$
+instead of $w=0.81$. In the case of Classic STDP, some modified $\tau_*$
+configurations lead to divergence to the maximum weight value ($20$), or
+exhibited similar instability to what has been observed thus far.
+
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_tau_astro_0.svg}{Astrocyte
   Response to Different Values for K+ and IP3 Pathway $\tau$}{fig:sweep:astro_tau}{0.4}
 
-\asvgf{figures/artifacts/obj2/snn_1n1a1s_tp_sweep_tau_classic_0.svg}{Classic
-  STDP Response to Different Values for Pre and Post-synaptic Trace $\tau$}{fig:sweep:stdp_tau}{0.4}
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_tau_classic_0.svg}{Classic
+  STDP Response to Different Values for Pre and Post-synaptic Trace
+  $\tau$}{fig:sweep:stdp_tau}{0.4}
 
 % TODO: graph of noise response vs. noise percent and possibly type

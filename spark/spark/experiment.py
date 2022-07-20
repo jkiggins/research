@@ -28,6 +28,28 @@ def try_load_dbs(base_name, many=False):
             return ExpStorage(path=path)
 
 
+def try_load_dbs_pairs(base_name, all_prefix, pairs):
+    dbs = []
+    
+    for p in all_prefix:
+        paths = [
+            Path(base_name.format(p, pairs[0])),
+            Path(base_name.format(p, pairs[1]))
+        ]
+
+        if not all([k.exists() for k in paths]):
+            return []
+
+        dbs.append((
+            p,
+            ExpStorage(path=paths[0]),
+            ExpStorage(path=paths[1]),
+        ))
+
+
+    return dbs
+
+
 def seed_many():
     seed = 2340234234
     torch.manual_seed(seed)

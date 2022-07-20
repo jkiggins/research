@@ -182,12 +182,12 @@ def _graph_sweep_tau_u(db):
     records_by_spikes = db.group_by('spikes')
     for i, (_, by_spike) in enumerate(records_by_spikes.items()):
         fig = plt.Figure(figsize=(6.4, 7.5))
-        fig.suptitle("Astrocyte Response to Different Values of U Tau")
+        fig.suptitle("Astrocyte Response to Different Values of Ca Tau")
 
         ax = fig.add_subplot(3, 1, 1)
-        ax.set_title("Astrocyte U")
+        ax.set_title("Astrocyte Ca")
         ax.set_xlabel("Time (ms)")
-        ax.set_ylabel("Value")
+        ax.set_ylabel("[Ca]")
 
         # Plot u for each tau on a single plot
         for d in by_spike:
@@ -206,7 +206,7 @@ def _graph_sweep_tau_u(db):
         ax = fig.add_subplot(3,1,2)
         ax.set_title("Astrocyte Input Traces")
         ax.set_xlabel("Time (ms)")
-        ax.set_ylabel("Value")
+        ax.set_ylabel("[IP3],[K+]")
         c1 = ax.plot(i_pre, label='ip3')[0].get_color()
         c2 = ax.plot(i_post, label='k+')[0].get_color()
         ax.legend()
@@ -287,7 +287,7 @@ def _graph_sweep_pre_alpha_tau(db):
             ax = fig.add_subplot(num_subplots, 1, j+1)
             ax.set_title("Alpha={:2.2f}".format(alpha))
             ax.set_xlabel("Time (ms)")
-            ax.set_ylabel("Value")
+            ax.set_ylabel("[IP3],[K+]")
 
             # Plot i_pre and u for each tau on a single plot
             for d in by_alpha:
@@ -323,7 +323,7 @@ def _exp_heatmap_tau_u_thr_events(cfg_path, sim=False):
 
     cfg = config.Config(cfg_path)
     cfg['astro_params'] = cfg['classic_stdp']
-    cfg['astro_params']['u_th'] = 10.0
+    cfg['astro_params']['u_th'] = 2.5
     
     spike_rate_range = torch.linspace(0.05, 0.8, 20)
     tau_range = torch.linspace(50, 500, 20)
@@ -356,12 +356,12 @@ def _graph_heatmap_tau_u_thr_events(db):
 
     fig = plt.Figure(figsize=(20,20))
     ax = fig.add_subplot(111)
-    ax.set_title("Mean U Threshold Event Waiting Time Given Poisson Spike Rate vs. U Tau")
+    ax.set_title("Mean Ca Threshold Event Waiting Time Given Poisson Spike Rate vs. Ca Tau")
     ax.set_yticks(
         list(range(len(tau_range))),
         labels=["{:2.4f}".format(float(a)) for a in tau_range],
         rotation=45)
-    ax.set_ylabel('U Tau')
+    ax.set_ylabel('Ca Tau')
 
     ax.set_xticks(
         list(range(len(spike_rate_range))),
@@ -432,7 +432,7 @@ def _graph_heatmap_alpha_thr_events(db):
 
     fig = plt.Figure(figsize=(20,20))
     ax = fig.add_subplot(111)
-    ax.set_title("Mean U Threshold Event Waiting Time Given Poisson Spike Rate vs. Pathway Alphas")
+    ax.set_title("Mean Ca Threshold Event Waiting Time Given Poisson Spike Rate vs. Pathway Alphas")
     ax.set_yticks(
         list(range(len(alpha_range))),
         labels=["{:2.4f}".format(float(a)) for a in alpha_range],
@@ -516,7 +516,7 @@ def _graph_exp_w_tl(dbs, xlim=None):
     graphs=['astro-ca']*len(dbs)
     graphs.append('spikes')
 
-    fig, axes = gen_sgnn_axes(1, graphs)
+    fig, axes = gen_sgnn_axes(1, graphs, offset=True)
 
     # Each db gets its own subplot on the graph
     for i, db in enumerate(dbs):
@@ -545,10 +545,11 @@ def _graph_exp_w_tl(dbs, xlim=None):
             if 'astro' in axes:
                 axes['astro'][i][0].set_xlim(*xlim)
 
+    fig_path = "{}_tl.svg".format(db.meta['descr'])
     if not (xlim is None):
         axes['spikes'][0][0].set_xlim(*xlim)
+        fig_path = "{}_tl.svg".format(db.meta['descr'] + '_xlim')
         
-    fig_path = "{}_tl.svg".format(db.meta['descr'] + '_xlim')
     print("Saving: ", fig_path)
     fig.savefig(fig_path)
 

@@ -78,6 +78,7 @@ class Astro:
             state, u_spike = astro_step_activity(state, self.params)  # Detect falling edge on ip3/k+
             state, eff = astro_step_effect_weight_prop(u_spike, state, self.params)  # Get effect based on u exceeding thr
 
+        # print("eff is not one: {}, eff: {}".format(bool(torch.any(eff != 1)), eff))
         return eff, state
 
 

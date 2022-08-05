@@ -531,13 +531,19 @@ def _graph_exp_w_tl(dbs, xlim=None):
         for j, (w, by_w) in enumerate(records_by_w.items()):
             assert len(by_w) == 1
 
+            if hasattr(w, '__len__'):
+                prefix = ['{:4.2f}'.format(w_i) for w_i in w]
+                prefix = "w=" + ",".join(prefix)
+            else:
+                prefix = 'w={:4.2f}'.format(w)
+            
             graph_sgnn(
                 by_w[0],
                 fig,
                 axes,
                 i,
                 plot=['spikes', 'astro-ca'],
-                prefix='w={:4.2f}'.format(w))
+                prefix=prefix)
 
         if not (xlim is None):
             if 'astro-ca' in axes:
@@ -656,9 +662,11 @@ def _sim_pulse_pair_w_impulse(cfg, db, spikes, all_w, all_ca_thr, tl_graph_idx, 
     for i, w in enumerate(tqdm(all_w, desc='Astro Sweep W (thr)')):
         for j, ca_thr in enumerate(all_ca_thr):
             if (i in tl_graph_idx) and ca_thr == tl_ca:
-                db.prefix({'w': w, 'ca_th': ca_thr, 'tl_graph': True})
+                # db.prefix({'w': w, 'ca_th': ca_thr, 'tl_graph': True})
+                db.prefix({'ca_th': ca_thr, 'tl_graph': True})
             else:
-                db.prefix({'w': w, 'ca_th': ca_thr})
+                # db.prefix({'w': w, 'ca_th': ca_thr})
+                db.prefix({'ca_th': ca_thr})
 
             cfg['linear_params']['mu'] = w
             cfg['astro_params']['u_th'] = ca_thr
@@ -666,16 +674,29 @@ def _sim_pulse_pair_w_impulse(cfg, db, spikes, all_w, all_ca_thr, tl_graph_idx, 
             db.last()['ca-act'] = db.last()['tl']['a'].sum()
             
 
-def _exp_pulse_pair_w_impulse(cfg_path, sim=False, dca_max=None):
+def _exp_pulse_pair_w_impulse(
+    cfg_path,
+    sim=False,
+    dca_max=None,
+    poisson_impulse=False,
+    tl_w = [0.8112, 1.0, 1.2],
+    tl_ca_thr = 2.5
+):
     """
     Simulate an snn in the 1n1s1a configuration, and demonstrate how plasticity
     triggered by a threshold on u can average multiple pulse pairs, and allow
     for confident steps for plasticity, based on multiple events.
     """
-
-    db_path = Path("_exp_pulse_pair_w_impulse.db")
+    
+    db_path = "_exp_pulse_pair_w"
+    if poisson_impulse:
+        db_path += "_poisson"
+    db_path += "_impulse"
+    
     if dca_max:
-        db_path = Path("_exp_pulse_pair_w_impulse_dca.db")
+        db_path += "_dca"
+
+    db_path = Path(db_path + ".db")
 
     if not sim:
         db = try_load_dbs(db_path)
@@ -691,16 +712,18 @@ def _exp_pulse_pair_w_impulse(cfg_path, sim=False, dca_max=None):
 
         db.meta['title'] = "Astrocyte Response to Impulse inputs for Different weight Values with {:4.2f} Ca Threshold".format(cfg['astro_params']['u_th'])
 
+        if poisson_impulse:
+            db.meta['descr'] += '_poisson'
+
         if not (dca_max is None):
             cfg['astro_params']['dca_max'] = dca_max
             db.meta['descr'] += '_dca'
 
-        spikes = gen_impulse_spikes(10, num_impulses=15)
+        spikes = gen_impulse_spikes(10, num_impulses=15, poisson=poisson_impulse)
         all_w = torch.linspace(0.75, 2.0, 100)
-        tl_graphs = torch.as_tensor([0.8112, 1.0, 1.2])
+        tl_graphs = torch.as_tensor(tl_w)
 
         all_ca_thr = torch.linspace(2.0, 3.0, 3)
-        tl_ca = 2.5
 
         w_graph_idx = torch.argmin(torch.abs(all_w.reshape(-1, 1) - tl_graphs), axis=0).tolist()
 
@@ -709,7 +732,7 @@ def _exp_pulse_pair_w_impulse(cfg_path, sim=False, dca_max=None):
             db,
             spikes,
             all_w, all_ca_thr,
-            w_graph_idx, tl_ca
+            w_graph_idx, tl_ca_thr
         )
 
     print("Saving: ", db_path)
@@ -874,6 +897,16 @@ def _main(args):
         _graph_exp_w_tl([db], xlim=(590, 630))
         _graph_exp_tp_w_sweep(db)
 
+        db = _exp_pulse_pair_w_impulse(
+            cfg_path,
+            tl_w = [1.0, 1.2, 1.8],
+            tl_ca_thr = 2.0,
+            sim=args.sim,
+            poisson_impulse=True)
+        _graph_exp_w_tl([db])
+        _graph_exp_w_tl([db], xlim=(655, 670))
+        _graph_exp_tp_w_sweep(db)
+
         db = _exp_pulse_pair_w_impulse(cfg_path, sim=args.sim, dca_max=1.0)
         _graph_exp_tp_w_sweep(db)
 
@@ -897,4 +930,5 @@ def _main(args):
 if __name__ == '__main__':
     args = _parse_args()
 
-    _main(args)
+    with torch.no_grad():
+        _main(args)

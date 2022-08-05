@@ -1,6 +1,32 @@
-\chapter{Adaptation of the Astrocyte Model To Multi-Synapse Configurations} \label{chapter:obj3}
+\chapter{Adaptation of the Astrocyte Model To Multi-Synapse
+  Configurations} \label{chapter:obj3}
 
-\section{Summary}]
+In biology, Astrocytes have not been observed influencing a single synapse on a
+single neuron. In general they encapsulate hundreds synapse across a single
+digit number of neurons. In this chapter, single neuron, multi-synapse
+configurations will be explored. Taking that small step closer to a bio-inspired
+configuration, but remaining simple enough to explore fundamental properties.
+
+\section{Multi-Synapse Cell-Level Response}
+What is the ultimage goal here... to support some learning on some specific set
+of inputs, that would not otherwise be achievable w/ STDP. What is the task?
+what is an interesting task that involves spike timing?
+
+What are some things I've got in my notes about this?
+
+Gating of plasticity
+  - Only allow plasticity on synchronous inputs
+  - The opposite of ^
+  
+Orchestration between Synapse
+  - Don't allow multiple synapse to learn from the same post-synaptic spike (WTA
+  Pairing)
+  - Global learning ``pool'' Each thr event on any synapse depletes the pool,
+  which then refills
+  - Relative strength of plasticity
+
+
+\section{Summary}
 In this chapter, the developed Astrocyte model is expanded to incorporate
 multiple synapses, along with the concept of a global, cell-level response. The
 goal here is to explore how an additional synapse alters existing behaviors and

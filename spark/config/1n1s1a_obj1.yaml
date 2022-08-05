@@ -81,6 +81,7 @@ sim:
 
 linear_params:
   synapse: 1
+  init: 'normal'
   mu: 0.7
   sigma: 0.001
   min: -20.0

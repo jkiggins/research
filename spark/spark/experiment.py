@@ -127,7 +127,7 @@ class VSweep:
         self.next = _next
         self.mode = 'zip'
 
-        return self.next
+        return self.next        
 
 
     def __iter__(self):
@@ -212,6 +212,17 @@ class ExpStorage:
 
     def prefix(self, d={}):
         self._prefix = d
+
+
+    def subset(self, idxs):
+        db = ExpStorage()
+        db.meta = copy.deepcopy(self.meta)
+        db.prefix = copy.deepcopy(self.prefix)
+
+        for i in idxs:
+            db.store(self.db[i])
+
+        return db
 
 
     def store(self, v):
@@ -331,6 +342,8 @@ class ExpStorage:
         """
         
         records = ExpStorage()
+        records.meta = copy.deepcopy(records)
+        db.prefix = copy.deepcopy(self.prefix)
 
         for d in self.db:
             # If filter is defined, and returns False, ignore this entry

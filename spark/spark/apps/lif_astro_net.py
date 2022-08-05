@@ -25,16 +25,40 @@ class LifNet:
         if not (mu is None):
             self.cfg['linear_params']['mu'] = mu
 
+        mu = torch.as_tensor(self.cfg['linear_params']['mu'])
+        std = torch.as_tensor(self.cfg['linear_params']['sigma'])
+
+        # Make sure tensors are at least (1,)
+        if len(mu.shape) == 0:
+            mu = mu.reshape(1)
+        if len(std.shape) == 0:
+            std = std.reshape(1)
+
+        if mu.numel() == 1 and std.numel() > 1:
+            mu = mu.repeat(std.numel())
+        if std.numel() == 1 and mu.numel() > 1:
+            std = std.repeat(mu.numel())
+
         self.num_synapse = self.cfg['linear_params']['synapse']
         self.neuron = LIFNeuron.from_cfg(cfg['lif_params'], self.dt)
 
         self.linear = nn.Linear(self.num_synapse, 1, bias=False)
-        nn.init.normal_(
-            self.linear.weight,
-            mean=cfg['linear_params']['mu'],
-            std=cfg['linear_params']['sigma'])
+
+        for i in range(mu.numel()):
+            if self.cfg['linear_params']['init'] == 'normal':
+                nn.init.normal_(
+                    self.linear.weight[0][i],
+                    mean=mu[i],
+                    std=std[i])
+
+            elif self.cfg['linear_params']['init'] == 'fixed':
+                self.linear.weight[0][i] = mu[i]
+
+            else:
+                raise ValueError("Unknown LIF Init method: {}".format(self.cfg['linear_params']['init']))
 
         self.neuron_state = None
+
 
     def __call__(self, z, dw=False):
         # Ignore dw, kept for compatibility with LifAstroNet
@@ -89,27 +113,34 @@ class LifAxis:
         self.offset_labels = []
         self.enable_offset = offset
 
+        self.yticks = []
+
         self.plot_count = 0
 
 
-    def _step_offset(self, y):
-        if self.offset != 0:
-            self.offset += max(-y.min(), 0.25)
-
+    def _step_offset(self, y, no_step=False):
         y = torch.as_tensor(y)
+
+        # If no_step == True, just apply existing offset
+        # This is generally used to plot over the previous plot, with offset enabled for
+        # non-overlay type plots
+        if no_step:
+            return y + self.last_offset
+        
+        if self.offset != 0:
+            self.offset += max(-y.min(), 1.5)
+
         y_max = y.max()
         y = y + self.offset
-
-        print("Adding Offset: ", self.offset)
 
         # Tick locations, and labels for offset graphs
         max_extent = y[(y-self.offset).abs().argmax()]
         self.offset_ticks += [float(self.offset), float(max_extent)]
         self.offset_labels += ["0.0", "{:4.2f}".format(float(max_extent-self.offset))]
-        
+
+        self.last_offset = self.offset
         # Add the max amount above the y=0 point, so the next graph clears that
-        # Minimum offset is 0.25
-        self.offset += max(y_max, 0.5)
+        self.offset += max(y_max, 1.5)
 
         return y
 
@@ -131,19 +162,49 @@ class LifAxis:
         self.ax.set_xlim(*args, **kwargs)
 
 
+    def lif_ax_yticks(self, ticks, append=False):
+        is_list_of_pairs = len(ticks) > 0 and hasattr(ticks[0], '__len__') and len(ticks[0]) == 2
+        is_pair = not is_list_of_pairs and len(ticks) == 2
+
+        if is_pair:
+            ticks = [ticks]
+
+        if append:
+            self.yticks += ticks
+        else:
+            self.yticks = ticks
+
+        ytick_loc, ytick_labels = zip(*self.yticks)
+        self.ax.set_yticks(ytick_loc, labels=ytick_labels)
+
+
     def plot(self, *args, **kwargs):
-        # Assume args[0] contains the data to plot
+        # Strip out some args from kwargs
+        markup = False
+        
+        if 'markup' in kwargs:
+            markup = kwargs['markup']
+            del kwargs['markup']
+
         if self.enable_offset:
+            # Apply offset to y axis, unless this is a decorative or 'markup' plot
             args = list(args)
-            args[0] = self._step_offset(args[0])
+            if len(args) > 1 and not isinstance(args[1], str):
+                args[1] = self._step_offset(args[1], no_step=markup)
+            else:
+                args[0] = self._step_offset(args[0], no_step=markup)
             args = tuple(args)
             self.ax.set_yticks(self.offset_ticks)
             self.ax.set_yticklabels(self.offset_labels)
-        self.ax.plot(*args, **kwargs)
+
+        line = self.ax.plot(*args, **kwargs)
+
         self.plot_count += 1
 
+        return line
 
-    def plot_events(self, events, colors=None):
+
+    def plot_events(self, events, colors=None, label=None):
         event_idxs = []
         max_x = 0
         for z in events:
@@ -155,6 +216,9 @@ class LifAxis:
             event_idxs.append(event_idx.tolist())
 
         line_offsets = [i + self.event_offset for i in range(len(event_idxs))]
+
+        ytick = (line_offsets[len(line_offsets) // 2], label)
+        self.lif_ax_yticks(ytick, append=True)
 
         self.ax.eventplot(event_idxs,
                      lineoffsets=line_offsets,
@@ -168,24 +232,28 @@ class LifAxis:
     
 def _store_snn_step(tl, i, spikes, snn, snn_output, s):
     if tl is None:
+        n_synapse = spikes.shape[1]
+        n_spikes = spikes.shape[0]
+
         tl = {}
-        tl['z_pre'] = torch.zeros_like(spikes)
-        tl['i_n'] = torch.zeros_like(spikes)
-        tl['v_n'] = torch.zeros_like(spikes)
-        tl['z_post'] = torch.zeros_like(spikes)
+        tl['z_pre'] = torch.zeros((n_spikes, n_synapse))
+        tl['i_n'] = torch.zeros((n_spikes, 1))
+        tl['v_n'] = torch.zeros((n_spikes, 1))
+        tl['z_post'] = torch.zeros((n_spikes, 1))
         
         if len(snn_output) == 5:
-            tl['u'] = torch.zeros_like(spikes)
-            tl['a'] = torch.zeros_like(spikes)
-            tl['dw'] = torch.zeros_like(spikes)
-            tl['i_pre'] = torch.zeros_like(spikes)
-            tl['i_post'] = torch.zeros_like(spikes)
-            tl['w'] = torch.zeros_like(spikes)
+            tl['u'] = torch.zeros((n_spikes, n_synapse))
+            tl['a'] = torch.zeros((n_spikes, n_synapse))
+            tl['dw'] = torch.zeros((n_spikes, n_synapse))
+            tl['i_pre'] = torch.zeros((n_spikes, n_synapse))
+            tl['i_post'] = torch.zeros((n_spikes, n_synapse))
+            tl['w'] = torch.zeros((n_spikes, n_synapse))
             tl['w'][0] = snn.linear.weight[:]
 
     if len(snn_output) == 2:
         z, n_state = snn_output
     elif len(snn_output) == 5:
+        # z_post, eff, self.neuron_state, self.astro_state, self.linear
         z, a, n_state, a_state, linear = snn_output
         weight_update = torch.logical_not(torch.isclose(a, torch.as_tensor(1.0))).float()
 
@@ -233,7 +301,7 @@ def gen_rate_spikes(spec):
     return spike_trains
 
 
-def gen_impulse_spikes(pulse_len, sim_len=None, num_impulses=None, noise=None):
+def gen_impulse_spikes(pulse_len, sim_len=None, num_impulses=None, noise=None, poisson=False, rate=0.75):
 
     if (sim_len is None) == (num_impulses):
         raise ValueError("Either num_impulses or sim_len must be specified")
@@ -243,13 +311,19 @@ def gen_impulse_spikes(pulse_len, sim_len=None, num_impulses=None, noise=None):
     gap_size = 100
     impulse_kernel = torch.as_tensor([1,0])
 
+    if poisson:
+        impulse_kernel = spiketrain.poisson(rate, pulse_len)[0]
+
     if num_impulses is None:
         iters = sim_len // (pulse_len*impulse_kernel.numel()+gap_size)
     else:
         iters = num_impulses
 
     for i in range(iters):
-        impulse = impulse_kernel.repeat(pulse_len)
+        if poisson:
+            impulse = impulse_kernel
+        else:
+            impulse = impulse_kernel.repeat(pulse_len)
         gap = torch.zeros((gap_size))
 
         if spikes is None:
@@ -304,6 +378,7 @@ def gen_sgnn_axes(
     num_synapse,
     graphs=None,
     offset=True,
+    figsize=(12, 10)
 ):
     if graphs is None:
         graphs=[
@@ -327,7 +402,7 @@ def gen_sgnn_axes(
     ncols = num_synapse
     gs = GridSpec(nrows, ncols)
 
-    fig = plt.Figure(figsize=(12, 10))
+    fig = plt.Figure(figsize=figsize)
 
     graph_to_title = {
         'spikes': "Astrocyte and Neuron Events for Synapse {}",
@@ -387,6 +462,9 @@ def plot_1nNs1a(
         plot = ['neuron', 'astro', 'spikes', 'weight']
 
     spikes = tl['z_pre']
+    wh_ca_event = torch.where(tl['a'])
+    ca_event_x = wh_ca_event[0]
+    ca_event_y = tl['u'][wh_ca_event]
 
     for g, g_axes in axes.items():
         # if g is not in graphs (None -> match all)
@@ -413,14 +491,22 @@ def plot_1nNs1a(
                     a.plot(tl['i_pre'][:, i], label='{}Pre-synaptic Astrocyte Trace'.format(prefix))
                     a.plot(tl['i_post'][:, i], label='{}Post-synaptic Astrocyte Trace'.format(prefix))
                     a.plot(tl['u'][:, i], label='{} Astrocyte Ca'.format(prefix))
+                    # if len(ca_event_loc) > 0:
+                    #     a.plot(ca_event_loc, 'r.', overlay=True)
 
                 elif g == 'astro-ca' and ('astro-ca' in plot):
-                    a.plot(tl['u'][:, i], label='{}'.format(prefix))
-
+                    line = a.plot(tl['u'][:, i].tolist(), label='{}'.format(prefix))
+                    
+                    # if ca_event_x.numel() > 0:
+                    #     a.plot(ca_event_x, ca_event_y, 'r.', markup=True)
+                        
                 elif g == 'spikes' and 'spikes' in plot:
+                    z_post_i = min(i, tl['z_post'].shape[1] - 1)
                     a.plot_events(
-                        [tl['z_pre'][:,i], tl['z_post'][:,i], tl['a'][:,i]],
-                        colors=['tab:blue', 'tab:orange', 'tab:red'])
+                        [tl['z_pre'][:,i], tl['z_post'][:,z_post_i], tl['a'][:,i]],
+                        colors=['tab:blue', 'tab:orange', 'tab:red'],
+                        label=prefix
+                    )
                     a.legend([l.format(i) for l in ['{}Pre Spikes', '{}Post Spikes', '{}Astro dw']])
 
                 elif g == 'pre-spikes' and 'pre-spikes' in plot:
@@ -444,8 +530,8 @@ def sim_lif_astro_net(cfg, spike_trains, db, dw=True):
     for spikes in spike_trains:
         snn = LifAstroNet(cfg)
         tl = _sim_snn(snn, spikes, dw=dw)
-        
-        db.store({'spikes': spikes, 'tl': tl})
+
+        db.store({'spikes': spikes, 'tl': tl, 'w': snn.linear.weight[0]})
 
     return db
 

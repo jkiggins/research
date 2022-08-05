@@ -12,7 +12,7 @@ def _clip_decay_across_zero(orig, decayed):
     decayed[where_invalid] = torch.as_tensor(0.0)
 
     return decayed
-    
+
 
 def astro_step_decay(state, params, dt):
     
@@ -41,7 +41,6 @@ def astro_step_z_pre(z_pre, state, params, dt):
     else:
         i_new = i_new + i_decayed
 
-    
     state['i_pre'] = i_new
 
     return state
@@ -110,8 +109,8 @@ def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
     wh_ltp = torch.where(bool_ltp)
 
     # Peform LTP/LTD across astrocyte processes
-    du[wh_ltd] = -state['i_post']
-    du[wh_ltp] = state['i_pre']
+    du[wh_ltd] = -state['i_post'][wh_ltd]
+    du[wh_ltp] = state['i_pre'][wh_ltp]
 
     # Apply band
     du = torch.where(
@@ -204,6 +203,25 @@ def astro_step_thr(state, params):
     state['u'][wh_spike] = torch.as_tensor(0.0)
     
     return state, u_spike
+
+
+def astro_step_and_coupling(state, params, syns):
+    # AND - coupling between synapse
+    # This function will add logic to the simple threshold normally used for weight update
+    # If (syn0_ca>thr) and (syn1_ca>thr) allow plasticity
+    # If (syn0_ca>thr) and (syn1_ca<thr) reverse sign of syn0_ca (anti-stdp)
+    # Likewise if (syn0_ca<thr) and (syn1_ca>thr) reverse sign of syn1_ca (anti-stdp)
+
+    ca_gt_thr = torch.abs(state['u'][syns]) > params['ca_th']
+
+    if torch.all(ca_gt_thr):
+        # Do nothing, let all ca>thr events happend downstream
+        pass
+    else:
+        # Invert all Ca values where thr was exceeded
+        state['u'][syns][ca_gt_thr] = -state['u'][syns][ca_gt_thr]
+
+    return ca_gt_thr
 
 
 # Step astro effects, based on the value of u

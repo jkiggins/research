@@ -27,10 +27,24 @@ Orchestration between Synapse
 
 
 \section{Summary}
-In this chapter, the developed Astrocyte model is expanded to incorporate
-multiple synapses, along with the concept of a global, cell-level response. The
-goal here is to explore how an additional synapse alters existing behaviors and
-properties of the Astrocyte model, as well as introduce a novel cell-level
-response, which helps the model to learn a desired response to a set of
-inputs. This learning bout will exhibit properties not achievable with Classic
-STDP in a similar configuration.
+Though there is a lack of general consensus, much of the Neuroscience literature
+suggests that Astrocytes have a fast local response to synaptic activity, which
+is then integrated to a cell-level response. Taking inspiration from this
+multiple level integration approach, the existing signals and Astrocyte behavior
+are duplicated for each synapse that an Astrocyte influences. The initial goal
+then, is to determine how the introduction of additional synapses effects
+general behavior. At a high level, the simple \ca threshold approach to driving
+plasticity is no longer stable in a 1nNs1a configuration. This is somewhat
+expected, and there is a need for additional constraints for weight values to
+converge. To meet this need synaptic coupling is introduced. This coupling
+drives plasticity of the coupled synapses based on activity across the coupled
+domain. This mimics an effect explored in Neuroscience literature, which is that
+ER bodies within an Astrocyte can form pathways between synapses that don't
+immediately affect the main cell body, but do influence a group of synapses. The
+two coupling rules explored in this chapter are AND and NAND. As their
+names suggest, these coupling rules are tied to a particular logic function. In
+general, the Astrocyte will drive weight values towards implementing the desired
+function, detecting behavior that is not in alignment and updating weights
+accordingly.
+
+\section{Synaptic Coupling}

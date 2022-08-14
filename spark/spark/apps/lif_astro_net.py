@@ -543,6 +543,7 @@ def sim_lif(cfg, spikes, name='lif_sample'):
     # Sim
     snn = LifNet(cfg)
     tl = _sim_snn(snn, spikes)
+
     db.store({'spikes': spikes, 'tl': tl})
 
     return db

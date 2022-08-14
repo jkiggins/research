@@ -12,7 +12,8 @@ from ..functional.astrocyte import (
     astro_step_reward_effect,
     astro_step_activity,
     astro_step_effect_weight_prop,
-    astro_track_activity
+    astro_track_activity,
+    astro_step_and_coupling,
 )
 
 class Astro:
@@ -51,19 +52,26 @@ class Astro:
             # print("act_gt_thr: ", state['act_gt_thr'], end=' ')
 
         # Step changes to Ca2+
-        # Ca is incremented by the product of ip3 and k+
         if self.params['u_step_params']['mode'] == 'u_prod':
+            # Ca is incremented by the product of ip3 and k+
             state = astro_step_u_prod(state)
-        # Ca is incremended by the product of ip3 and k+, with a sign depending on which is larger
+
         elif self.params['u_step_params']['mode'] == 'u_ordered_prod':
+            # Ca is incremended by the product of ip3 and k+, with a sign depending on which is larger
             state = astro_step_u_ordered_prod(state, self.params)
-        # Ca is incremented according to an STDP-like rule
+            
         elif self.params['u_step_params']['mode'] == 'stdp':
+            # Ca is incremented according to an STDP-like rule
             state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
+
+        # Apply synaptic coupling (if any)
+        # state = astro_step_and_coupling(state, self.params)
 
         # Effect weight
         # Update weight when Ca > thr, by a fixed factor for LTD/LTP
-        if self.params['weight_update'] == 'thr':
+        if True:
+            eff = torch.as_tensor(0.0)
+        elif self.params['weight_update'] == 'thr':
             state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
             eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
@@ -78,7 +86,6 @@ class Astro:
             state, u_spike = astro_step_activity(state, self.params)  # Detect falling edge on ip3/k+
             state, eff = astro_step_effect_weight_prop(u_spike, state, self.params)  # Get effect based on u exceeding thr
 
-        # print("eff is not one: {}, eff: {}".format(bool(torch.any(eff != 1)), eff))
         return eff, state
 
 

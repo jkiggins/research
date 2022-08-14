@@ -772,7 +772,7 @@ def _exp_lif_sample(cfg_path, sim=False):
         for tau_mem, tau_syn in params:
             cfg['lif_params']['tau_mem'] = tau_mem
             cfg['lif_params']['tau_syn'] = tau_syn
-            
+
             db = sim_lif(
                 cfg,
                 spikes[0],
@@ -818,8 +818,6 @@ def _graph_lif_sample(db):
 
     fig.tight_layout()
     fig.savefig("{}.svg".format(name))
-
-    
 
 
 def _parse_args():

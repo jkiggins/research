@@ -205,24 +205,62 @@ def astro_step_thr(state, params):
     return state, u_spike
 
 
-def astro_step_and_coupling(state, params, syns):
-    # AND - coupling between synapse
-    # This function will add logic to the simple threshold normally used for weight update
-    # If (syn0_ca>thr) and (syn1_ca>thr) allow plasticity
-    # If (syn0_ca>thr) and (syn1_ca<thr) reverse sign of syn0_ca (anti-stdp)
-    # Likewise if (syn0_ca<thr) and (syn1_ca>thr) reverse sign of syn1_ca (anti-stdp)
+def astro_step_and_coupling(state, params):
+    """
+    AND - coupling between synapse
+    This function will add logic to the simple threshold normally used for
+    weight update
+
+    If (syn0_ca>thr) and (syn1_ca>thr) - This is the desired behavior, no need
+    to change weights
+
+    If (syn0_ca>thr) xor (syn1_ca<thr) reverse sign of syn0_ca (anti-stdp)
+    """
+
+    syns = params['coupling']['and']
+    if (syns is None) or len(syns) == 0:
+        return state
 
     ca_gt_thr = torch.abs(state['u'][syns]) > params['ca_th']
+    ca_gt_thr_ltp = state['u'][syns] > params['ca_th']
+    ca_gt_thr_ltd = state['u'][syns] < -params['ca_th']
 
-    if torch.all(ca_gt_thr):
-        # Do nothing, let all ca>thr events happend downstream
+    wh_ca_gt_thr = torch.where(ca_gt_thr)
+    wh_ca_gt_thr_ltp = torch.where(ca_gt_thr_ltp)
+    wh_ca_gt_thr_ltd = torch.where(ca_gt_thr_ltd)
+
+    if torch.all(torch.logical_not(ca_gt_thr)):
+        # Do nothing, no thr exceeded
         pass
-    else:
-        # Invert all Ca values where thr was exceeded
-        state['u'][syns][ca_gt_thr] = -state['u'][syns][ca_gt_thr]
 
-    return ca_gt_thr
+    elif torch.all(ca_gt_thr):
+        # Zero out Ca, no need for thr events
+        # u_before = state['u'].tolist()
+        u_syns = state['u'][syns]
+        u_syns[wh_ca_gt_thr] = 0.0
+        state['u'][syns] = u_syns
+        # print(
+        #     "ca_gt_thr: {} -> {}: {} - {}".format(
+        #         u_before,
+        #         state['u'].tolist(),
+        #         syns, ca_gt_thr))
 
+    elif False: # torch.any(ca_gt_thr):
+        # Invert all Ca values where thr was exceeded, weight update's must
+        # follow anti-stdp
+        # u_before = state['u'].tolist()
+        u_syns = state['u'][syns]
+        u_syns[wh_ca_gt_thr] = u_syns[wh_ca_gt_thr] * -1.0
+        state['u'][syns] = u_syns
+
+        # print(
+        #     "ca_gt_thr: {} -> {}: {} - {}".format(
+        #     u_before,
+        #     state['u'].tolist(),
+        #     syns, ca_gt_thr))
+
+
+    return state
 
 # Step astro effects, based on the value of u
 def astro_step_effect_weight(u_spike, params):

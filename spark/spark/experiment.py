@@ -87,11 +87,11 @@ def cfg_text(cfg, astro=True, linear=False):
         astro_params = cfg['astro_params']
         text += "U Tau :{:4.2f}\n".format(astro_params['tau_u'])
 
-        if np.isclose(cfg['tau_i_pre'], cfg['tau_i_post']):
-            text += "Pre/Post Tau: {:4.2f}\n".format(astro_params['tau_i_pre'])
+        if np.isclose(cfg['tau_ip3'], cfg['tau_kp']):
+            text += "Pre/Post Tau: {:4.2f}\n".format(astro_params['tau_ip3'])
         else:
-            text += "Pre Tau: {:4.2f}\n".format(astro_params['tau_i_pre'])
-            text += "Post Tau: {:4.2f}\n".format(astro_params['tau_i_post'])
+            text += "Pre Tau: {:4.2f}\n".format(astro_params['tau_ip3'])
+            text += "Post Tau: {:4.2f}\n".format(astro_params['tau_kp'])
 
         if np.isclose(cfg['alpha_pre'], cfg['alpha_post']):
             text += "Pre/Post Alpha: {:4.2f}\n".format(astro_params['alpha_pre'])

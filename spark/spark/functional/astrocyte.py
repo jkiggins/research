@@ -16,11 +16,11 @@ def _clip_decay_across_zero(orig, decayed):
 
 def astro_step_decay(state, params, dt):
     
-    du = dt * params['tau_u'] * -state['u']
-    u_decayed = state['u'] + torch.as_tensor(du)
-    u_decayed = _clip_decay_across_zero(state['u'], u_decayed)
+    du = dt * params['tau_u'] * -state['ca']
+    u_decayed = state['ca'] + torch.as_tensor(du)
+    u_decayed = _clip_decay_across_zero(state['ca'], u_decayed)
 
-    state['u'] = u_decayed
+    state['ca'] = u_decayed
 
     return state
 
@@ -29,9 +29,9 @@ def astro_step_decay(state, params, dt):
 def astro_step_z_pre(z_pre, state, params, dt):
     # Current update
 
-    di = dt * params['tau_i_pre'] * -state['i_pre']
-    i_decayed = state['i_pre'] + di
-    i_decayed = _clip_decay_across_zero(state['i_pre'], i_decayed)
+    di = dt * params['tau_ip3'] * -state['ip3']
+    i_decayed = state['ip3'] + di
+    i_decayed = _clip_decay_across_zero(state['ip3'], i_decayed)
 
     i_new = z_pre * params['alpha_pre']
     
@@ -41,7 +41,7 @@ def astro_step_z_pre(z_pre, state, params, dt):
     else:
         i_new = i_new + i_decayed
 
-    state['i_pre'] = i_new
+    state['ip3'] = i_new
 
     return state
 
@@ -50,9 +50,9 @@ def astro_step_z_pre(z_pre, state, params, dt):
 def astro_step_z_post(z_post, state, params, dt):
     # Current update
 
-    di = dt * params['tau_i_post'] * -state['i_post']
-    i_decayed = state['i_post'] + di
-    i_decayed = _clip_decay_across_zero(state['i_post'], i_decayed)
+    di = dt * params['tau_kp'] * -state['kp']
+    i_decayed = state['kp'] + di
+    i_decayed = _clip_decay_across_zero(state['kp'], i_decayed)
 
     i_new = z_post * params['alpha_post']
     
@@ -62,7 +62,7 @@ def astro_step_z_post(z_post, state, params, dt):
     else:
         i_new = i_new + i_decayed
 
-    state['i_post'] = i_new
+    state['kp'] = i_new
 
     return state
 
@@ -70,16 +70,16 @@ def astro_step_z_post(z_post, state, params, dt):
 # Update u based on other signals
 def astro_step_u_prod(state):
     """ Update u by adding the product of pre and post signals """
-    du = state['i_pre'] * state['i_post']
-    state['u'] = state['u'] + du
+    du = state['ip3'] * state['kp']
+    state['ca'] = state['ca'] + du
 
     return state
 
 
 def astro_step_u_ordered_prod(state, params):
-    du = state['i_pre'] * state['i_post']
+    du = state['ip3'] * state['kp']
 
-    post_pre_diff = state['i_post'] - state['i_pre']
+    post_pre_diff = state['kp'] - state['ip3']
 
     if post_pre_diff < params['u_step_params']['ltd']:
         du = -du
@@ -88,13 +88,13 @@ def astro_step_u_ordered_prod(state, params):
     else:
         du = torch.as_tensor(0.0)
 
-    state['u'] = state['u'] + du
+    state['ca'] = state['ca'] + du
 
     return state
 
 
 def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
-    du = torch.zeros_like(state['u'])
+    du = torch.zeros_like(state['ca'])
 
     bool_ltd = torch.logical_and(
         z_pre > 0.0,
@@ -109,8 +109,8 @@ def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
     wh_ltp = torch.where(bool_ltp)
 
     # Peform LTP/LTD across astrocyte processes
-    du[wh_ltd] = -state['i_post'][wh_ltd]
-    du[wh_ltp] = state['i_pre'][wh_ltp]
+    du[wh_ltd] = -state['kp'][wh_ltd]
+    du[wh_ltp] = state['ip3'][wh_ltp]
 
     # Apply band
     du = torch.where(
@@ -123,28 +123,28 @@ def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
         reward = torch.ones_like(du)
     du = du * reward
 
-    state['u'] = state['u'] + du
+    state['ca'] = state['ca'] + du
     
     # When ip3 -> u or k+ -> u, that input trace is set to zero
     # These input traces effectivley "give" their value to u
-    state['i_post'][wh_ltd] = torch.as_tensor(0.0)
-    state['i_pre'][wh_ltp] = torch.as_tensor(0.0)
+    state['kp'][wh_ltd] = torch.as_tensor(0.0)
+    state['ip3'][wh_ltp] = torch.as_tensor(0.0)
 
     return state
 
 
 
 def astro_step_u_signal(state, params, dt):
-    du = state['i_pre'] + state['i_post']
+    du = state['ip3'] + state['kp']
 
-    state['u'] = state['u'] + du
+    state['ca'] = state['ca'] + du
 
     return state
         
 
 def astro_step_reward_effect(state, params, reward):
     # reward is either 0.0, 1.0, or -1.0
-    dw_prop = state['u'] * reward
+    dw_prop = state['ca'] * reward
     dw_prop = (dw_prop / params['u_th']) * 0.2 + 1.0
 
     # where reward is not 0.0
@@ -153,7 +153,7 @@ def astro_step_reward_effect(state, params, reward):
     ))
 
     # Reset u when updating weight
-    state['u'][wh_reward] = torch.as_tensor(0.0)
+    state['ca'][wh_reward] = torch.as_tensor(0.0)
 
     return state, dw_prop
 
@@ -161,10 +161,10 @@ def astro_step_reward_effect(state, params, reward):
 # Apply activity
 def astro_step_activity(state, params):
     # Detect when ip3 and k+ drop below a threshold, from above that same threshold
-    act_lt_thr = (state['i_pre'] + state['i_post']) < params['ip3_kp_activity_thr']
+    act_lt_thr = (state['ip3'] + state['kp']) < params['ip3_kp_activity_thr']
     falling_edge = torch.logical_and(act_lt_thr, state['act_gt_thr'])
 
-    u_spike = torch.zeros_like(state['u'])
+    u_spike = torch.zeros_like(state['ca'])
     u_spike[falling_edge] = 1.0
     state['act_gt_thr'][falling_edge] = False
 
@@ -172,7 +172,7 @@ def astro_step_activity(state, params):
 
 
 def astro_track_activity(state, params):
-    act_gt_thr = (state['i_pre'] + state['i_post']) > params['ip3_kp_activity_thr']
+    act_gt_thr = (state['ip3'] + state['kp']) > params['ip3_kp_activity_thr']
 
     if not ('act_gt_thr' in state):
         state['act_gt_thr'] = torch.logical_and(act_gt_thr, torch.as_tensor(False))
@@ -188,8 +188,8 @@ def astro_track_activity(state, params):
 
 # Apply a threshold
 def astro_step_thr(state, params):
-    u_spike_low = state['u'] < -(params['u_th'])
-    u_spike_high = state['u'] > params['u_th']
+    u_spike_low = state['ca'] < -(params['u_th'])
+    u_spike_high = state['ca'] > params['u_th']
 
     l_no_spike = torch.logical_not(
         torch.logical_or(u_spike_low,  u_spike_high))
@@ -200,7 +200,7 @@ def astro_step_thr(state, params):
     u_spike = u_spike_low * -1.0 + u_spike_high * 1.0
     u_spike[wh_no_spike] = torch.as_tensor(0.0)
 
-    state['u'][wh_spike] = torch.as_tensor(0.0)
+    state['ca'][wh_spike] = torch.as_tensor(0.0)
     
     return state, u_spike
 
@@ -221,9 +221,9 @@ def astro_step_and_coupling(state, params):
     if (syns is None) or len(syns) == 0:
         return state
 
-    ca_gt_thr = torch.abs(state['u'][syns]) > params['ca_th']
-    ca_gt_thr_ltp = state['u'][syns] > params['ca_th']
-    ca_gt_thr_ltd = state['u'][syns] < -params['ca_th']
+    ca_gt_thr = torch.abs(state['ca'][syns]) > params['ca_th']
+    ca_gt_thr_ltp = state['ca'][syns] > params['ca_th']
+    ca_gt_thr_ltd = state['ca'][syns] < -params['ca_th']
 
     wh_ca_gt_thr = torch.where(ca_gt_thr)
     wh_ca_gt_thr_ltp = torch.where(ca_gt_thr_ltp)
@@ -235,28 +235,28 @@ def astro_step_and_coupling(state, params):
 
     elif torch.all(ca_gt_thr):
         # Zero out Ca, no need for thr events
-        # u_before = state['u'].tolist()
-        u_syns = state['u'][syns]
+        # u_before = state['ca'].tolist()
+        u_syns = state['ca'][syns]
         u_syns[wh_ca_gt_thr] = 0.0
-        state['u'][syns] = u_syns
+        state['ca'][syns] = u_syns
         # print(
         #     "ca_gt_thr: {} -> {}: {} - {}".format(
         #         u_before,
-        #         state['u'].tolist(),
+        #         state['ca'].tolist(),
         #         syns, ca_gt_thr))
 
     elif False: # torch.any(ca_gt_thr):
         # Invert all Ca values where thr was exceeded, weight update's must
         # follow anti-stdp
-        # u_before = state['u'].tolist()
-        u_syns = state['u'][syns]
+        # u_before = state['ca'].tolist()
+        u_syns = state['ca'][syns]
         u_syns[wh_ca_gt_thr] = u_syns[wh_ca_gt_thr] * -1.0
-        state['u'][syns] = u_syns
+        state['ca'][syns] = u_syns
 
         # print(
         #     "ca_gt_thr: {} -> {}: {} - {}".format(
         #     u_before,
-        #     state['u'].tolist(),
+        #     state['ca'].tolist(),
         #     syns, ca_gt_thr))
 
 
@@ -279,7 +279,7 @@ def astro_step_effect_weight_prop(u_spike, state, params):
     # should be updated
 
     # Weight update magnitude and direction are proportional to ca
-    ca = state['u']
+    ca = state['ca']
     dw = ca / params['u_th']
     dw = torch.clamp(dw, -1.0, 1.0)  # -1.0 to 1.0
     dw = dw * 0.5  # -0.5 to 0.5
@@ -289,7 +289,7 @@ def astro_step_effect_weight_prop(u_spike, state, params):
     wh_zero = torch.where(torch.isclose(u_spike, torch.as_tensor(0.0)))
     wh_u_spike = torch.where(u_spike > 0.5)
 
-    state['u'][wh_u_spike] = 0.0
+    state['ca'][wh_u_spike] = 0.0
     
     dw[wh_zero] = 1.0
 
@@ -313,13 +313,13 @@ def save_path():
 
 def test_pre_post_signals():
     state = {
-        'i_pre': torch.as_tensor(1.0),
-        'i_post': torch.as_tensor(1.0),
+        'ip3': torch.as_tensor(1.0),
+        'kp': torch.as_tensor(1.0),
     }
 
     astro_params = {
-        'tau_i_pre': 200.0,
-        'tau_i_post': 200.0,
+        'tau_ip3': 200.0,
+        'tau_kp': 200.0,
         'alpha_pre': 1.0,
         'alpha_post': 1.0,
     }
@@ -349,26 +349,26 @@ def test_pre_post_signals():
     ]
 
     state = {
-        'i_pre': torch.as_tensor(1.0),
-        'i_post': torch.as_tensor(1.0),
+        'ip3': torch.as_tensor(1.0),
+        'kp': torch.as_tensor(1.0),
     }
 
     for i in range(len(exp_values)):
-        assert (exp_values[i] - state['i_pre']) < 1e-6, "I-PRE: Expected {}, got {}".format(exp_values[i], state['i_pre'])
-        assert (exp_values[i] - state['i_post']) < 1e-6, "I-POST: Expected {}, got {}".format(exp_values[i], state['i_post'])
+        assert (exp_values[i] - state['ip3']) < 1e-6, "I-PRE: Expected {}, got {}".format(exp_values[i], state['ip3'])
+        assert (exp_values[i] - state['kp']) < 1e-6, "I-POST: Expected {}, got {}".format(exp_values[i], state['kp'])
 
         astro_step_z_pre(0, state, astro_params, 0.001)
         astro_step_z_post(0, state, astro_params, 0.001)
 
 
     state = {
-        'i_pre': torch.as_tensor(-1.0),
-        'i_post': torch.as_tensor(-1.0),
+        'ip3': torch.as_tensor(-1.0),
+        'kp': torch.as_tensor(-1.0),
     }
 
     for i in range(len(exp_values)):
-        assert abs(-exp_values[i] - state['i_pre']) < 1e-6, "I-PRE: Expected {}, got {}".format(exp_values[i], state['i_pre'])
-        assert abs(-exp_values[i] - state['i_post']) < 1e-6, "I-POST: Expected {}, got {}".format(exp_values[i], state['i_post'])
+        assert abs(-exp_values[i] - state['ip3']) < 1e-6, "I-PRE: Expected {}, got {}".format(exp_values[i], state['ip3'])
+        assert abs(-exp_values[i] - state['kp']) < 1e-6, "I-POST: Expected {}, got {}".format(exp_values[i], state['kp'])
 
         astro_step_z_pre(0, state, astro_params, 0.001)
         astro_step_z_post(0, state, astro_params, 0.001)
@@ -384,7 +384,7 @@ def test_astro_step(save_path):
     dt = 0.001
     astro_params = {
         'tau_u': 1/1e-1,
-        'tau_i_pre': 1/1e-4,
+        'tau_ip3': 1/1e-4,
         'alpha_pre': 100.0,
         'alpha_post': 1.0,
         'u_th': 1.0,
@@ -393,12 +393,12 @@ def test_astro_step(save_path):
     # Simulate for 1000 time steps, constant spiking input
     z = torch.as_tensor(1)
     state = {
-        'u': torch.as_tensor(0.0),
-        'i_pre': 0.0,
-        'i_post': 0.0
+        'ca': torch.as_tensor(0.0),
+        'ip3': 0.0,
+        'kp': 0.0
     }
 
-    timeline = {'u': [], 'i_pre': [], 'z': [], 'u_spike': []}
+    timeline = {'ca': [], 'ip3': [], 'z': [], 'u_spike': []}
     
     for i in range(150):
         if i > 2:
@@ -412,8 +412,8 @@ def test_astro_step(save_path):
         # state, u_spike = astro_step_thr(state, astro_params)
         u_spike = 0
 
-        timeline['u'].append(state['u'])
-        timeline['i_pre'].append(state['i_pre'])
+        timeline['ca'].append(state['ca'])
+        timeline['ip3'].append(state['ip3'])
         timeline['z'].append(z)
         timeline['u_spike'].append(u_spike)
 
@@ -423,8 +423,8 @@ def test_astro_step(save_path):
     ax.set_title("Astrocyte State U and Current Over Time")
     ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Value")
-    ax.plot(timeline['u'], label='Astrocyte State')
-    ax.plot(timeline['i_pre'], label='pre-state Current')
+    ax.plot(timeline['ca'], label='Astrocyte State')
+    ax.plot(timeline['ip3'], label='pre-state Current')
     ax.set_xlim((0, len(timeline['z'])))
     ax.legend()
 

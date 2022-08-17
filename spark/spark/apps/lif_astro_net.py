@@ -242,11 +242,11 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
         tl['z_post'] = torch.zeros((n_spikes, 1))
         
         if len(snn_output) == 5:
-            tl['u'] = torch.zeros((n_spikes, n_synapse))
+            tl['ca'] = torch.zeros((n_spikes, n_synapse))
             tl['a'] = torch.zeros((n_spikes, n_synapse))
             tl['dw'] = torch.zeros((n_spikes, n_synapse))
-            tl['i_pre'] = torch.zeros((n_spikes, n_synapse))
-            tl['i_post'] = torch.zeros((n_spikes, n_synapse))
+            tl['ip3'] = torch.zeros((n_spikes, n_synapse))
+            tl['kp'] = torch.zeros((n_spikes, n_synapse))
             tl['w'] = torch.zeros((n_spikes, n_synapse))
             tl['w'][0] = snn.linear.weight[:]
 
@@ -257,11 +257,11 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
         z, a, n_state, a_state, linear = snn_output
         weight_update = torch.logical_not(torch.isclose(a, torch.as_tensor(1.0))).float()
 
-        tl['u'][i] = a_state['u']
+        tl['ca'][i] = a_state['ca']
         tl['a'][i] = weight_update
         tl['dw'][i] = a
-        tl['i_pre'][i] = a_state['i_pre']
-        tl['i_post'][i] = a_state['i_post']
+        tl['ip3'][i] = a_state['ip3']
+        tl['kp'][i] = a_state['kp']
         tl['w'][i] = linear.weight[:]
         
     tl['z_pre'][i] = s
@@ -464,7 +464,7 @@ def plot_1nNs1a(
     spikes = tl['z_pre']
     wh_ca_event = torch.where(tl['a'])
     ca_event_x = wh_ca_event[0]
-    ca_event_y = tl['u'][wh_ca_event]
+    ca_event_y = tl['ca'][wh_ca_event]
 
     for g, g_axes in axes.items():
         # if g is not in graphs (None -> match all)
@@ -488,14 +488,14 @@ def plot_1nNs1a(
             for i, a in enumerate(axs):
 
                 if g == 'astro' and ('astro' in plot):
-                    a.plot(tl['i_pre'][:, i], label='{}Pre-synaptic Astrocyte Trace'.format(prefix))
-                    a.plot(tl['i_post'][:, i], label='{}Post-synaptic Astrocyte Trace'.format(prefix))
-                    a.plot(tl['u'][:, i], label='{} Astrocyte Ca'.format(prefix))
+                    a.plot(tl['ip3'][:, i], label='{}Pre-synaptic Astrocyte Trace'.format(prefix))
+                    a.plot(tl['kp'][:, i], label='{}Post-synaptic Astrocyte Trace'.format(prefix))
+                    a.plot(tl['ca'][:, i], label='{} Astrocyte Ca'.format(prefix))
                     # if len(ca_event_loc) > 0:
                     #     a.plot(ca_event_loc, 'r.', overlay=True)
 
                 elif g == 'astro-ca' and ('astro-ca' in plot):
-                    line = a.plot(tl['u'][:, i].tolist(), label='{}'.format(prefix))
+                    line = a.plot(tl['ca'][:, i].tolist(), label='{}'.format(prefix))
                     
                     # if ca_event_x.numel() > 0:
                     #     a.plot(ca_event_x, ca_event_y, 'r.', markup=True)
@@ -717,7 +717,7 @@ def gen_dw_w_axes(n_plots, titles=None, spikes=False, size=(16, 8)):
 def graph_dw_w(db, fig, axes, prefix=None, title=None, sp=0):
     points = []
     for d in db:
-        ca = d['tl']['u']
+        ca = d['tl']['ca']
         points.append([d['w'], d['ca-act'], 0.0, 0.0])
 
         # Error bars where Ca Threshold is not crossed

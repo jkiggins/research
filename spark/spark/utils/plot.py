@@ -33,17 +33,17 @@ def astro_params_text(cfg, exclude=[]):
     if type(exclude) == str:
         exclude = [exclude]
 
-    can_group_tau = not ('tau_i_pre' in exclude) and not ('tau_i_post' in exclude)
+    can_group_tau = not ('tau_ip3' in exclude) and not ('tau_kp' in exclude)
     can_group_alpha = not ('alpha_pre' in exclude) and not ('alpha_post' in exclude)
 
 
-    if np.isclose(cfg['tau_i_pre'], cfg['tau_i_post']) and can_group_tau:
-        text += "Pre/Post Tau: {:4.2f}\n".format(cfg['tau_i_pre'])
+    if np.isclose(cfg['tau_ip3'], cfg['tau_kp']) and can_group_tau:
+        text += "Pre/Post Tau: {:4.2f}\n".format(cfg['tau_ip3'])
     else:
-        if not ('tau_i_pre' in exclude):
-            text += "Pre Tau: {:4.2f}\n".format(cfg['tau_i_pre'])
-        if not ('tau_i_post' in exclude):
-            text += "Post Tau: {:4.2f}\n".format(cfg['tau_i_post'])
+        if not ('tau_ip3' in exclude):
+            text += "Pre Tau: {:4.2f}\n".format(cfg['tau_ip3'])
+        if not ('tau_kp' in exclude):
+            text += "Post Tau: {:4.2f}\n".format(cfg['tau_kp'])
 
     if np.isclose(cfg['alpha_pre'], cfg['alpha_post']) and can_group_alpha:
         text += "Pre/Post Alpha: {:4.2f}\n".format(cfg['alpha_pre'])

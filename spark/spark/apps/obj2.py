@@ -141,7 +141,7 @@ def _exp_average_pulse_pair_sweep(cfg_path, sim=False):
         _print_sim("Tau ip3 and Tau K+")
         cfg = config.Config(cfg_path)
         cfg['astro_params'] = cfg['classic_stdp']
-        def_tau = cfg['astro_params']['tau_i_pre']
+        def_tau = cfg['astro_params']['tau_ip3']
         all_tau = torch.linspace(10, 800, 10)
 
         # Different descr only needed when each db will result in a separate graph
@@ -153,30 +153,30 @@ def _exp_average_pulse_pair_sweep(cfg_path, sim=False):
         # Same both tau together
         for tau in tqdm(all_tau, desc="tau"):
             # Sim with ip3 and k+ time constants = tau
-            cfg['astro_plasticity']['tau_i_pre'] = tau
-            cfg['astro_plasticity']['tau_i_post'] = tau
-            cfg['classic_stdp']['tau_i_pre'] = tau
-            cfg['classic_stdp']['tau_i_post'] = tau
+            cfg['astro_plasticity']['tau_ip3'] = tau
+            cfg['astro_plasticity']['tau_kp'] = tau
+            cfg['classic_stdp']['tau_ip3'] = tau
+            cfg['classic_stdp']['tau_kp'] = tau
             
             db_stdp.prefix({'tau': tau, 'sweep': 'both'})
             db_astro.prefix({'tau': tau, 'sweep': 'both'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
             # Sim with ip3 time constant = tau
-            cfg['astro_plasticity']['tau_i_pre'] = tau
-            cfg['astro_plasticity']['tau_i_post'] = def_tau
-            cfg['classic_stdp']['tau_i_pre'] = tau
-            cfg['classic_stdp']['tau_i_post'] = def_tau
+            cfg['astro_plasticity']['tau_ip3'] = tau
+            cfg['astro_plasticity']['tau_kp'] = def_tau
+            cfg['classic_stdp']['tau_ip3'] = tau
+            cfg['classic_stdp']['tau_kp'] = def_tau
 
             db_stdp.prefix({'tau': tau, 'sweep': 'ip3'})
             db_astro.prefix({'tau': tau, 'sweep': 'ip3'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
             # Sim with k+ time constant = tau
-            cfg['astro_plasticity']['tau_i_pre'] = def_tau
-            cfg['astro_plasticity']['tau_i_post'] = tau
-            cfg['classic_stdp']['tau_i_pre'] = def_tau
-            cfg['classic_stdp']['tau_i_post'] = tau
+            cfg['astro_plasticity']['tau_ip3'] = def_tau
+            cfg['astro_plasticity']['tau_kp'] = tau
+            cfg['classic_stdp']['tau_ip3'] = def_tau
+            cfg['classic_stdp']['tau_kp'] = tau
             db_stdp.prefix({'tau': tau, 'sweep': 'k+'})
             db_astro.prefix({'tau': tau, 'sweep': 'k+'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
@@ -443,16 +443,16 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
 
         # Again with LTD bias
         spikes = gen_ramp_impulse_spikes()
-        cfg['classic_stdp']['tau_i_post'] = 30
-        cfg['astro_plasticity']['tau_i_post'] = 30
+        cfg['classic_stdp']['tau_kp'] = 30
+        cfg['astro_plasticity']['tau_kp'] = 30
         dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_ltd_bias')
         dbs = dbs + dbs_sim
 
         # Again with LTP bias
         cfg = config.Config(cfg_path)
         spikes = gen_ramp_impulse_spikes()
-        cfg['classic_stdp']['tau_i_pre'] = 30
-        cfg['astro_plasticity']['tau_i_pre'] = 30
+        cfg['classic_stdp']['tau_ip3'] = 30
+        cfg['astro_plasticity']['tau_ip3'] = 30
         dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_ltp_bias')
         dbs = dbs + dbs_sim
 

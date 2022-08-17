@@ -16,11 +16,11 @@ def _astro_sim(astro, cfg, spikes, db):
     timeline = {
         key: torch.as_tensor([val])
         for key, val in [
-            ('i_pre', 0.0),
-            ('i_post', 0.0),
+            ('ip3', 0.0),
+            ('kp', 0.0),
             ('z_pre', 0.0),
             ('z_post', 0.0),
-            ('u', 0.0),
+            ('ca', 0.0),
             ('eff', 0.0),
         ]
     }
@@ -33,12 +33,12 @@ def _astro_sim(astro, cfg, spikes, db):
             eff, state = astro(state, z_pre=z[0], z_post=z[1])
             timeline['z_pre'] = torch.cat((timeline['z_pre'], z[0].reshape(1)))
             timeline['z_post'] = torch.cat((timeline['z_post'], z[1].reshape(1)))
-            timeline['i_post'] = torch.cat((timeline['i_post'], state['i_post'].reshape(1)))
+            timeline['kp'] = torch.cat((timeline['kp'], state['kp'].reshape(1)))
             
         timeline['eff'] = torch.cat((timeline['eff'], eff.reshape(1)))
-        timeline['i_pre'] = torch.cat((timeline['i_pre'], state['i_pre'].reshape(1)))
+        timeline['ip3'] = torch.cat((timeline['ip3'], state['ip3'].reshape(1)))
 
-        timeline['u'] = torch.cat((timeline['u'], state['u'].reshape(1)))
+        timeline['ca'] = torch.cat((timeline['ca'], state['ca'].reshape(1)))
 
     db.store({
         'timeline': timeline
@@ -84,22 +84,22 @@ def sim_sweep_u(cfg):
         for d in by_spike:
             tl = d['timeline']
             spikes = d['spikes']
-            ax.plot(tl['u'], label='tau_u={}'.format(d['tau_u']))
+            ax.plot(tl['ca'], label='tau_u={}'.format(d['tau_u']))
             ax.set_xlim((0, len(tl['z_pre'])))
         # ax.legend()
 
 
-        # i_pre, i_post, and spikes are the same across varying u
+        # ip3, kp, and spikes are the same across varying u
         tl = by_spike[0]['timeline']
-        i_pre = tl['i_pre']
-        i_post = tl['i_post']
+        ip3 = tl['ip3']
+        kp = tl['kp']
 
         ax = fig.add_subplot(3,1,2)
         ax.set_title("Astrocyte Input Traces")
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("Value")
-        c1 = ax.plot(i_pre, label='ip3')[0].get_color()
-        c2 = ax.plot(i_post, label='k+')[0].get_color()
+        c1 = ax.plot(ip3, label='ip3')[0].get_color()
+        c2 = ax.plot(kp, label='k+')[0].get_color()
         ax.legend()
 
         ax = fig.add_subplot(3,1,3)
@@ -113,22 +113,22 @@ def sim_sweep_u(cfg):
 
 
 def sim_sweep_pre_i(cfg):
-    alpha_i_pre_vals = torch.linspace(0.1, 1.0, 3)
-    tau_i_pre_vals = torch.logspace(1, 3, 5)
+    alpha_ip3_vals = torch.linspace(0.1, 1.0, 3)
+    tau_ip3_vals = torch.logspace(1, 3, 5)
     spike_trains = []
     spike_trains.append(spiketrain.impulse(0, 10, 100))
 
     for r in [0.1, 0.5, 0.7]:
         spike_trains.append(spiketrain.poisson(r, 100))
 
-    param_sweep = VSweep(tau_i_pre_vals)
-    param_sweep = param_sweep.foreach(alpha_i_pre_vals)
+    param_sweep = VSweep(tau_ip3_vals)
+    param_sweep = param_sweep.foreach(alpha_ip3_vals)
     param_sweep = param_sweep.foreach(spike_trains)
     db = ExpStorage()
 
     # Simulation
     for tau_i, alpha, spikes in param_sweep.head.run():
-        cfg('astro_params.tau_i_pre', tau_i)
+        cfg('astro_params.tau_ip3', tau_i)
         cfg('astro_params.alpha_pre', alpha)
 
         astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
@@ -156,11 +156,11 @@ def sim_sweep_pre_i(cfg):
             ax.set_xlabel("Time (ms)")
             ax.set_ylabel("Value")
 
-            # Plot i_pre and u for each tau on a single plot
+            # Plot ip3 and u for each tau on a single plot
             for d in by_alpha:
                 tl = d['timeline']
                 spikes = d['spikes']
-                ax.plot(tl['i_pre'].tolist(), label='tau_ip3={}'.format(d['tau_i']))
+                ax.plot(tl['ip3'].tolist(), label='tau_ip3={}'.format(d['tau_i']))
                 ax.set_xlim((0, len(tl['z_pre'])))
             ax.legend()
 
@@ -201,7 +201,7 @@ def sim_heatmap_alpha_u_thr_events(cfg):
         state = None
         timeline = {
             'eff': [],
-            'u': []
+            'ca': []
         }
 
         for z_pre, z_post in zip(pre_spikes[0], post_spikes[0]):
@@ -209,14 +209,14 @@ def sim_heatmap_alpha_u_thr_events(cfg):
             timeline['eff'].append(
                 torch.isclose(eff, torch.as_tensor(1.0)).float()
             )
-            timeline['u'].append(state['u'])
+            timeline['ca'].append(state['ca'])
 
         # print(
         #     "alpha: {}, spike rate: {}, any_effect: {}, max(u): {}".format(
         #         alpha,
         #         spike_rate,
         #         any(timeline['eff']),
-        #         max(timeline['u']),
+        #         max(timeline['ca']),
         #     ))
 
         db.store({
@@ -278,7 +278,7 @@ def sim_heatmap_tau_u_thr_events(cfg):
         state = None
         timeline = {
             'eff': [],
-            'u': []
+            'ca': []
         }
 
         for z_pre, z_post in zip(pre_spikes[0], post_spikes[0]):
@@ -286,14 +286,14 @@ def sim_heatmap_tau_u_thr_events(cfg):
             timeline['eff'].append(
                 torch.isclose(eff, torch.as_tensor(1.0)).float()
             )
-            timeline['u'].append(state['u'])
+            timeline['ca'].append(state['ca'])
 
         # print(
         #     "alpha: {}, spike rate: {}, any_effect: {}, max(u): {}".format(
         #         alpha,
         #         spike_rate,
         #         any(timeline['eff']),
-        #         max(timeline['u']),
+        #         max(timeline['ca']),
         #     ))
 
         db.store({
@@ -346,8 +346,8 @@ def sim_heatmap_dt_tau(cfg):
     for tau, delta_t in tqdm(param_sweep):
 
         # Create astro with modified config
-        cfg('astro_params.tau_i_pre', tau)
-        cfg('astro_params.tau_i_post', tau)
+        cfg('astro_params.tau_ip3', tau)
+        cfg('astro_params.tau_kp', tau)
 
         astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
         state = None
@@ -359,7 +359,7 @@ def sim_heatmap_dt_tau(cfg):
             eff, state = astro(state, z_pre=z_pre, z_post=z_post)
 
             if int(z_post) == 1:
-                delta_u = state['u']
+                delta_u = state['ca']
                 break
 
         db.store({
@@ -378,7 +378,7 @@ def sim_heatmap_dt_tau(cfg):
             eff, state = astro(state, z_pre=z_pre, z_post=z_post)
 
             if int(z_post) == 1:
-                delta_u = state['u']
+                delta_u = state['ca']
                 break
 
         db.store({

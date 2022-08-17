@@ -48,7 +48,7 @@ def srm_step(state, params, n, k, i):
 
     # Increment for next time
     state['ttls'] = min(state['ttls'] + 1, len(n))
-    state['u'] = u
+    state['ca'] = u
 
     return state
 
@@ -111,7 +111,7 @@ def test_srm_step(save_path):
         
         state = srm_step(state, srm_lif_params, n, k, z)
 
-        u.append(state['u'])
+        u.append(state['ca'])
         z_out.append(state['z'])
 
 

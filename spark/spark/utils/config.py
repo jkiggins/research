@@ -127,9 +127,9 @@ def test_config(save_path):
 classic_stdp: &classic_stdp
     mode: stdp
     tau_u: 10000.0
-    tau_i_pre: 100.0
+    tau_ip3: 100.0
     alpha_pre: 1.0
-    tau_i_post: 100.0
+    tau_kp: 100.0
     alpha_post: 1.0
     u_th: 1.0
 
@@ -146,7 +146,7 @@ anti_stdp: &anti_stdp
 
 ltp_bias: &ltp_bias
   __inherit__: *classic_stdp
-  tau_i_pre: 80
+  tau_ip3: 80
   
   u_step_params:
       ltd: -1.0
@@ -167,7 +167,7 @@ ltp_bias: &ltp_bias
 
     # Values that the target overrides still have their value
     assert cfg['anti_stdp']['alpha_pre'] == -1.0
-    assert cfg['ltp_bias']['tau_i_pre'] == 80
+    assert cfg['ltp_bias']['tau_ip3'] == 80
 
     # Nested sections from __inherit__ not present in target are populated
     assert cfg['anti_stdp']['u_step_params']['ltd'] == 0.0

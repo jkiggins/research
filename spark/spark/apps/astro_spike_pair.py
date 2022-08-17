@@ -19,10 +19,10 @@ def sim_astro_probe(cfg, spikes, db, weight=1.0):
 
     state = None
     timeline = {
-        'u': torch.zeros(len(spikes)),
+        'ca': torch.zeros(len(spikes)),
         'eff': torch.zeros(len(spikes)),
-        'i_pre': torch.zeros(len(spikes)),
-        'i_post': torch.zeros(len(spikes)),
+        'ip3': torch.zeros(len(spikes)),
+        'kp': torch.zeros(len(spikes)),
         'z_pre': torch.zeros(len(spikes)),
         'z_post': torch.zeros(len(spikes)),
     }
@@ -33,19 +33,19 @@ def sim_astro_probe(cfg, spikes, db, weight=1.0):
     for i, (z_pre, z_post) in enumerate(spikes):
         eff, state = astro(state, z_pre=z_pre*weight, z_post=z_post)
         
-        timeline['u'][i] = state['u']
+        timeline['ca'][i] = state['ca']
         timeline['eff'][i] = eff
-        timeline['i_pre'][i] = state['i_pre']
-        timeline['i_post'][i] = state['i_post']
+        timeline['ip3'][i] = state['ip3']
+        timeline['kp'][i] = state['kp']
         timeline['z_pre'][i] = z_pre
         timeline['z_post'][i] = z_post
 
         if z_post == 1 or z_pre == 1:
-            timeline['max_u'] = state['u']
+            timeline['max_u'] = state['ca']
             timeline['last_u'] = last_u
-            timeline['i_pre_at_max'] = state['i_pre']
-            timeline['i_post_at_max'] = state['i_post']                
-        last_u = state['u']
+            timeline['ip3_at_max'] = state['ip3']
+            timeline['kp_at_max'] = state['kp']                
+        last_u = state['ca']
 
     db.store({'timeline': timeline})
 
@@ -114,14 +114,14 @@ def graph_astro_tls(records, key, prefix=""):
         ax.set_title("{}: Pulse Pair Response with {} = {:4.4f}".format(prefix, key, rec[key]))
         ax.set_xlabel("Timesteps (ms)")
         ax.set_ylabel("Value")
-        c1 = ax.plot(tl['i_pre'])[0].get_color()
-        c2 = ax.plot(tl['i_post'])[0].get_color()
-        ax.plot(tl['u'])
+        c1 = ax.plot(tl['ip3'])[0].get_color()
+        c2 = ax.plot(tl['kp'])[0].get_color()
+        ax.plot(tl['ca'])
         plot.plot_events(
             ax,
             [tl['z_pre'], tl['z_post']],
             colors=(c1, c2))
-        ax.legend(['i_pre', 'i_post', 'u', 'z_in', 'z_out'])
+        ax.legend(['ip3', 'kp', 'ca', 'z_in', 'z_out'])
         ax.set_xlim((0, sim_steps))
         ax.set_xticks(ticks=list(range(sim_steps)))
 

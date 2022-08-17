@@ -29,9 +29,9 @@ class Astro:
     def init_state_if_none(self, state):
         if state is None:
             state = {
-                'u': torch.zeros(self.num_process),
-                'i_pre': torch.zeros(self.num_process),
-                'i_post': torch.zeros(self.num_process),
+                'ca': torch.zeros(self.num_process),
+                'ip3': torch.zeros(self.num_process),
+                'kp': torch.zeros(self.num_process),
             }
 
         return state
@@ -76,7 +76,7 @@ class Astro:
             eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
         elif self.params['weight_update'] == 'prop':
-            ca = state['u']
+            ca = state['ca']
             u_spike = torch.ones_like(ca)
             # print("ca: {}, ".format(ca), end='')
             state, eff = astro_step_effect_weight_prop(torch.ones_like(ca), state, self.params)

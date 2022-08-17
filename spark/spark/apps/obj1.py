@@ -64,9 +64,9 @@ def _exp_classic_stdp(cfg_path, sim=False):
         return dbs
 
     cfg = config.Config(cfg_path)
-    tau_ltp = cfg['classic_stdp']['tau_i_pre']
+    tau_ltp = cfg['classic_stdp']['tau_ip3']
     alpha_ltp = cfg['classic_stdp']['alpha_pre']
-    tau_ltd = cfg['classic_stdp']['tau_i_post']
+    tau_ltd = cfg['classic_stdp']['tau_kp']
     alpha_ltd = cfg['classic_stdp']['alpha_post']
 
     spike_deltas = torch.linspace(-0.05, 0.05, 50)
@@ -193,22 +193,22 @@ def _graph_sweep_tau_u(db):
         for d in by_spike:
             tl = d['timeline']
             spikes = d['spikes']
-            ax.plot(tl['u'], label='tau_u={}'.format(d['tau_u']))
+            ax.plot(tl['ca'], label='tau_u={}'.format(d['tau_u']))
             ax.set_xlim((0, len(tl['z_pre'])))
             # ax.legend()
 
-        # i_pre, i_post, and spikes are the same across varying u
+        # ip3, kp, and spikes are the same across varying u
         suffix = by_spike[0]['suffix']
         tl = by_spike[0]['timeline']
-        i_pre = tl['i_pre']
-        i_post = tl['i_post']
+        ip3 = tl['ip3']
+        kp = tl['kp']
 
         ax = fig.add_subplot(3,1,2)
         ax.set_title("Astrocyte Input Traces")
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("[IP3],[K+]")
-        c1 = ax.plot(i_pre, label='ip3')[0].get_color()
-        c2 = ax.plot(i_post, label='k+')[0].get_color()
+        c1 = ax.plot(ip3, label='ip3')[0].get_color()
+        c2 = ax.plot(kp, label='k+')[0].get_color()
         ax.legend()
 
         ax = fig.add_subplot(3,1,3)
@@ -221,7 +221,7 @@ def _graph_sweep_tau_u(db):
         fig.tight_layout()
         fig.savefig("sweep_u_tau_{}.svg".format(suffix))
 
-######## Sweep i_pre ########
+######## Sweep ip3 ########
 def _sweep_pre_alpha_tau_vals(all_tau_ip3, all_alpha_ip3, spike_trains):
     for tau_ip3 in all_tau_ip3:
         for alpha_ip3 in all_alpha_ip3:
@@ -240,8 +240,8 @@ def _exp_sweep_pre_alpha_tau(cfg_path, sim=False):
     cfg = config.Config(cfg_path)
     cfg['astro_params'] = cfg['classic_stdp']
     
-    alpha_i_pre_vals = torch.linspace(0.1, 1.0, 3)
-    tau_i_pre_vals = torch.logspace(1, 3, 5)
+    alpha_ip3_vals = torch.linspace(0.1, 1.0, 3)
+    tau_ip3_vals = torch.logspace(1, 3, 5)
 
     # Generate spikes
     spike_trains = []
@@ -255,9 +255,9 @@ def _exp_sweep_pre_alpha_tau(cfg_path, sim=False):
 
 
     # Simulation
-    sweep_params = _sweep_pre_alpha_tau_vals(tau_i_pre_vals, alpha_i_pre_vals, spike_trains)
+    sweep_params = _sweep_pre_alpha_tau_vals(tau_ip3_vals, alpha_ip3_vals, spike_trains)
     for tau_ip3, alpha_ip3, spikes in tqdm(sweep_params, desc='ip3-alpha/tau'):
-        cfg('astro_params.tau_i_pre', tau_ip3)
+        cfg('astro_params.tau_ip3', tau_ip3)
         cfg('astro_params.alpha_pre', alpha_ip3)
 
         sim_astro_probe(cfg, spikes, db)
@@ -289,11 +289,11 @@ def _graph_sweep_pre_alpha_tau(db):
             ax.set_xlabel("Time (ms)")
             ax.set_ylabel("[IP3],[K+]")
 
-            # Plot i_pre and u for each tau on a single plot
+            # Plot ip3 and u for each tau on a single plot
             for d in by_alpha:
                 tl = d['timeline']
                 spikes = d['spikes']
-                ax.plot(tl['i_pre'].tolist(), label='tau_ip3={}'.format(d['tau_ip3']))
+                ax.plot(tl['ip3'].tolist(), label='tau_ip3={}'.format(d['tau_ip3']))
                 ax.set_xlim((0, len(tl['z_pre'])))
             ax.legend()
 
@@ -571,7 +571,7 @@ def _sim_rate_w_impulse(cfg, spikes, db, tl_graph_idx, all_w, desc=""):
             db.prefix({'w': w})
 
         sim_lif_astro_net(cfg, spikes, db, dw=False)
-        db.last()['ca-act'] = db.last()['tl']['u'].sum()
+        db.last()['ca-act'] = db.last()['tl']['ca'].sum()
 
 
 def _exp_rate_w_impulse(cfg_path, sim=False):
@@ -631,7 +631,7 @@ def _exp_rate_w_impulse(cfg_path, sim=False):
                     db.prefix({'w': w, 'band': band})
 
                 sim_lif_astro_net(cfg, spikes, db, dw=False)
-                db.last()['ca-act'] = db.last()['tl']['u'].sum()
+                db.last()['ca-act'] = db.last()['tl']['ca'].sum()
 
         dbs.insert(0, db)
 

@@ -254,8 +254,8 @@ def _exp_average_pulse_pair_sweep(cfg_path, sim=False):
         db_astro.meta['descr'] = 'snn_1n1s1a_tp_sweep_ca_th'
 
         for thr in tqdm(all_thr, desc="ca_th"):
-            cfg['classic_stdp']['u_th'] = thr
-            cfg['astro_plasticity']['u_th'] = thr
+            cfg['classic_stdp']['ca_th'] = thr
+            cfg['astro_plasticity']['ca_th'] = thr
             db_stdp.prefix({'ca_th': thr})
             db_astro.prefix({'ca_th': thr})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
@@ -361,7 +361,7 @@ def _exp_rate_plasticity(cfg_path, sim=False):
         cfg['astro_params'] = cfg['anti_stdp']
         cfg['astro_params']['u_step_params']['mode'] = 'u_ordered_prod'
         cfg['astro_params']['weight_update'] = 'thr'
-        cfg['astro_params']['u_th'] = 2.5
+        cfg['astro_params']['ca_th'] = 2.5
 
         cfg['astro_params']['u_step_params']['ltd'] = -1.5
         cfg['astro_params']['u_step_params']['ltp'] = 1.5
@@ -461,7 +461,7 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
         cfg = config.Config(cfg_path)
         spikes = gen_ramp_impulse_spikes()
         cfg['astro_plasticity']['weight_update'] = 'ip3_k+_fall'
-        cfg['astro_plasticity']['tau_u'] = 10.0
+        cfg['astro_plasticity']['tau_ca'] = 10.0
         dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_fall', astro_only=True)
         dbs = dbs + dbs_sim
 
@@ -469,7 +469,7 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
         cfg = config.Config(cfg_path)
         spikes = gen_impulse_spikes(10, num_impulses=15)
         cfg['astro_plasticity']['weight_update'] = 'ip3_k+_fall'
-        cfg['astro_plasticity']['tau_u'] = 10.0
+        cfg['astro_plasticity']['tau_ca'] = 10.0
         dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const_fall', astro_only=True)
         dbs = dbs + dbs_sim
 

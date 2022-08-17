@@ -16,7 +16,7 @@ def _clip_decay_across_zero(orig, decayed):
 
 def astro_step_decay(state, params, dt):
     
-    du = dt * params['tau_u'] * -state['ca']
+    du = dt * params['tau_ca'] * -state['ca']
     u_decayed = state['ca'] + torch.as_tensor(du)
     u_decayed = _clip_decay_across_zero(state['ca'], u_decayed)
 
@@ -145,7 +145,7 @@ def astro_step_u_signal(state, params, dt):
 def astro_step_reward_effect(state, params, reward):
     # reward is either 0.0, 1.0, or -1.0
     dw_prop = state['ca'] * reward
-    dw_prop = (dw_prop / params['u_th']) * 0.2 + 1.0
+    dw_prop = (dw_prop / params['ca_th']) * 0.2 + 1.0
 
     # where reward is not 0.0
     wh_reward = torch.where(torch.logical_not(
@@ -188,8 +188,8 @@ def astro_track_activity(state, params):
 
 # Apply a threshold
 def astro_step_thr(state, params):
-    u_spike_low = state['ca'] < -(params['u_th'])
-    u_spike_high = state['ca'] > params['u_th']
+    u_spike_low = state['ca'] < -(params['ca_th'])
+    u_spike_high = state['ca'] > params['ca_th']
 
     l_no_spike = torch.logical_not(
         torch.logical_or(u_spike_low,  u_spike_high))
@@ -205,60 +205,47 @@ def astro_step_thr(state, params):
     return state, u_spike
 
 
-def astro_step_and_coupling(state, params):
+def astro_step_ca_and_coupling(state, params):
     """
     AND - coupling between synapse
-    This function will add logic to the simple threshold normally used for
-    weight update
-
-    If (syn0_ca>thr) and (syn1_ca>thr) - This is the desired behavior, no need
-    to change weights
-
-    If (syn0_ca>thr) xor (syn1_ca<thr) reverse sign of syn0_ca (anti-stdp)
+    
+    This function will consider IP3 values from N synapses, along with a
+    single K+ value, and determine an appropreate Ca response that will drive
+    plasticity.
+    
+    This step looks for the following conditions
+    1. All IP3 > thr with K+ < thr. The outcome is increase in Syns 0-N
+    2. All IP3 > thr With K+ > thr. The outcome is no activity
+    3. Some IP3 > thr, and K+ > thr, The outcome is a decrease in the subset of synapse with IP3 > thr
     """
 
     syns = params['coupling']['and']
     if (syns is None) or len(syns) == 0:
         return state
 
-    ca_gt_thr = torch.abs(state['ca'][syns]) > params['ca_th']
-    ca_gt_thr_ltp = state['ca'][syns] > params['ca_th']
-    ca_gt_thr_ltd = state['ca'][syns] < -params['ca_th']
+    # and_th is a common threshold used for ip3, and k+
+    ip3_gt_thr = state['ip3'][syns] > params['and_th']
+    kp_gt_thr = state['kp'][syns] > params['and_th']
 
-    wh_ca_gt_thr = torch.where(ca_gt_thr)
-    wh_ca_gt_thr_ltp = torch.where(ca_gt_thr_ltp)
-    wh_ca_gt_thr_ltd = torch.where(ca_gt_thr_ltd)
+    # Evaluate if all synapses need a weight increase due to a lack of downstream activity
+    ip3_high_kp_low = torch.logical_and(ip3_gt_thr, torch.logical_not(kp_gt_thr))
+    all_ip3_high_kp_low = torch.logical_and(ip3_high_kp_low, torch.all(ip3_gt_thr))
 
-    if torch.all(torch.logical_not(ca_gt_thr)):
-        # Do nothing, no thr exceeded
-        pass
+    # Evaluate if some synapses need a weight decrease, due to a subset of syns triggering a downstream response
+    ip3_high_kp_high = torch.logical_and(ip3_gt_thr, kp_gt_thr)
+    some_ip3_high_kp_high = torch.logical_and(ip3_high_kp_high, torch.logical_not(torch.all(ip3_high_kp_high)))
+    
+    dca = torch.zeros_like(state['ca'][syns])
 
-    elif torch.all(ca_gt_thr):
-        # Zero out Ca, no need for thr events
-        # u_before = state['ca'].tolist()
-        u_syns = state['ca'][syns]
-        u_syns[wh_ca_gt_thr] = 0.0
-        state['ca'][syns] = u_syns
-        # print(
-        #     "ca_gt_thr: {} -> {}: {} - {}".format(
-        #         u_before,
-        #         state['ca'].tolist(),
-        #         syns, ca_gt_thr))
+    # If all synapses have high IP3 and there is Low K+, increase Ca proportional to synapse activity (IP3)
+    dca[all_ip3_high_kp_low] = state['ip3'][syns][all_ip3_high_kp_low]
+    state['ip3'][syns][all_ip3_high_kp_low] = 0.0
+    
+    # If some synapses have high IP3 and there is High K+, decrease Ca proportional to synapse activity (IP3)
+    dca[all_ip3_high_kp_low] = -state['ip3'][syns][some_ip3_high_kp_high]
+    state['ip3'][syns][some_ip3_high_kp_high] = 0.0
 
-    elif False: # torch.any(ca_gt_thr):
-        # Invert all Ca values where thr was exceeded, weight update's must
-        # follow anti-stdp
-        # u_before = state['ca'].tolist()
-        u_syns = state['ca'][syns]
-        u_syns[wh_ca_gt_thr] = u_syns[wh_ca_gt_thr] * -1.0
-        state['ca'][syns] = u_syns
-
-        # print(
-        #     "ca_gt_thr: {} -> {}: {} - {}".format(
-        #     u_before,
-        #     state['ca'].tolist(),
-        #     syns, ca_gt_thr))
-
+    state['ca'][syns] = state['ca'][syns] + dca
 
     return state
 
@@ -280,7 +267,7 @@ def astro_step_effect_weight_prop(u_spike, state, params):
 
     # Weight update magnitude and direction are proportional to ca
     ca = state['ca']
-    dw = ca / params['u_th']
+    dw = ca / params['ca_th']
     dw = torch.clamp(dw, -1.0, 1.0)  # -1.0 to 1.0
     dw = dw * 0.5  # -0.5 to 0.5
     # 1.0 -> 0.5 to 1.5, 0.0 -> -0.5 to 0.5
@@ -383,11 +370,11 @@ def test_astro_step(save_path):
 
     dt = 0.001
     astro_params = {
-        'tau_u': 1/1e-1,
+        'tau_ca': 1/1e-1,
         'tau_ip3': 1/1e-4,
         'alpha_pre': 100.0,
         'alpha_post': 1.0,
-        'u_th': 1.0,
+        'ca_th': 1.0,
     }
 
     # Simulate for 1000 time steps, constant spiking input

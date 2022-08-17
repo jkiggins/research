@@ -28,7 +28,7 @@ def plot_events(ax, events, colors=None, offset=0):
 
 
 def astro_params_text(cfg, exclude=[]):
-    text = "U Tau :{:4.2f}\n".format(cfg['tau_u'])
+    text = "U Tau :{:4.2f}\n".format(cfg['tau_ca'])
 
     if type(exclude) == str:
         exclude = [exclude]

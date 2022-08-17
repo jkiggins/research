@@ -2,14 +2,14 @@
 classic_stdp: &classic_stdp
   mode: plasticity
     
-  tau_u: 50.0
-  u_th: 2.5
+  tau_ca: 50.0
+  ca_th: 2.5
 
-  tau_i_pre: 100.0
+  tau_ip3: 100.0
   alpha_pre: 1.0
   pre_reset_on_spike: False
 
-  tau_i_post: 100.0
+  tau_kp: 100.0
   alpha_post: 1.0
   post_reset_on_spike: False
 
@@ -32,14 +32,14 @@ anti_stdp: &anti_stdp
 
 
 astro_plasticity:
-  tau_u: 50.0
-  u_th: 2.5
+  tau_ca: 50.0
+  ca_th: 2.5
 
-  tau_i_pre: 100.0
+  tau_ip3: 100.0
   alpha_pre: 1.0
   pre_reset_on_spike: False
 
-  tau_i_post: 100.0
+  tau_kp: 100.0
   alpha_post: 1.0
   post_reset_on_spike: False
 

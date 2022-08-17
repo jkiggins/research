@@ -85,7 +85,7 @@ def cfg_text(cfg, astro=True, linear=False):
     text = ""
     if astro:
         astro_params = cfg['astro_params']
-        text += "U Tau :{:4.2f}\n".format(astro_params['tau_u'])
+        text += "U Tau :{:4.2f}\n".format(astro_params['tau_ca'])
 
         if np.isclose(cfg['tau_ip3'], cfg['tau_kp']):
             text += "Pre/Post Tau: {:4.2f}\n".format(astro_params['tau_ip3'])

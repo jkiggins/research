@@ -40,10 +40,10 @@ class Astro:
     def _astro_step(self, state, z_pre, z_post, reward=None):
         state = self.init_state_if_none(state)
 
-        # Decay u
-        state = astro_step_decay(state, self.params, self.dt)
+        # Decay Ca
 
-        # Processes incoming spikes
+
+        # ------------ IP3 and K= Response --------------
         state = astro_step_z_pre(z_pre, state, self.params, self.dt)
         state = astro_step_z_post(z_post, state, self.params, self.dt)
 
@@ -51,24 +51,27 @@ class Astro:
             state = astro_track_activity(state, self.params)
             # print("act_gt_thr: ", state['act_gt_thr'], end=' ')
 
-        # Step changes to Ca2+
-        if self.params['u_step_params']['mode'] == 'u_prod':
-            # Ca is incremented by the product of ip3 and k+
-            state = astro_step_u_prod(state)
+        # ------------ Ca Response --------------
+        state = astro_step_decay(state, self.params, self.dt)
+        
+        # if self.params['u_step_params']['mode'] == 'u_prod':
+        #     # Ca is incremented by the product of ip3 and k+
+        #     state = astro_step_u_prod(state)
 
-        elif self.params['u_step_params']['mode'] == 'u_ordered_prod':
-            # Ca is incremended by the product of ip3 and k+, with a sign depending on which is larger
-            state = astro_step_u_ordered_prod(state, self.params)
+        # elif self.params['u_step_params']['mode'] == 'u_ordered_prod':
+        #     # Ca is incremended by the product of ip3 and k+, with a sign depending on which is larger
+        #     state = astro_step_u_ordered_prod(state, self.params)
             
-        elif self.params['u_step_params']['mode'] == 'stdp':
-            # Ca is incremented according to an STDP-like rule
-            state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
+        # elif self.params['u_step_params']['mode'] == 'stdp':
+        #     # Ca is incremented according to an STDP-like rule
+        #     state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
 
-        # Apply synaptic coupling (if any)
-        # state = astro_step_and_coupling(state, self.params)
+        state = astro_step_prod_ca(state, self.params)
+        state = astro_step_ordered_prod_ca(state, self.params)
+        state = astro_step_stdp_ca(state, self.params)
+        state = astro_step_and_coupling_ca(state, self.params)
 
-        # Effect weight
-        # Update weight when Ca > thr, by a fixed factor for LTD/LTP
+        # ------------ Effect on Synaptic Weight --------------
         if True:
             eff = torch.as_tensor(0.0)
         elif self.params['weight_update'] == 'thr':

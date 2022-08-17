@@ -2,16 +2,16 @@
 classic_stdp: &classic_stdp
   mode: plasticity
 
-  tau_i_pre: 100.0
+  tau_ip3: 100.0
   alpha_pre: 1.0
   pre_reset_on_spike: False
   
-  tau_i_post: 100.0
+  tau_kp: 100.0
   alpha_post: 1.0
   post_reset_on_spike: False
   
-  tau_u: 10000.0
-  u_th: 1.0
+  tau_ca: 10000.0
+  ca_th: 1.0
 
   u_step_params:
     mode: u_ordered_prod

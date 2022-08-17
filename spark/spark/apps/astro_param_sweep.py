@@ -46,7 +46,7 @@ def _astro_sim(astro, cfg, spikes, db):
 
 
 def sim_sweep_u(cfg):
-    tau_u = torch.linspace(50, 500, 20)
+    tau_ca = torch.linspace(50, 500, 20)
     db = ExpStorage()
     
     spike_trains = []
@@ -58,14 +58,14 @@ def sim_sweep_u(cfg):
 
     suffix = ['impulse', 'p0.1', 'p0.5', 'p0.7']
 
-    param_sweep = VSweep(tau_u)
+    param_sweep = VSweep(tau_ca)
     param_sweep = param_sweep.foreach(spike_trains)
 
-    for tau_u, spikes in param_sweep.head.run():
-        cfg('astro_params.tau_u', tau_u)
+    for tau_ca, spikes in param_sweep.head.run():
+        cfg('astro_params.tau_ca', tau_ca)
         astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
         _astro_sim(astro, cfg, spikes, db)
-        db.last()['tau_u'] = tau_u
+        db.last()['tau_ca'] = tau_ca
         db.last()['spikes'] = spikes
 
 
@@ -84,7 +84,7 @@ def sim_sweep_u(cfg):
         for d in by_spike:
             tl = d['timeline']
             spikes = d['spikes']
-            ax.plot(tl['ca'], label='tau_u={}'.format(d['tau_u']))
+            ax.plot(tl['ca'], label='tau_ca={}'.format(d['tau_ca']))
             ax.set_xlim((0, len(tl['z_pre'])))
         # ax.legend()
 
@@ -179,7 +179,7 @@ def sim_sweep_pre_i(cfg):
         )
 
 
-def sim_heatmap_alpha_u_thr_events(cfg):
+def sim_heatmap_alpha_ca_thr_events(cfg):
     spike_rate_range = torch.linspace(0.05, 0.8, 20)
     alpha_range = torch.linspace(0.1, 2.0, 20)
 
@@ -253,11 +253,11 @@ def sim_heatmap_alpha_u_thr_events(cfg):
 
     ax.imshow(heat_img)
     fig.tight_layout()
-    fig.savefig("u_thr_event_heatmap_spike-rate_alpha.svg")
+    fig.savefig("ca_thr_event_heatmap_spike-rate_alpha.svg")
 
 
 
-def sim_heatmap_tau_u_thr_events(cfg):
+def sim_heatmap_tau_ca_thr_events(cfg):
     spike_rate_range = torch.linspace(0.05, 0.8, 20)
     tau_range = torch.linspace(50, 500, 20)
 
@@ -269,8 +269,8 @@ def sim_heatmap_tau_u_thr_events(cfg):
     db = ExpStorage()
 
     # Simulate
-    for spike_rate, tau_u in tqdm(param_sweep):
-        cfg('astro_params.tau_u', tau_u)
+    for spike_rate, tau_ca in tqdm(param_sweep):
+        cfg('astro_params.tau_ca', tau_ca)
 
         astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
         pre_spikes = spiketrain.poisson(spike_rate, 1000)
@@ -298,7 +298,7 @@ def sim_heatmap_tau_u_thr_events(cfg):
 
         db.store({
             'spike_rate': spike_rate,
-            'tau_u': tau_u,
+            'tau_ca': tau_ca,
             'timeline': timeline})
 
     # Graph
@@ -330,7 +330,7 @@ def sim_heatmap_tau_u_thr_events(cfg):
 
     ax.imshow(heat_img)
     fig.tight_layout()
-    fig.savefig("u_thr_heatmap_spike-rate_tau_u.svg")
+    fig.savefig("ca_thr_heatmap_spike-rate_tau_ca.svg")
 
 
 def sim_heatmap_dt_tau(cfg):
@@ -436,16 +436,16 @@ def _main(args):
 
     cfg = config.Config(args.config)
     cfg['astro_params'] = cfg['classic_stdp']
-    cfg['astro_params']['u_th'] = 100.0
+    cfg['astro_params']['ca_th'] = 100.0
     sim_sweep_u(cfg)
 
     cfg = config.Config(args.config)
     cfg['astro_params'] = cfg['classic_stdp']
-    sim_heatmap_alpha_u_thr_events(cfg)
+    sim_heatmap_alpha_ca_thr_events(cfg)
 
     cfg = config.Config(args.config)
     cfg['astro_params'] = cfg['classic_stdp']
-    sim_heatmap_tau_u_thr_events(cfg)
+    sim_heatmap_tau_ca_thr_events(cfg)
     
     # cfg = config.Config(args.config)
     # cfg['astro_params'] = cfg['classic_stdp']

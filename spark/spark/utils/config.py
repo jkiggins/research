@@ -126,12 +126,12 @@ def test_config(save_path):
     yaml_str = """
 classic_stdp: &classic_stdp
     mode: stdp
-    tau_u: 10000.0
+    tau_ca: 10000.0
     tau_ip3: 100.0
     alpha_pre: 1.0
     tau_kp: 100.0
     alpha_post: 1.0
-    u_th: 1.0
+    ca_th: 1.0
 
     u_step_params:
         mode: stdp

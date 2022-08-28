@@ -3,10 +3,10 @@ from ..functional.astrocyte import (
     astro_step_decay,
     astro_step_z_pre,
     astro_step_z_post,
-    astro_step_u_prod,
-    astro_step_u_ordered_prod,
-    astro_step_u_signal,
-    astro_step_u_stdp,
+    astro_step_prod_ca,
+    astro_step_ordered_prod_ca,
+    # astro_step_u_signal,
+    astro_step_stdp_ca,
     astro_step_thr,
     astro_step_effect_weight,
     astro_step_reward_effect,
@@ -68,8 +68,8 @@ class Astro:
 
         state = astro_step_prod_ca(state, self.params)
         state = astro_step_ordered_prod_ca(state, self.params)
-        state = astro_step_stdp_ca(state, self.params)
-        state = astro_step_and_coupling_ca(state, self.params)
+        state = astro_step_stdp_ca(state, self.params, z_pre=z_pre, z_post=z_post)
+        state = astro_step_and_coupling(state, self.params)
 
         # ------------ Effect on Synaptic Weight --------------
         if True:
@@ -92,21 +92,21 @@ class Astro:
         return eff, state
 
 
-    def _signal_respose_mode_step(self, state, z_pre=None, z_post=None):
-        state = self.init_state_if_none(state)
+    # def _signal_respose_mode_step(self, state, z_pre=None, z_post=None):
+    #     state = self.init_state_if_none(state)
 
-        # Astro step
-        state = astro_step_decay(state, self.params, self.dt)
-        if not (z_pre is None):
-            state = astro_step_z_pre(z_pre, state, self.params, self.dt)
-        if not (z_post is None):
-            state = astro_step_z_post(z_post, state, self.params, self.dt)
-        state = astro_step_u_signal(state, self.params, self.dt)
+    #     # Astro step
+    #     state = astro_step_decay(state, self.params, self.dt)
+    #     if not (z_pre is None):
+    #         state = astro_step_z_pre(z_pre, state, self.params, self.dt)
+    #     if not (z_post is None):
+    #         state = astro_step_z_post(z_post, state, self.params, self.dt)
+    #     state = astro_step_u_signal(state, self.params, self.dt)
 
-        state, u_spike = astro_step_thr(state, self.params)
+    #     state, u_spike = astro_step_thr(state, self.params)
         
 
-        return u_spike, state
+    #     return u_spike, state
 
 
     def __call__(self, state, z_pre=None, z_post=None, reward=None):

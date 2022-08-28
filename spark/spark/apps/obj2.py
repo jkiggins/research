@@ -188,8 +188,8 @@ def _exp_average_pulse_pair_sweep(cfg_path, sim=False):
         _print_sim("Alpha ip3 and Alpha K+")
         cfg = config.Config(cfg_path)
         cfg['astro_params'] = cfg['classic_stdp']
-        def_dw_ltd = cfg['astro_params']['u_step_params']['dw_ltd']
-        def_dw_ltp = cfg['astro_params']['u_step_params']['dw_ltp']
+        def_dw_ltd = cfg['astro_params']['dw_ltd']
+        def_dw_ltp = cfg['astro_params']['dw_ltp']
         all_dw = torch.linspace(0.1, 0.5, 5)
 
         db_stdp = ExpStorage()
@@ -201,24 +201,24 @@ def _exp_average_pulse_pair_sweep(cfg_path, sim=False):
         # Same both tau together
         for dw in tqdm(all_dw, desc="dw"):
             # Sim with ltp/ltd factors changed together
-            cfg['classic_stdp']['u_step_params']['dw_ltd'] = 1.0 - dw
-            cfg['classic_stdp']['u_step_params']['dw_ltp'] = 1.0 + dw
-            cfg['astro_plasticity']['u_step_params']['dw_ltd'] = 1.0 - dw
-            cfg['astro_plasticity']['u_step_params']['dw_ltp'] = 1.0 + dw
+            cfg['classic_stdp']['dw_ltd'] = 1.0 - dw
+            cfg['classic_stdp']['dw_ltp'] = 1.0 + dw
+            cfg['astro_plasticity']['dw_ltd'] = 1.0 - dw
+            cfg['astro_plasticity']['dw_ltp'] = 1.0 + dw
             db_stdp.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
             db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
             # Sim with ltd = dw
-            cfg['astro_params']['u_step_params']['dw_ltd'] = 1.0 - dw
-            cfg['astro_params']['u_step_params']['dw_ltp'] = def_dw_ltp
+            cfg['astro_params']['dw_ltd'] = 1.0 - dw
+            cfg['astro_params']['dw_ltp'] = def_dw_ltp
             db_stdp.prefix({'dw': dw, 'sweep': 'ltd'})
             db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
             # Sim with ltp = dw
-            cfg['astro_params']['u_step_params']['dw_ltd'] = def_dw_ltd
-            cfg['astro_params']['u_step_params']['dw_ltp'] = 1.0 + dw
+            cfg['astro_params']['dw_ltd'] = def_dw_ltd
+            cfg['astro_params']['dw_ltp'] = 1.0 + dw
             db_stdp.prefix({'dw': dw, 'sweep': 'ltp'})
             db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
@@ -359,12 +359,12 @@ def _exp_rate_plasticity(cfg_path, sim=False):
         cfg = config.Config(cfg_path)
         
         cfg['astro_params'] = cfg['anti_stdp']
-        cfg['astro_params']['u_step_params']['mode'] = 'u_ordered_prod'
+        cfg['astro_params']['mode'] = 'u_ordered_prod'
         cfg['astro_params']['weight_update'] = 'thr'
         cfg['astro_params']['ca_th'] = 2.5
 
-        cfg['astro_params']['u_step_params']['ltd'] = -1.5
-        cfg['astro_params']['u_step_params']['ltp'] = 1.5
+        cfg['astro_params']['ltd'] = -1.5
+        cfg['astro_params']['ltp'] = 1.5
 
         spikes = gen_rate_spikes([
             (0.3, cfg['sim']['steps'])
@@ -379,8 +379,8 @@ def _exp_rate_plasticity(cfg_path, sim=False):
         )
         dbs.append(db)
 
-        cfg['astro_params']['u_step_params']['ltd'] = -0.8
-        cfg['astro_params']['u_step_params']['ltp'] = 0.8
+        cfg['astro_params']['ltd'] = -0.8
+        cfg['astro_params']['ltp'] = 0.8
         db = ExpStorage()
         db.meta['descr'] = 'snn_1n1s1a_rp_thr'
         sim_lif_astro_net(

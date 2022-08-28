@@ -4,6 +4,10 @@ from .threshold import threshold
 
 import torch.jit
 
+def _get_syns(params, name):
+    if name in params['coupling'] and len(params['coupling'][name]) > 0:
+        return params['coupling'][name]
+
 def _clip_decay_across_zero(orig, decayed):
     orig_is_gt_zero = orig > 0.0
     decayed_is_lt_zero = decayed < 0.0
@@ -68,15 +72,29 @@ def astro_step_z_post(z_post, state, params, dt):
 
 
 # Update u based on other signals
-def astro_step_u_prod(state):
+def astro_step_prod_ca(state, params):
     """ Update u by adding the product of pre and post signals """
+
+    syns = _get_syns(params, 'prod')
+    if syns is None:
+        return state
+
+    raise NotImplementedError("Synapse selection not implemented")
+        
     du = state['ip3'] * state['kp']
     state['ca'] = state['ca'] + du
 
     return state
 
 
-def astro_step_u_ordered_prod(state, params):
+def astro_step_ordered_prod_ca(state, params):
+
+    syns = _get_syns(params, 'ordered_prod')
+    if syns is None:
+        return state
+
+    raise NotImplementedError("Synapse selection not implemented")
+
     du = state['ip3'] * state['kp']
 
     post_pre_diff = state['kp'] - state['ip3']
@@ -93,42 +111,47 @@ def astro_step_u_ordered_prod(state, params):
     return state
 
 
-def astro_step_u_stdp(state, params, z_pre=None, z_post=None, reward=None):
-    du = torch.zeros_like(state['ca'])
+def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
+
+    syns = _get_syns(params, 'stdp')
+    if syns is None:
+        return state
+
+    dca = torch.zeros_like(state['ca'][syns])
 
     bool_ltd = torch.logical_and(
-        z_pre > 0.0,
+        z_pre[syns] > 0.0,
         torch.isclose(z_post, torch.tensor(0.0))
     )        
     wh_ltd = torch.where(bool_ltd)
     
     bool_ltp = torch.logical_and(
         z_post > 0.0,
-        torch.isclose(z_pre, torch.tensor(0.0))
+        torch.isclose(z_pre[syns], torch.tensor(0.0))
     )
     wh_ltp = torch.where(bool_ltp)
 
     # Peform LTP/LTD across astrocyte processes
-    du[wh_ltd] = -state['kp'][wh_ltd]
-    du[wh_ltp] = state['ip3'][wh_ltp]
+    dca[wh_ltd] = -state['kp'][syns][wh_ltd]
+    dca[wh_ltp] = state['ip3'][syns][wh_ltp]
 
     # Apply band
-    du = torch.where(
-        torch.abs(du) > params['dca_max'],
+    dca = torch.where(
+        torch.abs(dca) > params['dca_max'],
         torch.as_tensor(0.0),
-        du)
+        dca)
 
     # Apply reward
     if reward is None:
-        reward = torch.ones_like(du)
-    du = du * reward
+        reward = torch.ones_like(dca)
+    dca = dca * reward
 
-    state['ca'] = state['ca'] + du
+    state['ca'][syns] = state['ca'][syns] + dca
     
     # When ip3 -> u or k+ -> u, that input trace is set to zero
     # These input traces effectivley "give" their value to u
-    state['kp'][wh_ltd] = torch.as_tensor(0.0)
-    state['ip3'][wh_ltp] = torch.as_tensor(0.0)
+    state['kp'][syns][wh_ltd] = torch.as_tensor(0.0)
+    state['ip3'][syns][wh_ltp] = torch.as_tensor(0.0)
 
     return state
 
@@ -205,7 +228,7 @@ def astro_step_thr(state, params):
     return state, u_spike
 
 
-def astro_step_ca_and_coupling(state, params):
+def astro_step_and_coupling(state, params):
     """
     AND - coupling between synapse
     
@@ -219,33 +242,58 @@ def astro_step_ca_and_coupling(state, params):
     3. Some IP3 > thr, and K+ > thr, The outcome is a decrease in the subset of synapse with IP3 > thr
     """
 
-    syns = params['coupling']['and']
-    if (syns is None) or len(syns) == 0:
+    syns = _get_syns(params, 'and')
+    if syns is None:
         return state
 
+    ip3 = state['ip3'][syns]
+    kp = state['kp'][syns]
+    ca = state['ca'][syns]
+
     # and_th is a common threshold used for ip3, and k+
-    ip3_gt_thr = state['ip3'][syns] > params['and_th']
-    kp_gt_thr = state['kp'][syns] > params['and_th']
+    ip3_gt_thr = ip3 > params['and_th']
+    kp_gt_thr = kp > params['and_th']
 
     # Evaluate if all synapses need a weight increase due to a lack of downstream activity
     ip3_high_kp_low = torch.logical_and(ip3_gt_thr, torch.logical_not(kp_gt_thr))
     all_ip3_high_kp_low = torch.logical_and(ip3_high_kp_low, torch.all(ip3_gt_thr))
 
-    # Evaluate if some synapses need a weight decrease, due to a subset of syns triggering a downstream response
+    # Evaluate if some synapses need a weight decrease, due to a subset of syns
+    # triggering a downstream response 
     ip3_high_kp_high = torch.logical_and(ip3_gt_thr, kp_gt_thr)
-    some_ip3_high_kp_high = torch.logical_and(ip3_high_kp_high, torch.logical_not(torch.all(ip3_high_kp_high)))
-    
-    dca = torch.zeros_like(state['ca'][syns])
+    some_ip3_high_kp_high = torch.logical_and(ip3_high_kp_high,
+                                              torch.logical_not(torch.all(ip3_high_kp_high)))
+    all_ip3_high_kp_high = torch.logical_and(ip3_high_kp_high,
+                                              torch.all(ip3_high_kp_high))
+        
 
-    # If all synapses have high IP3 and there is Low K+, increase Ca proportional to synapse activity (IP3)
-    dca[all_ip3_high_kp_low] = state['ip3'][syns][all_ip3_high_kp_low]
-    state['ip3'][syns][all_ip3_high_kp_low] = 0.0
-    
-    # If some synapses have high IP3 and there is High K+, decrease Ca proportional to synapse activity (IP3)
-    dca[all_ip3_high_kp_low] = -state['ip3'][syns][some_ip3_high_kp_high]
-    state['ip3'][syns][some_ip3_high_kp_high] = 0.0
+    dca = torch.zeros_like(ca)
 
-    state['ca'][syns] = state['ca'][syns] + dca
+    # If all synapses have high IP3 and there is Low K+, increase Ca
+    # proportional to synapse activity (IP3) 
+    dca[all_ip3_high_kp_low] = ip3[all_ip3_high_kp_low]
+    
+    # If some synapses have high IP3 and there is High K+, decrease Ca
+    # proportional to synapse activity (IP3)
+    dca[some_ip3_high_kp_high] = -ip3[some_ip3_high_kp_high]
+    ip3[some_ip3_high_kp_high] = 0.0
+
+    # If we are implementing AND properly, drive Ca towards zero by ip3
+    dca[all_ip3_high_kp_high] = -ip3[all_ip3_high_kp_high] * ca[all_ip3_high_kp_high].sign()
+    ip3[all_ip3_high_kp_high] = 0.0
+
+    kp[kp_gt_thr] = 0.0
+    
+    ca = ca + dca
+
+    # if dca.abs().sum() > 0:
+    #     print("k+: {}, ip3: {}, dca: {}".format(state['kp'][syns].tolist(),
+    #                                             state['ip3'][syns].tolist(),
+    #                                             dca.tolist()))
+
+    state['ip3'][syns] = ip3
+    state['kp'][syns] = kp
+    state['ca'][syns] = ca
 
     return state
 

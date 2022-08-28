@@ -145,6 +145,13 @@ class LifAxis:
         return y
 
 
+    def divider(self):
+        self.offset += 3
+
+    def event_divider(self):
+        self.event_offset += 3
+
+
     # Pass-throug methods
     def legend(self, *args, **kwargs):
         self.ax.legend(*args, **kwargs)
@@ -307,9 +314,8 @@ def gen_and_spikes(n, window=5, min_spacing=2, num_impulses=5):
          num_impulses * (window+min_spacing))
     )
     spike_win_ind = torch.randint(5, (n, num_impulses))
-    
-    spike_win_offsets = torch.arange(0, num_impulses) * window
-    spike_win_offsets[1:] += min_spacing
+
+    spike_win_offsets = torch.arange(0, num_impulses) * (window + min_spacing)
 
     spike_time_ind = spike_win_ind + spike_win_offsets.view(1, -1)
     spike_syn_ind = torch.arange(n).view(n, 1).expand(spike_time_ind.shape)
@@ -417,34 +423,26 @@ def gen_sgnn_axes(
     
     # Figure out the gridspec
     nrows = len(graphs)
-    ncols = num_synapse
+    ncols = 1
     gs = GridSpec(nrows, ncols)
 
     fig = plt.Figure(figsize=figsize)
 
     graph_to_title = {
-        'spikes': "Astrocyte and Neuron Events for Synapse {}",
-        'pre-spikes': "Pre-synaptic Spikes for Synapse {}",
+        'spikes': "Astrocyte and Neuron Events for Synapse",
+        'pre-spikes': "Pre-synaptic Spikes for Synapse",
         'neuron': "Neuron Membrane Voltage",
-        'astro': "Astrocyte Traces, Synapse {}",
-        'astro-ca': "Astrocyte Calcium Response, Synapse {}",
-        'weight': "Synapse {} Weight"
+        'astro': "Astrocyte Traces, Synapse",
+        'astro-ca': "Astrocyte Calcium Response, Synapse",
+        'weight': "Synapse Weight"
     }
 
     axes = {g: [] for g in graphs}
     
     for gs_idx, g in enumerate(graphs):
-        if g == "neuron":
-            ax = fig.add_subplot(gs[gs_idx, 0:ncols])
-            ax.set_title(graph_to_title[g])
-            ax = LifAxis(ax, offset=offset)
-        else:
-            ax = []
-            for i in range(num_synapse):
-                a = fig.add_subplot(gs[gs_idx, i])
-                a.set_title(graph_to_title[g].format(i))
-                a = LifAxis(a, offset=offset)
-                ax.append(a)
+        ax = fig.add_subplot(gs[gs_idx, 0])
+        ax.set_title(graph_to_title[g])
+        ax = LifAxis(ax, offset=offset)
 
         axes[g].append(ax)
 
@@ -461,9 +459,17 @@ def plot_1nNs1a(
 ):
     # Build a figure with the following
     # * Traces for the state values for a single neuron
-    # * One plot each for the traces of an astrocyes process, for each synapse
-    # * A plot of the spiking events, including weight update events
-    # * A single plot with the weight values of all synapses
+
+    spike_colors = {
+        'post': 'tab:orange',
+        'pre': 'tab:orange'
+    }
+
+    astro_colors = {
+        'k+': 'tab:orange',
+        'ip3': 'tab:blue',
+        'ca': 'tab:purple'
+    }
 
     if prefix is None:
         prefix = ''
@@ -475,72 +481,99 @@ def plot_1nNs1a(
     elif type(prefix) != str:
         prefix = str(prefix)
         
-    
     if plot is None:
         plot = ['neuron', 'astro', 'spikes', 'weight']
 
     spikes = tl['z_pre']
+    max_x = spikes.shape[0]
     wh_ca_event = torch.where(tl['a'])
     ca_event_x = wh_ca_event[0]
     ca_event_y = tl['ca'][wh_ca_event]
+
+    nsyns = tl['z_pre'].shape[1]
 
     for g, g_axes in axes.items():
         # if g is not in graphs (None -> match all)
         if not (plot is None) and not (g in plot):
             continue
 
+        ax = g_axes[idx]
         # Neuron plot
         if g == 'neuron' and 'neuron' in plot:
-            ax = g_axes[idx]
-            ax.plot(tl['v_n'].squeeze().tolist(), label='{}Neuron Membrane Voltage'.format(prefix))
+            ax.plot(tl['v_n'].squeeze().tolist(), label='{}'.format(prefix))
 
-            if len(prefix) > 0:
-                a.legend()
+        elif g == 'astro' and ('astro' in plot):
+            ax.plot(tl['kp'][:, 0], label='K+', color=astro_colors['k+'])
 
+        elif g == 'pre-spikes' and 'pre-spikes' in plot:
+            events = []
+            events = events + [tl['z_pre'][:, i] for i in range(tl['z_pre'].shape[1])]
+            legend = ['pre-s{}'.format(i) for i in range(len(events))]
+            
+            ax.plot_events(
+                events,
+                colors=['tab:blue']*nsyns + ['tab:orange'],
+            )
+            
+        elif g == 'spikes' and 'spikes' in plot:
+            events = []
+            events = events + [tl['z_pre'][:, i] for i in range(tl['z_pre'].shape[1])]
+            legend = ['pre-s{}'.format(i) for i in range(len(events))]
+            events = events + [tl['z_post'][:,0]]
+            legend += ['post']
+
+            ax.plot_events(
+                events,
+                colors=['tab:blue']*nsyns + ['tab:orange'],
+                label=prefix
+            )
+            ax.legend(legend)
+
+        elif g in ['astro', 'astro-ca', 'weight']:
+            pass
         else:
-            if idx >= len(g_axes):
-                continue
+            raise ValueError("Unknown graph type: {}".format(g))
 
-            axs = g_axes[idx]
 
-            for i, a in enumerate(axs):
+        # For each Synapse
+        graph_color=None
+        graph_colors = [None, None]
+        for i in range(nsyns):
+            if g == 'astro' and ('astro' in plot):
+                line_ip3 = ax.plot(tl['ip3'][:, i], color=astro_colors['ip3'])[0]
+                line_ca = ax.plot(tl['ca'][:, i], color=astro_colors['ca'])[0]
 
-                if g == 'astro' and ('astro' in plot):
-                    a.plot(tl['ip3'][:, i], label='{}Pre-synaptic Astrocyte Trace'.format(prefix))
-                    a.plot(tl['kp'][:, i], label='{}Post-synaptic Astrocyte Trace'.format(prefix))
-                    a.plot(tl['ca'][:, i], label='{} Astrocyte Ca'.format(prefix))
-                    # if len(ca_event_loc) > 0:
-                    #     a.plot(ca_event_loc, 'r.', overlay=True)
+                if i == 0 and ax.plot_count == 3:
+                    line_ip3.set_label('IP3')
+                    line_ca.set_label('Ca')
+                    ax.legend()
 
-                elif g == 'astro-ca' and ('astro-ca' in plot):
-                    line = a.plot(tl['ca'][:, i].tolist(), label='{}'.format(prefix))
-                    
-                    # if ca_event_x.numel() > 0:
-                    #     a.plot(ca_event_x, ca_event_y, 'r.', markup=True)
-                        
-                elif g == 'spikes' and 'spikes' in plot:
-                    z_post_i = min(i, tl['z_post'].shape[1] - 1)
-                    a.plot_events(
-                        [tl['z_pre'][:,i], tl['z_post'][:,z_post_i], tl['a'][:,i]],
-                        colors=['tab:blue', 'tab:orange', 'tab:red'],
-                        label=prefix
-                    )
-                    a.legend([l.format(i) for l in ['{}Pre Spikes', '{}Post Spikes', '{}Astro dw']])
+            elif g == 'astro-ca' and ('astro-ca' in plot):
+                lines = ax.plot(tl['ca'][:, i].tolist(), color=graph_color)
+                # Only label the fist synapses' graph, and reuse the color for all other synapses
+                if i == 0:
+                    graph_color = lines[0].get_color()
 
-                elif g == 'pre-spikes' and 'pre-spikes' in plot:
-                    if a.plot_count == 0:
-                        a.plot_events(
-                            [tl['z_pre'][:,i]],
-                            colors=['tab:blue'])
+                    if ax.plot_count == 1:
+                        lines[0].set_label(prefix)
+                        ax.legend()
 
-                elif g == 'weight' and 'weight' in plot:
-                    a.plot(tl['w'][:,i], marker='.', label='{}'.format(prefix))
+            elif g == 'weight' and 'weight' in plot:
+                ax.plot(tl['w'][:,i], marker='.', label='{}'.format(prefix))
 
-                else:
-                    raise ValueError("Unknown graph type: {}".format(g))
 
-                if len(prefix) > 0:
-                    a.legend()
+        # Consistant x range
+        ax.set_xlim((0, max_x))
+
+        # Apply dividers
+        if g in ['spikes']:
+            ax.event_divider();
+        elif g in ['astro-ca', 'astro']:
+            ax.divider()
+
+        # Apply Legend
+        if g in ['weight', 'neuron']:
+            ax.legend()
 
 
 def sim_lif_astro_net(cfg, spike_trains, db, dw=True):

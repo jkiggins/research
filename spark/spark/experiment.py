@@ -343,7 +343,7 @@ class ExpStorage:
         
         records = ExpStorage()
         records.meta = copy.deepcopy(records)
-        db.prefix = copy.deepcopy(self.prefix)
+        records.prefix = copy.deepcopy(self.prefix)
 
         for d in self.db:
             # If filter is defined, and returns False, ignore this entry

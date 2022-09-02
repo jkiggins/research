@@ -250,40 +250,42 @@ def astro_step_and_coupling(state, params):
     kp = state['kp'][syns]
     ca = state['ca'][syns]
 
+    dca = torch.zeros_like(ca)
+
     # and_th is a common threshold used for ip3, and k+
     ip3_gt_thr = ip3 > params['and_th']
     kp_gt_thr = kp > params['and_th']
 
-    # Evaluate if all synapses need a weight increase due to a lack of downstream activity
-    ip3_high_kp_low = torch.logical_and(ip3_gt_thr, torch.logical_not(kp_gt_thr))
-    all_ip3_high_kp_low = torch.logical_and(ip3_high_kp_low, torch.all(ip3_gt_thr))
+    # pre, pre -> no post: increase all weights
+    ip3_high_kp_low = torch.logical_and(ip3_gt_thr,
+                                        torch.logical_not(kp_gt_thr))
+    all_ip3_high_kp_low = torch.logical_and(ip3_high_kp_low,
+                                            torch.all(ip3_gt_thr))
+    # Ca integrates ip3-s when this condition is met
+    dca[all_ip3_high_kp_low] = ip3[all_ip3_high_kp_low]
 
-    # Evaluate if some synapses need a weight decrease, due to a subset of syns
-    # triggering a downstream response 
+    
+    # pre, no pre -> post: decrease synaptic weights
     ip3_high_kp_high = torch.logical_and(ip3_gt_thr, kp_gt_thr)
     some_ip3_high_kp_high = torch.logical_and(ip3_high_kp_high,
                                               torch.logical_not(torch.all(ip3_high_kp_high)))
-    all_ip3_high_kp_high = torch.logical_and(ip3_high_kp_high,
-                                              torch.all(ip3_high_kp_high))
-        
 
-    dca = torch.zeros_like(ca)
+    # if torch.any(some_ip3_high_kp_high):
+    #     print("ip3: {}, k+: {}".format(ip3.tolist(), kp.tolist()))
 
-    # If all synapses have high IP3 and there is Low K+, increase Ca
-    # proportional to synapse activity (IP3) 
-    dca[all_ip3_high_kp_low] = ip3[all_ip3_high_kp_low]
-    
-    # If some synapses have high IP3 and there is High K+, decrease Ca
-    # proportional to synapse activity (IP3)
     dca[some_ip3_high_kp_high] = -ip3[some_ip3_high_kp_high]
     ip3[some_ip3_high_kp_high] = 0.0
+    kp[torch.logical_and(kp_gt_thr, torch.any(some_ip3_high_kp_high))] = 0.0
 
-    # If we are implementing AND properly, drive Ca towards zero by ip3
-    dca[all_ip3_high_kp_high] = -ip3[all_ip3_high_kp_high] * ca[all_ip3_high_kp_high].sign()
+
+    # pre, pre -> post: proper AND condition
+    all_ip3_high_kp_high = torch.logical_and(ip3_high_kp_high,
+                                              torch.all(ip3_high_kp_high))
     ip3[all_ip3_high_kp_high] = 0.0
+    kp[all_ip3_high_kp_high] = 0.0
 
-    kp[kp_gt_thr] = 0.0
-    
+    # pre, post, pre: Ignore the 2nd pre
+
     ca = ca + dca
 
     # if dca.abs().sum() > 0:

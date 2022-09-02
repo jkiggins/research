@@ -323,6 +323,23 @@ def gen_and_spikes(n, window=5, min_spacing=2, num_impulses=5):
     spikes[spike_syn_ind, spike_time_ind] = 1.0
 
     return spikes.transpose(1,0)
+
+
+def gen_fixed_and_spikes(n, window=5, min_spacing=2):
+    spikes = torch.zeros(
+        (n,
+         num_impulses * (window+min_spacing))
+    )
+    spike_win_ind = torch.randint(5, (n, num_impulses))
+
+    spike_win_offsets = torch.arange(0, num_impulses) * (window + min_spacing)
+
+    spike_time_ind = spike_win_ind + spike_win_offsets.view(1, -1)
+    spike_syn_ind = torch.arange(n).view(n, 1).expand(spike_time_ind.shape)
+
+    spikes[spike_syn_ind, spike_time_ind] = 1.0
+
+    return spikes.transpose(1,0)
     
     
 def gen_impulse_spikes(pulse_len, sim_len=None, num_impulses=None, noise=None, poisson=False, rate=0.75):

@@ -38,7 +38,10 @@ def _graph_sweep_w(db):
     w_points = None
 
     for d in db:
-        w_point = torch.as_tensor([*d['w'], d['tl']['ca'].sum()]).reshape(1, -1)
+        ca_abs_max_idx = d['tl']['ca'].abs().argmax(dim=0)
+        ca_max = d['tl']['ca'][ca_abs_max_idx].max()
+
+        w_point = torch.as_tensor([*d['w'], ca_max]).reshape(1, -1)
 
         # Build tensor of weights and Ca activity
         if w_points is None:
@@ -303,8 +306,8 @@ def _main(args):
     cfg_path = '../../config/1nNs1a_obj3.yaml'
 
     w_inspect = [
-        (1.2632, 0.8421),
-        # (1.2632, 0.7368),
+        (0.6316, 0.8421),
+        (0.9474, 0.8421),
         # (1.0526, 0.8421),
         # (0.8421, 0.8421),
     ]

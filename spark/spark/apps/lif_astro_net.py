@@ -235,8 +235,30 @@ class LifAxis:
 
         self.event_offset = line_offsets[-1] + 1
         self.plot_count += 1
+
+
+def _store_astro_step(tl, i, spikes, astro_state, s, z):
+    if tl is None:
+        n_synapse = spikes.shape[-1] - 1
+        n_spikes = spikes.shape[0]
+
+        tl = {}
+        tl['z_pre'] = torch.zeros((n_spikes, n_synapse))
+        tl['z_post'] = torch.zeros((n_spikes, 1))
+        tl['ca'] = torch.zeros((n_spikes, n_synapse))
+        tl['ip3'] = torch.zeros((n_spikes, n_synapse))
+        tl['kp'] = torch.zeros((n_spikes, n_synapse))
+
+    tl['ca'][i] = astro_state['ca']
+    tl['ip3'][i] = astro_state['ip3']
+    tl['kp'][i] = astro_state['kp']
         
-    
+    tl['z_pre'][i] = s
+    tl['z_post'][i] = z
+
+    return tl
+
+
 def _store_snn_step(tl, i, spikes, snn, snn_output, s):
     if tl is None:
         n_synapse = spikes.shape[1]
@@ -286,12 +308,33 @@ def _sim_snn_step(snn, tl, spikes, s, i, dw=True):
     return tl
 
 
+def _sim_astro_step(astro, astro_state, tl, spikes, s, z, i):
+
+    eff, astro_state = astro(astro_state, z_pre=s, z_post=z)
+
+    tl = _store_astro_step(tl, i, spikes, astro_state, s, z)
+
+    return tl
+
+
 def _sim_snn(snn, spikes, dw=True):
     tl = None
     for i, s in enumerate(spikes):
         tl = _sim_snn_step(snn, tl, spikes, s, i, dw=dw)
         # snn_output = snn(s)
         # tl = _store_snn_step(tl, i, sim_len, snn, snn_output, s)
+
+    return tl
+
+
+def _sim_astro(astro, spikes):
+    tl = None
+    astro_state = None
+    for i, sz in enumerate(spikes):
+        s = sz[:-1]
+        z = sz[-1]
+
+        tl = _sim_astro_step(astro, astro_state, tl, spikes, s, z, i)
 
     return tl
 
@@ -308,38 +351,25 @@ def gen_rate_spikes(spec):
     return spike_trains
 
 
-def gen_and_spikes(n, window=5, min_spacing=2, num_impulses=5):
+def gen_and_spikes(n, window=5, num_impulses=5, padding=10, gen_post=False):
+    if gen_post:
+        n += 1
+
     spikes = torch.zeros(
-        (n,
-         num_impulses * (window+min_spacing))
+        (num_impulses, window+padding, n)
     )
-    spike_win_ind = torch.randint(5, (n, num_impulses))
 
-    spike_win_offsets = torch.arange(0, num_impulses) * (window + min_spacing)
+    num_spikes = n * num_impulses
 
-    spike_time_ind = spike_win_ind + spike_win_offsets.view(1, -1)
-    spike_syn_ind = torch.arange(n).view(n, 1).expand(spike_time_ind.shape)
+    spikes_ind = torch.cat((
+        torch.arange(num_impulses).view(-1,1).repeat(1, n).view(-1, 1),
+        torch.randint(window, (n*num_impulses,)).view(-1, 1),
+        torch.arange(n).repeat(num_impulses).view(-1, 1),
+    ), dim=-1).transpose(1,0).tolist()
 
-    spikes[spike_syn_ind, spike_time_ind] = 1.0
+    spikes[spikes_ind] = 1.0
 
-    return spikes.transpose(1,0)
-
-
-def gen_fixed_and_spikes(n, window=5, min_spacing=2):
-    spikes = torch.zeros(
-        (n,
-         num_impulses * (window+min_spacing))
-    )
-    spike_win_ind = torch.randint(5, (n, num_impulses))
-
-    spike_win_offsets = torch.arange(0, num_impulses) * (window + min_spacing)
-
-    spike_time_ind = spike_win_ind + spike_win_offsets.view(1, -1)
-    spike_syn_ind = torch.arange(n).view(n, 1).expand(spike_time_ind.shape)
-
-    spikes[spike_syn_ind, spike_time_ind] = 1.0
-
-    return spikes.transpose(1,0)
+    return spikes
     
     
 def gen_impulse_spikes(pulse_len, sim_len=None, num_impulses=None, noise=None, poisson=False, rate=0.75):
@@ -503,9 +533,6 @@ def plot_1nNs1a(
 
     spikes = tl['z_pre']
     max_x = spikes.shape[0]
-    wh_ca_event = torch.where(tl['a'])
-    ca_event_x = wh_ca_event[0]
-    ca_event_y = tl['ca'][wh_ca_event]
 
     nsyns = tl['z_pre'].shape[1]
 
@@ -616,6 +643,13 @@ def sim_lif(cfg, spikes, name='lif_sample'):
 
     return db
 
+
+def sim_astro(cfg, spike_trains, db):
+    for spikes in spike_trains:
+        astro = Astro.from_cfg(cfg['astro_params'], cfg['linear_params']['synapse'], cfg['sim']['dt'])
+        tl = _sim_astro(astro, spikes)
+
+        db.store({'spikes': spikes, 'tl': tl})
 
 def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''):
     if graphs is None:

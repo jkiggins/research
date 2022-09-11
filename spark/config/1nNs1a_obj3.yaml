@@ -5,7 +5,7 @@ classic_stdp: &classic_stdp
   tau_ca: 50.0
   ca_th: 2.5
 
-  and_th: 1.0
+  and_th: 0.5
 
   tau_ip3: 100.0
   alpha_pre: 1.0

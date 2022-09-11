@@ -256,6 +256,9 @@ def astro_step_and_coupling(state, params):
     ip3_gt_thr = ip3 > params['and_th']
     kp_gt_thr = kp > params['and_th']
 
+    print(ip3_gt_thr, kp_gt_thr)
+
+
     # pre, pre -> no post: increase all weights
     ip3_high_kp_low = torch.logical_and(ip3_gt_thr,
                                         torch.logical_not(kp_gt_thr))
@@ -263,19 +266,23 @@ def astro_step_and_coupling(state, params):
                                             torch.all(ip3_gt_thr))
     # Ca integrates ip3-s when this condition is met
     dca[all_ip3_high_kp_low] = ip3[all_ip3_high_kp_low]
+    if torch.any(all_ip3_high_kp_low):
+        print("pre, pre, no-post")
 
     
     # pre, no pre -> post: decrease synaptic weights
     ip3_high_kp_high = torch.logical_and(ip3_gt_thr, kp_gt_thr)
     some_ip3_high_kp_high = torch.logical_and(ip3_high_kp_high,
                                               torch.logical_not(torch.all(ip3_high_kp_high)))
-
+    if torch.any(some_ip3_high_kp_high):
+        print("pre, post, pre")
+        
     # if torch.any(some_ip3_high_kp_high):
     #     print("ip3: {}, k+: {}".format(ip3.tolist(), kp.tolist()))
 
     dca[some_ip3_high_kp_high] = -ip3[some_ip3_high_kp_high]
-    ip3[some_ip3_high_kp_high] = 0.0
-    kp[torch.logical_and(kp_gt_thr, torch.any(some_ip3_high_kp_high))] = 0.0
+    # ip3[some_ip3_high_kp_high] = 0.0
+    # kp[torch.logical_and(kp_gt_thr, torch.any(some_ip3_high_kp_high))] = 0.0
 
 
     # pre, pre -> post: proper AND condition
@@ -283,8 +290,8 @@ def astro_step_and_coupling(state, params):
                                               torch.all(ip3_high_kp_high))
     ip3[all_ip3_high_kp_high] = 0.0
     kp[all_ip3_high_kp_high] = 0.0
-
-    # pre, post, pre: Ignore the 2nd pre
+    if torch.any(some_ip3_high_kp_high):
+        print("pre, pre, post: reset ip3 and kp")
 
     ca = ca + dca
 

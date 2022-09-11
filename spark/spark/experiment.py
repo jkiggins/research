@@ -51,7 +51,7 @@ def try_load_dbs_pairs(base_name, all_prefix, pairs):
 
 
 def seed_many():
-    seed = 2340234234
+    seed = 7
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)

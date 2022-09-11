@@ -17,7 +17,8 @@ from .lif_astro_net import (
     sim_lif_astro_net,
     gen_sgnn_axes,
     graph_sgnn,
-    gen_and_spikes
+    gen_and_spikes,
+    sim_astro
 )
 
 from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
@@ -92,6 +93,73 @@ def _graph_sweep_w(db):
     fig.savefig(fig_path)
 
 
+def _graph_n_syn_cat(db, graphs=None, xlim=None):
+    def _cat_dict(d_a, d_b):
+        _next = [(d_a, d_b)]
+        while len(_next) > 0:
+            a, b = _next.pop(0)
+
+            for k in a:
+                if not (k in b):
+                    continue
+
+                if type(a[k]) == dict:
+                    _next.append((a[k], b[k]))
+                elif type(a[k]) == torch.Tensor:
+                    a[k] = torch.cat((a[k], b[k]))
+                else:
+                    raise ValueError("Can't merge type: {}", type(a[k]))
+
+        return d_a
+
+
+    descr = db.meta['descr']
+
+    db_rec_cat = None
+    for db_rec in db:
+        if db_rec_cat is None:
+            db_rec_cat = db_rec
+            continue
+
+        db_rec_cat = _cat_dict(db_rec_cat, db_rec)
+
+    fig, axes = gen_sgnn_axes(
+        2,
+        offset=True,
+        figsize=(18, 14),
+        graphs=graphs
+    )
+
+    graph_sgnn(db_rec_cat, fig, axes, 0, plot=graphs)
+
+
+    if not (xlim is None):
+        descr = descr + "_xlim"
+        i = 0
+        for _, ax in axes.items():
+            # ax is [sp0, sp1, ...] where spN is [syn0, syn1, ...] or just spN
+            if type(ax) == list:
+                assert len(ax) == 1
+                ax = ax[0]
+            else:
+                raise ValueError("Expected each axis to be a list of axes, one for each subplot")
+
+            if not (type(ax) == list):
+                ax = [ax]
+
+            for a in ax:
+                a.set_xlim(*xlim)
+    else:
+        descr = descr + "_tl"
+
+
+    fig_path = "{}.svg".format(descr)
+    print("Saving: ", fig_path)
+    fig.savefig(fig_path)
+
+
+    
+    
 def _graph_n_syn(db, xlim=None, w=None, prefix=None, graphs=None):
     descr = db.meta['descr']
 
@@ -149,7 +217,23 @@ def _graph_n_syn(db, xlim=None, w=None, prefix=None, graphs=None):
     print("Saving: ", fig_path)
     fig.savefig(fig_path)
 
+    
+def _spikes_gen(
+    cfg_gen,
+    window=10,
+    num_impulses=5,
+    padding=10,
+    gen_post=False):
 
+    n = None
+    for cfg in cfg_gen:
+        if n is None or not (n == cfg['linear_params']['synapse']):
+            n = cfg['linear_params']['synapse']
+            spikes = gen_and_spikes(n, window=window, num_impulses=num_impulses, gen_post=gen_post, padding=padding)
+
+        yield cfg, spikes
+
+    
 def _cfg_gen(
     cfg_path,
     n=2,
@@ -212,8 +296,42 @@ def _cfg_gen(
     return cfgs, num_cfgs
 
 
+def _exp_n_syn_coupled_astro(
+    rt_gen,
+    num_cfgs,
+    sim=False,
+    sim_name='_exp_{}_syn_astro'
+):
+    seed_many()
+
+    db = ExpStorage()
+
+
+    n = None
+    spikes = None
+    for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
+        assert (n is None) or (n == cfg['linear_params']['synapse'])
+
+        # Attempt to load db, assume number of synapse doesn't change
+        if n is None:
+            n = cfg['linear_params']['synapse']
+            sim_name = sim_name.format(n)
+
+            db_path = Path("{}.db".format(sim_name))
+            if not sim:
+                if db_path.exists():
+                    db = ExpStorage(path=db_path)
+                    return db
+
+            db.meta['descr'] = 'astro_{}s1a_and'.format(n)
+
+        sim_astro(cfg, spikes, db)
+
+    return db
+
+
 def _exp_n_syn_coupled(
-    cfg_gen,
+    rt_gen,
     num_cfgs,
     sim=False,
     sim_name='_exp_n_syn_poisson'
@@ -224,15 +342,16 @@ def _exp_n_syn_coupled(
 
     n = None
     spikes = None
-    for cfg in tqdm(cfg_gen, total=num_cfgs):
+    for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
         assert (n is None) or (n == cfg['linear_params']['synapse'])
 
-        if n is None:
-            n = cfg['linear_params']['synapse']
-            spikes = gen_and_spikes(n, window=5, min_spacing=40, num_impulses=5)
+        ss = spikes.shape
+        spikes = spikes.view((ss[0]*ss[1], *ss[2:]))
 
         # Attempt to load db, assume number of synapse doesn't change
-        sim_name = sim_name.format(n)
+        if n is None:
+            n = cfg['linear_params']['synapse']
+            sim_name = sim_name.format(n)
 
         db_path = Path("{}.db".format(sim_name))
         if not sim:
@@ -249,7 +368,7 @@ def _exp_n_syn_coupled(
 
 
 def _exp_n_syn_poisson(
-    cfg_gen,
+    rt_gen,
     num_cfgs,
     sim=False,
     sim_name='_exp_n_syn_poisson'
@@ -267,7 +386,7 @@ def _exp_n_syn_poisson(
     db = ExpStorage()
 
     n = None
-    for cfg in tqdm(cfg_gen, total=num_cfgs):
+    for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
         assert (n is None) or (n == cfg['linear_params']['synapse'])
         n = cfg['linear_params']['synapse']
 
@@ -293,6 +412,7 @@ def _parse_args():
 
     parser.add_argument('--astro-nsyn-poisson', action='store_true')
     parser.add_argument('--astro-nsyn-and', action='store_true')
+    parser.add_argument('--astro-and-spike-response', action='store_true')
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--sim', action='store_true')
 
@@ -311,7 +431,7 @@ def _main(args):
         # (1.0526, 0.8421),
         # (0.8421, 0.8421),
     ]
-    w_sweep = (0.0, 2.0, 20)
+    w_sweep = (0.5, 1.0, 50)
     # w_sweep = (4.0, 10.0, 20)
     ca_th = 0.8
     xlim = (75, 100)
@@ -322,7 +442,9 @@ def _main(args):
             n=2, ca_th=ca_th, dw=False,
             w_sweep=w_sweep)
 
-        db = _exp_n_syn_poisson(cfgs, num_cfgs, sim=args.sim, sim_name='snn_1n{}s1a_poisson')
+        cfg_and_spikes = _spikes_gen(cfgs, num_impulses=5)
+
+        db = _exp_n_syn_poisson(cfgs_and_spikes, num_cfgs, sim=args.sim, sim_name='snn_1n{}s1a_poisson')
 
         _graph_sweep_w(db)
 
@@ -342,16 +464,18 @@ def _main(args):
 
 
     if args.astro_nsyn_and or args.all:
+
+        # Examine response to single spiking events (on each synapse) with settle time between
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
             n=2, ca_th=ca_th, dw=False, c_and=[0,1],
             w_sweep=w_sweep)
 
-        db = _exp_n_syn_coupled(cfgs, num_cfgs, sim=args.sim, sim_name='snn_1n{}s1a_and_poisson')
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=5, padding=40)
+        db = _exp_n_syn_coupled(cfg_and_spikes, num_cfgs, sim=args.sim, sim_name='snn_1n{}s1a_and_poisson')
 
         _graph_sweep_w(db)
 
-        # Graph timelines for these weight combinations
         _graph_n_syn(
             db, w=w_inspect,
             prefix = ('w={}', 'w'),
@@ -364,6 +488,33 @@ def _main(args):
             graphs = ['spikes', 'astro'],
             xlim=xlim,
         )
+
+        # Examine response to the same set of spikes repeated multiple times, each time with a different weight value
+        cfgs, num_cfgs = _cfg_gen(
+            cfg_path,
+            n=2, ca_th=ca_th, dw=False, c_and=[0,1],
+            w_sweep=w_sweep)
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1)
+
+        db = _exp_n_syn_coupled(cfg_and_spikes, num_cfgs, sim=args.sim, sim_name='snn_1n{}s1a_and_poisson_fixed')
+
+        _graph_n_syn_cat(db, graphs=['spikes', 'astro'], xlim=(300,800))
+
+
+    if args.astro_and_spike_response or args.all:
+        # Generate single pre, pre, post events in a given time window
+        # and examine astrocyte response.
+
+        cfgs, num_cfgs = _cfg_gen(
+            cfg_path,
+            n=2, ca_th=ca_th, dw=False, c_and=[0,1]
+        )
+
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=20, gen_post=True)
+
+        db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
+        _graph_n_syn_cat(db, graphs=['spikes', 'astro'])
+
 
 
 if __name__ == '__main__':

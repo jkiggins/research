@@ -7,23 +7,23 @@ digit number of neurons. In this chapter, single neuron, multi-synapse
 configurations will be explored. Taking that small step closer to a bio-inspired
 configuration, but remaining simple enough to explore fundamental properties.
 
-\section{Multi-Synapse Cell-Level Response}
-What is the ultimage goal here... to support some learning on some specific set
-of inputs, that would not otherwise be achievable w/ STDP. What is the task?
-what is an interesting task that involves spike timing?
+%% \section{Multi-Synapse Cell-Level Response}
+%% What is the ultimage goal here... to support some learning on some specific set
+%% of inputs, that would not otherwise be achievable w/ STDP. What is the task?
+%% what is an interesting task that involves spike timing?
 
-What are some things I've got in my notes about this?
+%% What are some things I've got in my notes about this?
 
-Gating of plasticity
-  - Only allow plasticity on synchronous inputs
-  - The opposite of ^
+%% Gating of plasticity
+%%   - Only allow plasticity on synchronous inputs
+%%   - The opposite of ^
   
-Orchestration between Synapse
-  - Don't allow multiple synapse to learn from the same post-synaptic spike (WTA
-  Pairing)
-  - Global learning ``pool'' Each thr event on any synapse depletes the pool,
-  which then refills
-  - Relative strength of plasticity
+%% Orchestration between Synapse
+%%   - Don't allow multiple synapse to learn from the same post-synaptic spike (WTA
+%%   Pairing)
+%%   - Global learning ``pool'' Each thr event on any synapse depletes the pool,
+%%   which then refills
+%%   - Relative strength of plasticity
 
 
 \section{Summary}
@@ -48,3 +48,37 @@ function, detecting behavior that is not in alignment and updating weights
 accordingly.
 
 \section{Synaptic Coupling}
+In order to implement synaptic coupling in an efficient and bio-realistic way,
+there are some changes to internal Astrocyte signaling, when compared to the
+1N1S1A configuration. Figure \ref{fig:astro:syn_coupling} shows the progression
+of the Astrocyte model to support coupling. Instead of each synapse having
+separate \ipt, \kp, and \ca dynamics, the coupling rule defines the mapping of
+these concentrations, and drives any resetting behavior.
+
+\asvgf{figures/1nNs1a_diagram_obj3.svg}{Astrocyte Functional Diagram for
+  Multi-Synapse Synaptic Coupling}{fig:astro:syn_coupling}{0.5}
+
+\subsection{AND Coupling}
+
+The AND coupling function is implemented across 2 or more synapses within a
+single Astrocyte, and may be one of many coupling functions at work. Logically,
+AND coupling can be defined by Figure \ref{fig:logical-and-coupling}.
+
+\asvgf{figures/AstroAndCoupling.svg}{Logical Definition for AND
+  Coupling}{fig:logical-and-coupling}{0.5}
+
+In Figure \ref{fig:logical-and-coupling} each of the blue or orange boxes
+represents a spiking event, consisting of one or more spikes. In the case of
+multiple spikes, the synaptic weight may be tuned to be sensitive to a
+particular spiking pattern, if that pattern is differentiable with a single
+weight value and LIF neuron dynamics.
+
+In order to test the Astrocyte response and tune parameters, some timing
+constraints must be defined. Initially, a single timing constraint
+$\delta_{ptp}=10ms$ will be used. This implies that the time between the
+first pre-synaptic spike, to the first (possibly only) post-synaptic spike must
+be no more than this value to ensure proper behavior. $\delta_{ptp}/2$ will be
+the maximum time between any two pre-synaptic spikes. With these timing
+constraints a variety of pre-pre-post spiking events can be generated in a
+two-synapse configuration. This experiment will remove the influence of synaptic
+weights and LIF neuron dynamics, focusing solely on Astrocyte response.

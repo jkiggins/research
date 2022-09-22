@@ -287,6 +287,38 @@ class ExpStorage:
         return pivot_db
 
 
+    def cat(self):
+        def _cat_dict(d_a, d_b):
+            _next = [(d_a, d_b)]
+            while len(_next) > 0:
+                a, b = _next.pop(0)
+
+                for k in a:
+                    if not (k in b):
+                        continue
+
+                    if type(a[k]) == dict:
+                        _next.append((a[k], b[k]))
+                    elif type(a[k]) == torch.Tensor:
+                        a[k] = torch.cat((a[k], b[k]))
+                    elif type(a[k]) == list:
+                        a[k] = a[k] + b[k]
+                    else:
+                        raise ValueError("Can't merge type: {}", type(a[k]))
+
+            return d_a
+
+        db_rec_cat = None
+        for db_rec in self.db:
+            if db_rec_cat is None:
+                db_rec_cat = db_rec
+                continue
+
+            db_rec_cat = _cat_dict(db_rec_cat, db_rec)
+
+        return db_rec_cat
+
+
     def group_by(self, key, sort=False):
         """
         Group all stored records by a given key

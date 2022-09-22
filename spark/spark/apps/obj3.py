@@ -18,7 +18,8 @@ from .lif_astro_net import (
     gen_sgnn_axes,
     graph_sgnn,
     gen_and_spikes,
-    sim_astro
+    sim_astro,
+    astro_and_region
 )
 
 from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
@@ -306,7 +307,6 @@ def _exp_n_syn_coupled_astro(
 
     db = ExpStorage()
 
-
     n = None
     spikes = None
     for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
@@ -326,6 +326,10 @@ def _exp_n_syn_coupled_astro(
             db.meta['descr'] = 'astro_{}s1a_and'.format(n)
 
         sim_astro(cfg, spikes, db)
+
+
+        for db_rec in db:
+            db_rec['region'] = [astro_and_region(db_rec['tl'])]
 
     return db
 
@@ -505,17 +509,49 @@ def _main(args):
         # Generate single pre, pre, post events in a given time window
         # and examine astrocyte response.
 
+        n_synapse = 2
+
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
-            n=2, ca_th=ca_th, dw=False, c_and=[0,1]
+            n=n_synapse, ca_th=ca_th, dw=False, c_and=[0,1]
         )
 
-        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=20, gen_post=True)
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=5, gen_post=True)
 
         db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
-        _graph_n_syn_cat(db, graphs=['spikes', 'astro'])
+        # Graph: spikes, synapse specific ip3, k+ and Ca, category of event (AND, Early spike, etc..)
+        # Layout: Spikes in a SP (lables on X axis) Other traces in separate SPs with labels in title
+        gs = plot.gs(n_synapse + 2, 1)
+        fig, axes = plot.gen_axes(
+            ('spikes', gs[0]),
+            ('regions', gs[-1]),
+            figsize=(15,10),
+        )
+        for i in range(n_synapse):
+            fig, axes = plot.gen_axes(
+                ('astro', gs[i+1]),
+                fig=fig, axes=axes
+            )
 
+        db_cat = db.cat()
 
+        plot.plot_spikes(
+            axes, ('spikes',),
+            db_cat['tl']['z_pre'],
+            db_cat['tl']['z_post'])
+
+        plot.plot_astro(
+            axes, ('astro',),
+            db_cat['tl']['ip3'], db_cat['tl']['kp'], db_cat['tl']['ca'])
+
+        plot.plot_coupling_region(
+            axes, ('regions',),
+            db_cat['region'])
+
+        fig_path = "{}.svg".format(db.meta['descr'])
+        print('Saving: ', fig_path)
+        fig.savefig(fig_path)
+            
 
 if __name__ == '__main__':
     args = _parse_args()

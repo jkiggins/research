@@ -40,10 +40,9 @@ class Astro:
     def _astro_step(self, state, z_pre, z_post, reward=None):
         state = self.init_state_if_none(state)
 
-        # Decay Ca
+        print('ca: ', state['ca'])
 
-
-        # ------------ IP3 and K= Response --------------
+        # ------------ IP3 and K+ Response --------------
         state = astro_step_z_pre(z_pre, state, self.params, self.dt)
         state = astro_step_z_post(z_post, state, self.params, self.dt)
 
@@ -66,10 +65,10 @@ class Astro:
         #     # Ca is incremented according to an STDP-like rule
         #     state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
 
-        state = astro_step_prod_ca(state, self.params)
-        state = astro_step_ordered_prod_ca(state, self.params)
+        # state = astro_step_prod_ca(state, self.params)
+        # state = astro_step_ordered_prod_ca(state, self.params)
         state = astro_step_stdp_ca(state, self.params, z_pre=z_pre, z_post=z_post)
-        state = astro_step_and_coupling(state, self.params)
+        # state = astro_step_and_coupling(state, self.params)
 
         # ------------ Effect on Synaptic Weight --------------
         if True:

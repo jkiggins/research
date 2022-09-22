@@ -314,7 +314,7 @@ def _sim_astro_step(astro, astro_state, tl, spikes, s, z, i):
 
     tl = _store_astro_step(tl, i, spikes, astro_state, s, z)
 
-    return tl
+    return astro_state, tl
 
 
 def _sim_snn(snn, spikes, dw=True):
@@ -334,7 +334,7 @@ def _sim_astro(astro, spikes):
         s = sz[:-1]
         z = sz[-1]
 
-        tl = _sim_astro_step(astro, astro_state, tl, spikes, s, z, i)
+        astro_state, tl = _sim_astro_step(astro, astro_state, tl, spikes, s, z, i)
 
     return tl
 
@@ -481,7 +481,8 @@ def gen_sgnn_axes(
         'neuron': "Neuron Membrane Voltage",
         'astro': "Astrocyte Traces, Synapse",
         'astro-ca': "Astrocyte Calcium Response, Synapse",
-        'weight': "Synapse Weight"
+        'weight': "Synapse Weight",
+        'regions': "Activity Regions"
     }
 
     axes = {g: [] for g in graphs}
@@ -547,7 +548,7 @@ def plot_1nNs1a(
             ax.plot(tl['v_n'].squeeze().tolist(), label='{}'.format(prefix))
 
         elif g == 'astro' and ('astro' in plot):
-            ax.plot(tl['kp'][:, 0], label='K+', color=astro_colors['k+'])
+            pass
 
         elif g == 'pre-spikes' and 'pre-spikes' in plot:
             events = []
@@ -585,10 +586,12 @@ def plot_1nNs1a(
         for i in range(nsyns):
             if g == 'astro' and ('astro' in plot):
                 line_ip3 = ax.plot(tl['ip3'][:, i], color=astro_colors['ip3'])[0]
+                line_kp = ax.plot(tl['kp'][:, i], color=astro_colors['k+'])[0]
                 line_ca = ax.plot(tl['ca'][:, i], color=astro_colors['ca'])[0]
 
                 if i == 0 and ax.plot_count == 3:
                     line_ip3.set_label('IP3')
+                    line_ip3.set_label('K+')
                     line_ca.set_label('Ca')
                     ax.legend()
 
@@ -650,6 +653,8 @@ def sim_astro(cfg, spike_trains, db):
         tl = _sim_astro(astro, spikes)
 
         db.store({'spikes': spikes, 'tl': tl})
+
+
 
 def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''):
     if graphs is None:
@@ -843,3 +848,22 @@ def graph_dw_w(db, fig, axes, prefix=None, title=None, sp=0):
         axes[sp].legend()
 
     return fig, axes
+
+
+def astro_and_region(tl):
+    z_pre = tl['z_pre']
+    z_post = tl['z_post']
+
+    z_pre_t = torch.where(z_pre == 1)[0]
+    z_post_t = torch.where(z_post == 1)[0]
+
+    duration = z_pre.shape[0]
+
+    if torch.all(z_pre_t < z_post_t):
+        return ('and', duration)
+    elif torch.any(z_pre_t < z_post_t):
+        return ('early-spike', duration)
+    elif torch.all(z_pre_t >= z_post_t):
+        return ('other-influence', duration)
+    else:
+        return ('n/a', duration)

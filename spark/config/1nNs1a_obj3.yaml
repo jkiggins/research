@@ -36,6 +36,7 @@ anti_stdp: &anti_stdp
 astro_plasticity:
   tau_ca: 50.0
   ca_th: 2.5
+  
   and_th: 0.5
 
   tau_ip3: 100.0
@@ -52,6 +53,9 @@ astro_plasticity:
   ltp: 0.0
   dw_ltp: 1.05
 
+  local:
+    stdp: [0, 1]
+  
   coupling:
     and: null
     nand: null

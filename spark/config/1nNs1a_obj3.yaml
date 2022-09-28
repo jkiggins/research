@@ -55,6 +55,7 @@ astro_plasticity:
 
   local:
     stdp: [0, 1]
+    ip3_ca: [0, 1]
   
   coupling:
     and: null

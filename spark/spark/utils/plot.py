@@ -15,6 +15,7 @@ astro_colors = {
 
 region_colors = {
     'and': 'tab:orange',
+    'ltp': 'tab:red',
     'early-spike': 'tab:blue',
     'other-influence': 'tab:purple',
     'n/a': 'tab:green',
@@ -68,6 +69,8 @@ def plot_spikes(axes, loc, z_pre, z_post):
         colors=['tab:blue']*nsyns + ['tab:orange']
     )
 
+    ax.set_xlim(-10, z_pre.shape[0] + 10)
+
 
 def plot_astro(axes, loc, ip3, kp, ca):
     # Locate axes for plotting, expecting n_synapse axes
@@ -77,11 +80,14 @@ def plot_astro(axes, loc, ip3, kp, ca):
     assert n_synapse == ip3.shape[-1]
 
     for i, ax in enumerate(axs):
+        ax.set_title("S{}".format(i))
         ax.plot(ip3[:, i], color=astro_colors['ip3'], label='ip3')
         ax.plot(kp[:, i], color=astro_colors['k+'], label='k+')
         ax.plot(ca[:, i], color=astro_colors['ca'], label='ca')
 
         ax.legend()
+
+        ax.set_xlim(-10, ip3.shape[0] + 10)
 
 
 def plot_coupling_region(axes, loc, regions):
@@ -103,6 +109,8 @@ def plot_coupling_region(axes, loc, regions):
             '-o', color=color)
 
         x_prev += duration
+
+    ax.set_xlim(-10, x_prev + 10)
 
     ax.set_yticks(list(reg_to_offset.values()), list(reg_to_offset.keys()))
 

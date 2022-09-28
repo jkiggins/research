@@ -115,6 +115,24 @@ def astro_step_ordered_prod_ca(state, params):
     return state
 
 
+def astro_step_ip3_ca(state, params, dt):
+    syns = _get_syns(params, 'ip3_ca')
+
+    if syns is None:
+        return state
+
+    ca = state['ca'][syns]
+    dca = torch.zeros_like(ca)
+    ip3 = state['ip3'][syns]
+
+    dca = ip3 * dt * 30
+    ca = ca + dca
+
+    state['ca'][syns] = ca
+
+    return state
+    
+    
 def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
 
     syns = _get_syns(params, 'stdp')
@@ -122,7 +140,8 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
     if syns is None:
         return state
 
-    dca = torch.zeros_like(state['ca'][syns])
+    ca = state['ca'][syns]
+    dca = torch.zeros_like(ca)
     z_pre = z_pre[syns]
     kp = state['kp'][syns]
     ip3 = state['ip3'][syns]
@@ -143,18 +162,17 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
     dca[wh_ltd] = -kp[wh_ltd]
     dca[wh_ltp] = ip3[wh_ltp]
 
-    if dca.abs().sum() > 0 and torch.isclose(ip3.abs().sum(),
-                                             torch.tensor(0.0)):
-        import code
-        code.interact(local=dict(globals(), **locals()))
-        exit(1)
-
-    state['ca'][syns] = state['ca'][syns] + dca
+    ca = ca + dca
     
     # When ip3 -> u or k+ -> u, that input trace is set to zero
     # These input traces effectivley "give" their value to u
-    state['kp'][syns][wh_ltd] = torch.as_tensor(0.0)
-    state['ip3'][syns][wh_ltp] = torch.as_tensor(0.0)
+    kp[wh_ltd] = torch.as_tensor(0.0)
+    ip3[wh_ltp] = torch.as_tensor(0.0)
+
+    state['kp'][syns] = kp
+    state['ip3'][syns] = ip3
+    state['ca'][syns] = ca
+    
 
     return state
 
@@ -252,15 +270,28 @@ def astro_step_and_coupling(state, params):
     ca = state['ca'][syns]
 
     ca_gt_thr = ca > params['and_th']
-    all_ca_gt_thr = torch.logical_and(ca_gt_thr, torch.all(ca_gt_thr))
+    ca_lt_nthr = ca < -params['and_th']
+
+    only_ca_lt_nthr = torch.logical_and(ca_lt_nthr, torch.logical_not(torch.any(ca_gt_thr)))
+    
     some_ca_gt_thr = torch.logical_and(ca_gt_thr,
                                        torch.logical_not(torch.all(ca_gt_thr)))
+    all_ca_gt_thr = torch.logical_and(ca_gt_thr,
+                                      torch.all(ca_gt_thr))
 
-    # If LIF Neuron is implementing AND, no Ca response
+    some_ca_lt_nthr = torch.logical_and(ca_lt_nthr,
+                                        torch.logical_not(torch.all(ca_lt_nthr)))
+
+
+    # Some (but not all) ca > thr -> Early spike, LTD
+    # TODO: Handle this local to the synapse
+    ca[some_ca_gt_thr] = 0.0
+
+    # All Ca > thr -> AND, reset Ca, no weight change
     ca[all_ca_gt_thr] = 0.0
 
-    # If Early Spiking, invert Ca response
-    ca[some_ca_gt_thr] = -ca[some_ca_gt_thr]
+    # Only Ca < -thr -> Outside influence, no weight change
+    ca[some_ca_lt_nthr] = 0.0
 
     state['ca'][syns] = ca
 

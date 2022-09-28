@@ -367,7 +367,10 @@ def gen_and_spikes(n, window=5, num_impulses=5, padding=10, gen_post=False):
         torch.arange(n).repeat(num_impulses).view(-1, 1),
     ), dim=-1).transpose(1,0).tolist()
 
-    spikes[spikes_ind] = 1.0
+    spike_val = torch.rand(len(spikes_ind[0]))
+    spike_val = (spike_val < 0.85) * 1.0
+
+    spikes[spikes_ind] = spike_val
 
     return spikes
     
@@ -854,16 +857,33 @@ def astro_and_region(tl):
     z_pre = tl['z_pre']
     z_post = tl['z_post']
 
+    n_syns = z_pre.shape[-1]
+
     z_pre_t = torch.where(z_pre == 1)[0]
     z_post_t = torch.where(z_post == 1)[0]
 
+    all_z_pre = len(z_pre_t) == n_syns
+    any_z_pre = len(z_pre_t) > 0
+    all_z_post = len(z_post_t) == 1
+
     duration = z_pre.shape[0]
 
-    if torch.all(z_pre_t < z_post_t):
-        return ('and', duration)
-    elif torch.any(z_pre_t < z_post_t):
-        return ('early-spike', duration)
-    elif torch.all(z_pre_t >= z_post_t):
-        return ('other-influence', duration)
-    else:
-        return ('n/a', duration)
+    print("astro_and_region: all_z_pre: {}, any_z_pre: {}, z_post: {}".format(all_z_pre, any_z_pre, all_z_post))
+
+    if all_z_post and all_z_pre:
+        print("all pre and all post")
+        if torch.all(z_pre_t < z_post_t):
+            return ('and', duration)
+        
+    if all_z_post and any_z_pre:
+        print("any pre and all post")
+        if torch.any(z_pre_t < z_post_t):
+            return ('early-spike', duration)
+        elif torch.all(z_pre_t >= z_post_t):
+            return ('other-influence', duration)
+
+    if (not all_z_post) and all_z_pre:
+        print("all pre and all post")
+        return ('ltp', duration)
+
+    return ('n/a', duration)

@@ -272,3 +272,27 @@ exhibited similar instability to what has been observed thus far.
   $\tau$}{fig:sweep:stdp_tau}{0.4}
 
 % TODO: graph of noise response vs. noise percent and possibly type
+
+\section{Summary}
+
+This Chapter builds upon the Astrocyte-LIF models from the previous chapter,
+adding a plasticity step, which translates \ca levels to a change
+in synaptic weight. In order to implement STDP, \ca concentration can be directly
+translated into a weight change. This is the baseline used for comparison with
+other variations on weight update dynamics.
+
+Temporal integration is explored next, by defining a simple threshold on
+\ca to drive plasticity. This means (in general) that multiple plasticity events
+must occur on a given synapse before any change in weight occurs. A variety of
+parameter values are explored, in both the ``Spike Timing'' and ``Rate-based''
+Astrocyte models. Compared to classic STDP, the threshold approach exhibits
+convergence where classic STDP diverges, or exhibits oscillation. A threshold
+update rule is able to consistently drive synaptic weights into one of the
+Astrocyte model's stable configurations. In addition, and learning and
+convergence are stable in the presence of Gaussian noise.
+
+The observed improvements over classic STDP were demonstrated across a variety
+of parameter values, including varying $tau_{ip3}$, $tau_{k+}$, LIF $V_{th}$,
+and the weight update multiplier. In each case where learning did occur, the
+improvements over classic STDP were observed.
+

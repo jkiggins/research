@@ -10,7 +10,9 @@ spike_colors = {
 astro_colors = {
     'k+': 'tab:orange',
     'ip3': 'tab:blue',
-    'ca': 'tab:purple'
+    'ca': 'tab:purple',
+    'dser': 'tab:green',
+    'serca': 'tab:red',
 }
 
 region_colors = {
@@ -57,11 +59,16 @@ def plot_spikes(axes, loc, z_pre, z_post):
 
     nsyns = z_pre.shape[-1]
 
+    syn_range = list(reversed(range(nsyns)))
+
     events = []
-    events = events + [z_pre[:, i] for i in range(z_pre.shape[1])]
-    legend = ['pre-s{}'.format(i) for i in range(len(events))]
+    events = events + [z_pre[:, i] for i in syn_range]
+    legend = ['pre-s{}'.format(i) for i in syn_range]
     events = events + [z_post[:,0]]
     legend += ['post']
+
+    ax.set_title("Spikes")
+    ax.set_ylabel("Time (ms)")
 
     ax.plot_events(
         events,
@@ -72,7 +79,7 @@ def plot_spikes(axes, loc, z_pre, z_post):
     ax.set_xlim(-10, z_pre.shape[0] + 10)
 
 
-def plot_astro(axes, loc, ip3, kp, ca):
+def plot_astro(axes, loc, ip3, kp, ca, dser, serca):
     # Locate axes for plotting, expecting n_synapse axes
     axs = _locate_ax(axes, loc)
 
@@ -80,10 +87,14 @@ def plot_astro(axes, loc, ip3, kp, ca):
     assert n_synapse == ip3.shape[-1]
 
     for i, ax in enumerate(axs):
-        ax.set_title("S{}".format(i))
+        ax.set_title("Local Astrocyte State: S{}".format(i))
+        ax.set_xlabel("Time (ms)")
+        ax.set_ylabel("Concentrations")
         ax.plot(ip3[:, i], color=astro_colors['ip3'], label='ip3')
-        ax.plot(kp[:, i], color=astro_colors['k+'], label='k+')
+        # ax.plot(kp[:, i], color=astro_colors['k+'], label='k+')
         ax.plot(ca[:, i], color=astro_colors['ca'], label='ca')
+        ax.plot(dser[:, i], color=astro_colors['dser'], label='D-Serine')
+        ax.plot(serca[:, i], color=astro_colors['serca'], label='Serca')
 
         ax.legend()
 
@@ -93,6 +104,9 @@ def plot_astro(axes, loc, ip3, kp, ca):
 def plot_coupling_region(axes, loc, regions):
     # Locate one axis for plotting
     ax = _locate_ax(axes, loc)
+
+    ax.set_title("Astrocyte AND Coupling Region")
+    ax.set_xlabel("Time (ms)")
 
     reg_to_offset = {}
 

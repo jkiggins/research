@@ -4,12 +4,20 @@ from .threshold import threshold
 
 import torch.jit
 
-def _get_syns(params, name):
+def _get_syns(params, name=None, coupled=False):
     if name in params['coupling'] and len(params['coupling'][name]) > 0:
         return params['coupling'][name]
     
     if name in params['local'] and len(params['local'][name]) > 0:
         return params['local'][name]
+
+    if coupled:
+        c_syns = []
+        for _, syns in params['coupling'].items():
+            if not (syns is None):
+                c_syns = c_syns + syns
+
+        return c_syns
 
 
 def _clip_decay_across_zero(orig, decayed):
@@ -41,7 +49,7 @@ def astro_step_z_pre(z_pre, state, params, dt):
     i_decayed = state['ip3'] + di
     i_decayed = _clip_decay_across_zero(state['ip3'], i_decayed)
 
-    i_new = z_pre * params['alpha_pre']
+    i_new = z_pre
     
     if params['pre_reset_on_spike'] and z_pre:
         # In this case, don't add i_decayed (forget past spikes)
@@ -62,7 +70,7 @@ def astro_step_z_post(z_post, state, params, dt):
     i_decayed = state['kp'] + di
     i_decayed = _clip_decay_across_zero(state['kp'], i_decayed)
 
-    i_new = z_post * params['alpha_post']
+    i_new = z_post
     
     if params['post_reset_on_spike'] and z_post:
         # In this case, don't add i_decayed (forget past spikes)
@@ -125,7 +133,7 @@ def astro_step_ip3_ca(state, params, dt):
     dca = torch.zeros_like(ca)
     ip3 = state['ip3'][syns]
 
-    dca = ip3 * dt * 30
+    dca = ip3 * dt * 16
     ca = ca + dca
 
     state['ca'][syns] = ca
@@ -146,10 +154,11 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
     kp = state['kp'][syns]
     ip3 = state['ip3'][syns]
 
-    bool_ltd = torch.logical_and(
-        z_pre > 0.0,
-        torch.isclose(z_post, torch.tensor(0.0))
-    )        
+    # bool_ltd = torch.logical_and(
+    #     z_pre > 0.0,
+    #     torch.isclose(z_post, torch.tensor(0.0))
+    # )
+    bool_ltd = z_pre > 0.0
     wh_ltd = torch.where(bool_ltd)
     
     bool_ltp = torch.logical_and(
@@ -159,8 +168,8 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
     wh_ltp = torch.where(bool_ltp)
 
     # Peform LTP/LTD across astrocyte processes
-    dca[wh_ltd] = -kp[wh_ltd]
-    dca[wh_ltp] = ip3[wh_ltp]
+    dca[wh_ltd] = -kp[wh_ltd] * params['alpha_kp']
+    dca[wh_ltp] = ip3[wh_ltp] * params['alpha_ip3']
 
     ca = ca + dca
     
@@ -177,13 +186,49 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
     return state
 
 
-def astro_step_u_signal(state, params, dt):
-    du = state['ip3'] + state['kp']
-
-    state['ca'] = state['ca'] + du
+def astro_reset_signal(state):
+    state['serca'][:] = 0.0
+    state['dser'][:] = 0.0
 
     return state
-        
+    
+    
+def astro_step_signal(state, params):
+    syns = _get_syns(params, coupled=True)
+
+    if syns is None:
+        return state, None
+
+    eff = torch.ones_like(state['ca'])
+    eff_syns = eff[syns]
+
+    ca = state['ca'][syns]
+    ip3 = state['ip3'][syns]
+    kp = state['kp'][syns]
+    serca = state['serca'][syns]
+    dser = state['dser'][syns]
+
+    wh_reset = torch.where(serca == 1.0)
+    wh_ltd = torch.where(dser == -1.0)
+    wh_ltp = torch.where(dser == 1.0)
+
+    eff_syns[wh_ltd] = ca[wh_ltd]
+    eff_syns[wh_ltp] = ca[wh_ltp]
+
+    ca[wh_ltd] = 0.0
+    ca[wh_ltp] = 0.0
+    ca[wh_reset] = 0.0
+
+    ip3[wh_reset] = 0.0
+    kp[wh_reset] = 0.0
+
+    eff[syns] = eff_syns
+    state['ca'][syns] = ca
+    state['ip3'][syns] = ip3
+    state['kp'][syns] = kp
+
+    return state, eff
+
 
 def astro_step_reward_effect(state, params, reward):
     # reward is either 0.0, 1.0, or -1.0
@@ -254,13 +299,6 @@ def astro_step_and_coupling(state, params):
     
     This function will consider Ca values from N synapses and determine an
     appropreate Ca response that will drive plasticity at the local level.
-    
-    This step looks for the following conditions
-    1. All Ca > thr: This is correct AND behavior, don't update weights (zero
-    out Ca)
-    1. Some Ca > thr: Early spike, invert Ca for those synapses
-    2. All IP3 > thr With K+ > thr. The outcome is no activity
-    3. Some IP3 > thr, and K+ > thr, The outcome is a decrease in the subset of synapse with IP3 > thr
     """
 
     syns = _get_syns(params, 'and')
@@ -268,9 +306,12 @@ def astro_step_and_coupling(state, params):
         return state
 
     ca = state['ca'][syns]
+    serca = state['serca'][syns]
+    dser = state['dser'][syns]
 
-    ca_gt_thr = ca > params['and_th']
-    ca_lt_nthr = ca < -params['and_th']
+    ca_gt_thr = ca >= params['and_th']
+    ca_lt_nthr = ca <= -params['and_th']
+    ca_gt_ltp_thr = torch.logical_and(ca >= params['and_ltp_th'], ca < params['and_th'])
 
     only_ca_lt_nthr = torch.logical_and(ca_lt_nthr, torch.logical_not(torch.any(ca_gt_thr)))
     
@@ -278,22 +319,27 @@ def astro_step_and_coupling(state, params):
                                        torch.logical_not(torch.all(ca_gt_thr)))
     all_ca_gt_thr = torch.logical_and(ca_gt_thr,
                                       torch.all(ca_gt_thr))
+    all_ca_gt_ltp_thr = torch.logical_and(ca_gt_ltp_thr, torch.all(ca_gt_ltp_thr))
 
     some_ca_lt_nthr = torch.logical_and(ca_lt_nthr,
                                         torch.logical_not(torch.all(ca_lt_nthr)))
 
 
     # Some (but not all) ca > thr -> Early spike, LTD
-    # TODO: Handle this local to the synapse
-    ca[some_ca_gt_thr] = 0.0
+    dser[some_ca_gt_thr] = -1.0
+    dser[all_ca_gt_ltp_thr] = 1.0
+
+    # print("ca: {}, gt_ltp_thr: all_ca_gt_ltp_thr: {}".format(ca.tolist(), ca_gt_ltp_thr.tolist()))
 
     # All Ca > thr -> AND, reset Ca, no weight change
-    ca[all_ca_gt_thr] = 0.0
+    serca[all_ca_gt_thr] = 1.0
 
     # Only Ca < -thr -> Outside influence, no weight change
-    ca[some_ca_lt_nthr] = 0.0
+    serca[only_ca_lt_nthr] = 1.0
 
     state['ca'][syns] = ca
+    state['serca'][syns] = serca
+    state['dser'][syns] = dser
 
     return state
 

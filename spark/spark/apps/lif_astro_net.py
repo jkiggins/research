@@ -246,10 +246,14 @@ def _store_astro_step(tl, i, spikes, astro_state, s, z):
         tl['z_pre'] = torch.zeros((n_spikes, n_synapse))
         tl['z_post'] = torch.zeros((n_spikes, 1))
         tl['ca'] = torch.zeros((n_spikes, n_synapse))
+        tl['dser'] = torch.zeros((n_spikes, n_synapse))
+        tl['serca'] = torch.zeros((n_spikes, n_synapse))
         tl['ip3'] = torch.zeros((n_spikes, n_synapse))
         tl['kp'] = torch.zeros((n_spikes, n_synapse))
 
     tl['ca'][i] = astro_state['ca']
+    tl['dser'][i] = astro_state['dser']
+    tl['serca'][i] = astro_state['serca']
     tl['ip3'][i] = astro_state['ip3']
     tl['kp'][i] = astro_state['kp']
         
@@ -868,22 +872,22 @@ def astro_and_region(tl):
 
     duration = z_pre.shape[0]
 
-    print("astro_and_region: all_z_pre: {}, any_z_pre: {}, z_post: {}".format(all_z_pre, any_z_pre, all_z_post))
+    # print("astro_and_region: all_z_pre: {}, any_z_pre: {}, z_post: {}".format(all_z_pre, any_z_pre, all_z_post))
 
     if all_z_post and all_z_pre:
-        print("all pre and all post")
+        # print("all pre and all post")
         if torch.all(z_pre_t < z_post_t):
             return ('and', duration)
         
     if all_z_post and any_z_pre:
-        print("any pre and all post")
+        # print("any pre and all post")
         if torch.any(z_pre_t < z_post_t):
             return ('early-spike', duration)
         elif torch.all(z_pre_t >= z_post_t):
             return ('other-influence', duration)
 
     if (not all_z_post) and all_z_pre:
-        print("all pre and all post")
+        # print("all pre and all post")
         return ('ltp', duration)
 
     return ('n/a', duration)

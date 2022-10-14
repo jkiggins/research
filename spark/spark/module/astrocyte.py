@@ -15,6 +15,8 @@ from ..functional.astrocyte import (
     astro_track_activity,
     astro_step_and_coupling,
     astro_step_ip3_ca,
+    astro_reset_signal,
+    astro_step_signal
 )
 
 class Astro:
@@ -33,6 +35,8 @@ class Astro:
                 'ca': torch.zeros(self.num_process),
                 'ip3': torch.zeros(self.num_process),
                 'kp': torch.zeros(self.num_process),
+                'serca': torch.zeros(self.num_process),
+                'dser': torch.zeros(self.num_process),
             }
 
         return state
@@ -41,18 +45,16 @@ class Astro:
     def _astro_step(self, state, z_pre, z_post, reward=None):
         state = self.init_state_if_none(state)
 
-        # ------------ Define Time Substeps -------------
-        # sub_dt = self.dt / 2
-
         # ------------ IP3 and K+ Response --------------
         state = astro_step_z_pre(z_pre, state, self.params, self.dt)
         state = astro_step_z_post(z_post, state, self.params, self.dt)
 
-        # yield state
-
         if self.params['weight_update'] == 'ip3_k+_fall':
             state = astro_track_activity(state, self.params)
             # print("act_gt_thr: ", state['act_gt_thr'], end=' ')
+
+        # ------------ Reset global -> local signaling ------------
+        state = astro_reset_signal(state)
 
         # ------------ Ca Response --------------
         state = astro_step_decay(state, self.params, self.dt)
@@ -71,27 +73,27 @@ class Astro:
 
         # state = astro_step_prod_ca(state, self.params)
         # state = astro_step_ordered_prod_ca(state, self.params)
-        # state = astro_step_ip3_ca(state, self.params, self.dt)
+        state = astro_step_ip3_ca(state, self.params, self.dt)
         state = astro_step_stdp_ca(state, self.params, z_pre=z_pre, z_post=z_post)
         state = astro_step_and_coupling(state, self.params)
-        
+
         # ------------ Effect on Synaptic Weight --------------
-        if True:
-            eff = torch.as_tensor(0.0)
-        elif self.params['weight_update'] == 'thr':
-            state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
-            eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
+        state, eff = astro_step_signal(state, self.params)
+        eff = 1.0
+        # if self.params['weight_update'] == 'thr':
+        #     state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
+        #     eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
-        elif self.params['weight_update'] == 'prop':
-            ca = state['ca']
-            u_spike = torch.ones_like(ca)
-            # print("ca: {}, ".format(ca), end='')
-            state, eff = astro_step_effect_weight_prop(torch.ones_like(ca), state, self.params)
-            # print("u_spike: {}, eff: {}".format(u_spike, eff))
+        # elif self.params['weight_update'] == 'prop':
+        #     ca = state['ca']
+        #     u_spike = torch.ones_like(ca)
+        #     # print("ca: {}, ".format(ca), end='')
+        #     state, eff = astro_step_effect_weight_prop(torch.ones_like(ca), state, self.params)
+        #     # print("u_spike: {}, eff: {}".format(u_spike, eff))
 
-        elif self.params['weight_update'] == 'ip3_k+_fall':
-            state, u_spike = astro_step_activity(state, self.params)  # Detect falling edge on ip3/k+
-            state, eff = astro_step_effect_weight_prop(u_spike, state, self.params)  # Get effect based on u exceeding thr
+        # elif self.params['weight_update'] == 'ip3_k+_fall':
+        #     state, u_spike = astro_step_activity(state, self.params)  # Detect falling edge on ip3/k+
+        #     state, eff = astro_step_effect_weight_prop(u_spike, state, self.params)  # Get effect based on u exceeding thr
 
         return eff, state
 

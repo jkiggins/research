@@ -536,30 +536,44 @@ Astrocyte response, and for what is considered synchronous activity.
   events with different synaptic weights.}{fig:astro:tp_many_w_sweep}{0.5}
 
 \section{Summary}
-This chapter introduces a computationally efficient and intuitive Astrocyte
-model. This model was derived from the many works outlined in Chapter
-\ref{chapter:backround}, leaning heavily towards Engineering applications,
-while taking inspiration from the Neuroscience and many highly bio-realistic
-models. A relatively small number of parameters are used to define the
-Astrocyte model's behavior, and the effects of varying this behavior is
-explored in two different configurations of the model, with an emphasis on
-signals internal to the Astrocyte. Figure \ref{fig:1n1s1a_fn_diagram} shows
-an ``Update FN'' block, which represents how the input traces \ipt and \kp
-effect Astrocyte \ca. With \ca concentration driving the mechanisms
-identified for the Astrocyte to influence things external to
-itself. Considering a variant of the model where \ca responds to a
-difference in the magnitude between \ipt and \kp, it was found that \ca
-response varied widely given a random Poisson input for some weight values.
-For other weight values, where a quick response from the neuron was
-observed, \ca was relatively stable. Switching the input to be a pair
-of pre and post-synaptic spikes with variable inter-spike-interval, a graph
-very similar to the characteristic STDP curve was observed (Figure
-\ref{fig:astro:classic_stdp}).
+\todo{Add Table of Astrocyte chemical Pathways, and Show how the Astrocyte model
+  supports them}
+This chapter introduces a computationally simple and efficient Astrocyte
+model. This model was developed with inspiration from the many works outlined in
+Chapter \ref{chapter:backround}, and focuses on an Astrocyte's role in synaptic
+plasticity. These include Neuroscience works, which outline observed and
+theorized bio-chemical pathways. As well as works which present highly realistic
+mathematical models of Astrocyte behavior. For the Astrocyte model developed in
+this work, an emphasis was placed on computational efficiency, while maintaining
+the common pathways pulled from the body of background research.  Compared to
+some of the more bio-realistic Astrocyte models, A relatively small number of
+parameters are used to define this model's behavior.
 
-Since the first variation of the Astrocyte model exhibited sensitivity to
-the general firing rates at pre and post-synaptic terminals, it was logical
-to explore a variation sensitive to spike timing. This ``Integrated Spike-Timing''
-model, similarly, exhibited an STDP-like \ca response given a single spiking
-pair with variable timing. With dense inputs this model maintained sensitivity
-to recent spike timing, and exhibited bi-modal stability with respect to
-synaptic weights.
+The literature shows considerable debate on the main functional role of an
+Astrocyte, as well as how a given functional role is achieved chemically. In
+this work, with synaptic plasticity as a main functional role, a framework for
+Astrocyte local dynamics was developed, and is outlined in Figure
+\ref{fig:1n1s1a_fn_diagram}. ``Update FN'' is a generic functional block which
+represents the gap in existing literature.
+
+It is assumed the \ca will drive synaptic plasticity, though the exact mechanism
+isn't explored in this chapter. With that in mind, two different approaches
+are considered, both of which are capable of generalizing STDP, and can extend
+it in different ways. One, which considers the \ca response to a difference in
+the magnitude between \ipt and \kp, was shown to generalize and STDP-like
+response (Figure \ref{fig:astro:classic_stdp}), and extend it, supporting common
+variations on STDP with one model. In addition, in the presence of dense spiking
+input the Astrocyte showed a response to the difference between pre and
+post-synaptic average firing rates. Sweeping weight values showed a stable
+configuration to the model, where \ca response was minimal, or non-existent.
+
+The second approach instead uses an ``Update FN'' that results in sensitivity to
+pre and post-synaptic spike timing, instead of firing rate. This model
+generalizes STDP in both sparse and dense inputs, as well as supporting common
+STDP variants. Sweeping weight values for particular parameters lead to stable
+configurations with minimal \ca response as well.
+
+Overall, this objective introduces a framework for Astrocyte-LIF Neuron
+computation, and explores two specific models geared towards synaptic
+plasticity. For each of these models, stable configurations are explored, which
+represent convergence points in a potential learning rule.

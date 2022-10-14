@@ -508,7 +508,6 @@ def _main(args):
     if args.astro_and_spike_response or args.all:
         # Generate single pre, pre, post events in a given time window
         # and examine astrocyte response.
-
         n_synapse = 2
 
         cfgs, num_cfgs = _cfg_gen(
@@ -516,16 +515,53 @@ def _main(args):
             n=n_synapse, ca_th=ca_th, dw=False, c_and=[0,1]
         )
 
-        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=5, gen_post=True)
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=10, gen_post=True)
 
         db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
+
+        # Inspect db, and see how many impulses have activity matching the region
+        num_invalid=0
+        for i, db_rec in enumerate(db):
+            val_res=True  # Check for valid response
+            region = db_rec['region'][0][0]
+
+            any_pre_spike = torch.any(db_rec['tl']['z_pre'] > 0.5, dim=0)
+            no_serca = torch.all(db_rec['tl']['serca'] < 0.5, dim=0)
+            yes_serca = torch.any(db_rec['tl']['serca'] > 0.5, dim=0)
+            no_dser= torch.all(torch.abs(db_rec['tl']['dser']) < 0.5, dim=0)
+            yes_dser_ltp = torch.any(db_rec['tl']['dser'] > 0.5, dim=0)
+            yes_dser_ltd = torch.any(db_rec['tl']['dser'] < -0.5, dim=0)
+
+
+            if region in ['other-influence', 'and']:
+                val_res = torch.all(yes_serca == any_pre_spike) and torch.all(no_dser)
+
+            elif region == 'ltp':
+                val_res = torch.all(no_serca) and torch.all(yes_dser_ltp)
+
+            elif region == 'early-spike':
+                val_res = torch.any(yes_serca) and torch.any(yes_dser_ltd)
+
+            if not (val_res):
+                print("{} ({}) Invalid".format(region, i))
+                # import code
+                # code.interact(local=dict(globals(), **locals()))
+                # exit(1)
+                
+                num_invalid += 1
+                print()
+
+        print("{}/{} Invalid".format(num_invalid, i+1))
+
+                    
+        
         # Graph: spikes, synapse specific ip3, k+ and Ca, category of event (AND, Early spike, etc..)
         # Layout: Spikes in a SP (lables on X axis) Other traces in separate SPs with labels in title
         gs = plot.gs(n_synapse + 2, 1)
         fig, axes = plot.gen_axes(
             ('spikes', gs[0]),
             ('regions', gs[-1]),
-            figsize=(15,10),
+            figsize=(15,12),
         )
         for i in range(n_synapse):
             fig, axes = plot.gen_axes(
@@ -542,7 +578,7 @@ def _main(args):
 
         plot.plot_astro(
             axes, ('astro',),
-            db_cat['tl']['ip3'], db_cat['tl']['kp'], db_cat['tl']['ca'])
+            db_cat['tl']['ip3'], db_cat['tl']['kp'], db_cat['tl']['ca'], db_cat['tl']['dser'], db_cat['tl']['serca'])
 
         plot.plot_coupling_region(
             axes, ('regions',),
@@ -550,7 +586,8 @@ def _main(args):
 
         fig_path = "{}.svg".format(db.meta['descr'])
         print('Saving: ', fig_path)
-        fig.savefig(fig_path)
+        fig.tight_layout()
+        fig.savefig(fig_path)        
             
 
 if __name__ == '__main__':

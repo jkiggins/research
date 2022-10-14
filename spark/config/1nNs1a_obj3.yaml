@@ -6,7 +6,7 @@ classic_stdp: &classic_stdp
   ca_th: 2.5
 
   and_th: 0.5
-
+  and_ltp_th: 0.01
   tau_ip3: 100.0
   alpha_pre: 1.0
   pre_reset_on_spike: False
@@ -38,13 +38,14 @@ astro_plasticity:
   ca_th: 2.5
   
   and_th: 0.5
+  and_ltp_th: 0.08
 
   tau_ip3: 100.0
-  alpha_pre: 1.0
+  alpha_ip3: 1.0
   pre_reset_on_spike: False
 
   tau_kp: 100.0
-  alpha_post: 1.0
+  alpha_kp: 1.2
   post_reset_on_spike: False
 
   ltd: 0.0

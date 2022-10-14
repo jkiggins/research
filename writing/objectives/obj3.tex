@@ -1,4 +1,4 @@
-\chapter{Adaptation of the Astrocyte Model To Multi-Synapse
+\chapter{Extension Astrocyte Model To Multi-Synapse
   Configurations} \label{chapter:obj3}
 
 In biology, Astrocytes have not been observed influencing a single synapse on a
@@ -30,22 +30,18 @@ configuration, but remaining simple enough to explore fundamental properties.
 Though there is a lack of general consensus, much of the Neuroscience literature
 suggests that Astrocytes have a fast local response to synaptic activity, which
 is then integrated to a cell-level response. Taking inspiration from this
-multiple level integration approach, the existing signals and Astrocyte behavior
-are duplicated for each synapse that an Astrocyte influences. The initial goal
-then, is to determine how the introduction of additional synapses effects
-general behavior. At a high level, the simple \ca threshold approach to driving
-plasticity is no longer stable in a 1nNs1a configuration. This is somewhat
-expected, and there is a need for additional constraints for weight values to
-converge. To meet this need synaptic coupling is introduced. This coupling
-drives plasticity of the coupled synapses based on activity across the coupled
-domain. This mimics an effect explored in Neuroscience literature, which is that
-ER bodies within an Astrocyte can form pathways between synapses that don't
-immediately affect the main cell body, but do influence a group of synapses. The
-two coupling rules explored in this chapter are AND and NAND. As their
-names suggest, these coupling rules are tied to a particular logic function. In
-general, the Astrocyte will drive weight values towards implementing the desired
-function, detecting behavior that is not in alignment and updating weights
-accordingly.
+multi-level integration approach, the Astrocyte model is extended. At the
+local level, \ipt, \kp, and \ca dynamics remain mostly the same compared to
+previous chapters. The \ca signals do not remain local however, and instead
+propagate up to a regional level. At this multi-synapse, regional level, \ca
+responses from multiple synapses are integrated. A response is then generated at
+the regional level, then travels back down to one or more synapses, affecting
+local plasticity. The two regional functions are explored in this
+chapter, AND and NAND. In general, the Astrocyte will drive weight values
+towards implementing the desired function, detecting behavior that is not in
+alignment and updating weights accordingly. For these functions in particular,
+having a multi-synapse view of activity is critical.
+
 
 \section{Synaptic Coupling}
 In order to implement synaptic coupling in an efficient and bio-realistic way,

@@ -214,12 +214,12 @@ class ExpStorage:
         self._prefix = d
 
 
-    def subset(self, idxs):
+    def slice(self, start, stop, interval=1):
         db = ExpStorage()
         db.meta = copy.deepcopy(self.meta)
         db.prefix = copy.deepcopy(self.prefix)
 
-        for i in idxs:
+        for i in range(start, stop, interval):
             db.store(self.db[i])
 
         return db
@@ -287,6 +287,27 @@ class ExpStorage:
         return pivot_db
 
 
+    # def split(self, step):
+    #     _next = [self.db]
+    #     split_idx = 0
+
+    #     # Search db, and build a list of 
+
+    #     while len(_next) > 0:
+    #         n = next(_next)
+    #         if type(n) == dict:
+    #             for k, v in n.items():
+    #                 if type(v) == dict:
+    #                     _next.append(v)
+    #                 elif type(n) == torch.Tensor:
+    #                     low = split_idx*step
+    #                     high = (split_idx + 1)*step
+
+    #                     n[k] = v[low:high]
+
+    #     split_idx += 1
+                
+        
     def cat(self):
         def _cat_dict(d_a, d_b):
             _next = [(d_a, d_b)]
@@ -297,14 +318,33 @@ class ExpStorage:
                     if not (k in b):
                         continue
 
+                    # Put primatives in 1-d lists
+                    if type(a[k]) in [bool, tuple]:
+                        a[k] = [a[k]]
+                    if type(b[k]) in [bool, tuple]:
+                        b[k] = [b[k]]
+
                     if type(a[k]) == dict:
                         _next.append((a[k], b[k]))
                     elif type(a[k]) == torch.Tensor:
-                        a[k] = torch.cat((a[k], b[k]))
-                    elif type(a[k]) == list:
+
+                        # Fix shape of 0-d for call to torch.cat
+                        if a[k].shape == torch.Size([]):
+                            a[k] = a[k].reshape(1)
+                        if b[k].shape == torch.Size([]):
+                            b[k] = b[k].reshape(1)
+                            
+                        try:
+                            a[k] = torch.cat((a[k], b[k]))
+                        except:
+                            import code
+                            code.interact(local=dict(globals(), **locals()))
+                            exit(1)
+                            
+                    elif type(a[k]) == list and type(b[k]) == list:
                         a[k] = a[k] + b[k]
                     else:
-                        raise ValueError("Can't merge type: {}", type(a[k]))
+                        raise ValueError("Can't merge type: {}: {} -> {}".format(k, type(a[k]), type(b[k])))
 
             return d_a
 
@@ -316,7 +356,10 @@ class ExpStorage:
 
             db_rec_cat = _cat_dict(db_rec_cat, db_rec)
 
-        return db_rec_cat
+        if db_rec_cat is None:
+            return self
+        else:
+            return db_rec_cat
 
 
     def group_by(self, key, sort=False):

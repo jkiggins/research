@@ -38,13 +38,13 @@ astro_plasticity:
   ca_th: 2.5
   
   and_th: 0.5
-  and_ltp_th: 0.08
+  and_ltp_th: 0.09
 
-  tau_ip3: 100.0
+  tau_ip3: 80.0
   alpha_ip3: 1.0
   pre_reset_on_spike: False
 
-  tau_kp: 100.0
+  tau_kp: 80.0
   alpha_kp: 1.2
   post_reset_on_spike: False
 

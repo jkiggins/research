@@ -19,7 +19,8 @@ from .lif_astro_net import (
     graph_sgnn,
     gen_and_spikes,
     sim_astro,
-    astro_and_region
+    astro_and_region,
+    astro_check_respose
 )
 
 from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
@@ -159,8 +160,37 @@ def _graph_n_syn_cat(db, graphs=None, xlim=None):
     fig.savefig(fig_path)
 
 
+
+def _graph_n_syn_coupled_astro(db_rec, n_synapse):
+    gs = plot.gs(n_synapse + 2, 1)
+    fig, axes = plot.gen_axes(
+        ('spikes', gs[0]),
+        ('regions', gs[-1]),
+        figsize=(15,12),
+    )
+    for i in range(n_synapse):
+        fig, axes = plot.gen_axes(
+            ('astro', gs[i+1]),
+            fig=fig, axes=axes
+        )
+
+    plot.plot_spikes(
+        axes, ('spikes',),
+        db_rec['tl']['z_pre'],
+        db_rec['tl']['z_post'])
+
+    plot.plot_astro(
+        axes, ('astro',),
+        db_rec['tl']['ip3'], db_rec['tl']['kp'], db_rec['tl']['ca'], db_rec['tl']['dser'], db_rec['tl']['serca'])
+
+    plot.plot_coupling_region(
+        axes, ('regions',),
+        db_rec['region'])
+
+
+    return fig, axes
     
-    
+
 def _graph_n_syn(db, xlim=None, w=None, prefix=None, graphs=None):
     descr = db.meta['descr']
 
@@ -224,13 +254,19 @@ def _spikes_gen(
     window=10,
     num_impulses=5,
     padding=10,
-    gen_post=False):
+    gen_post=False,
+    concat=False
+):
 
     n = None
     for cfg in cfg_gen:
         if n is None or not (n == cfg['linear_params']['synapse']):
             n = cfg['linear_params']['synapse']
             spikes = gen_and_spikes(n, window=window, num_impulses=num_impulses, gen_post=gen_post, padding=padding)
+
+            if concat:
+                spikes = spikes.view(1, spikes.shape[0]*spikes.shape[1], *spikes.shape[2:])
+
 
         yield cfg, spikes
 
@@ -301,6 +337,7 @@ def _exp_n_syn_coupled_astro(
     rt_gen,
     num_cfgs,
     sim=False,
+    keep_state=False,
     sim_name='_exp_{}_syn_astro'
 ):
     seed_many()
@@ -325,11 +362,17 @@ def _exp_n_syn_coupled_astro(
 
             db.meta['descr'] = 'astro_{}s1a_and'.format(n)
 
-        sim_astro(cfg, spikes, db)
+        sim_astro(cfg, spikes, db, keep_state=keep_state)
 
+        num_invalid = 0
+        for i, db_rec in enumerate(db):
+            db_rec['region'] = astro_and_region(db_rec['tl'])
+            db_rec['invalid'] = not astro_check_respose(db_rec['tl'], db_rec['region'][0])
 
-        for db_rec in db:
-            db_rec['region'] = [astro_and_region(db_rec['tl'])]
+            if db_rec['invalid']:
+                num_invalid += 1
+
+        print("{}/{} Invalid".format(num_invalid, i+1))
 
     return db
 
@@ -417,6 +460,7 @@ def _parse_args():
     parser.add_argument('--astro-nsyn-poisson', action='store_true')
     parser.add_argument('--astro-nsyn-and', action='store_true')
     parser.add_argument('--astro-and-spike-response', action='store_true')
+    parser.add_argument('--astro-and-continuous-response', action='store_true')
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--sim', action='store_true')
 
@@ -468,7 +512,6 @@ def _main(args):
 
 
     if args.astro_nsyn_and or args.all:
-
         # Examine response to single spiking events (on each synapse) with settle time between
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
@@ -503,8 +546,10 @@ def _main(args):
         db = _exp_n_syn_coupled(cfg_and_spikes, num_cfgs, sim=args.sim, sim_name='snn_1n{}s1a_and_poisson_fixed')
 
         _graph_n_syn_cat(db, graphs=['spikes', 'astro'], xlim=(300,800))
+        
 
-
+    # Look at a number of 10ms bouts of activity
+    # Determine if the Astrocyte responded correctly
     if args.astro_and_spike_response or args.all:
         # Generate single pre, pre, post events in a given time window
         # and examine astrocyte response.
@@ -515,79 +560,79 @@ def _main(args):
             n=n_synapse, ca_th=ca_th, dw=False, c_and=[0,1]
         )
 
-        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=10, gen_post=True)
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1000, gen_post=True)
 
         db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
 
-        # Inspect db, and see how many impulses have activity matching the region
-        num_invalid=0
-        for i, db_rec in enumerate(db):
-            val_res=True  # Check for valid response
-            region = db_rec['region'][0][0]
-
-            any_pre_spike = torch.any(db_rec['tl']['z_pre'] > 0.5, dim=0)
-            no_serca = torch.all(db_rec['tl']['serca'] < 0.5, dim=0)
-            yes_serca = torch.any(db_rec['tl']['serca'] > 0.5, dim=0)
-            no_dser= torch.all(torch.abs(db_rec['tl']['dser']) < 0.5, dim=0)
-            yes_dser_ltp = torch.any(db_rec['tl']['dser'] > 0.5, dim=0)
-            yes_dser_ltd = torch.any(db_rec['tl']['dser'] < -0.5, dim=0)
-
-
-            if region in ['other-influence', 'and']:
-                val_res = torch.all(yes_serca == any_pre_spike) and torch.all(no_dser)
-
-            elif region == 'ltp':
-                val_res = torch.all(no_serca) and torch.all(yes_dser_ltp)
-
-            elif region == 'early-spike':
-                val_res = torch.any(yes_serca) and torch.any(yes_dser_ltd)
-
-            if not (val_res):
-                print("{} ({}) Invalid".format(region, i))
-                # import code
-                # code.interact(local=dict(globals(), **locals()))
-                # exit(1)
-                
-                num_invalid += 1
-                print()
-
-        print("{}/{} Invalid".format(num_invalid, i+1))
-
-                    
-        
         # Graph: spikes, synapse specific ip3, k+ and Ca, category of event (AND, Early spike, etc..)
         # Layout: Spikes in a SP (lables on X axis) Other traces in separate SPs with labels in title
-        gs = plot.gs(n_synapse + 2, 1)
-        fig, axes = plot.gen_axes(
-            ('spikes', gs[0]),
-            ('regions', gs[-1]),
-            figsize=(15,12),
+        # gs = plot.gs(n_synapse + 2, 1)
+        # fig, axes = plot.gen_axes(
+        #     ('spikes', gs[0]),
+        #     ('regions', gs[-1]),
+        #     figsize=(15,12),
+        # )
+        # for i in range(n_synapse):
+        #     fig, axes = plot.gen_axes(
+        #         ('astro', gs[i+1]),
+        #         fig=fig, axes=axes
+        #     )
+
+        db_cat = db.filter(invalid=False).cat()
+
+        if len(db_cat) > 0:
+            fig, axes = _graph_n_syn_coupled_astro(db_cat, n_synapse)
+
+            fig_path = "{}.svg".format(db.meta['descr'])
+            print('Saving: ', fig_path)
+            fig.tight_layout()
+            fig.savefig(fig_path)
+
+
+        # if len(db_cat) > 0:
+        #     plot.plot_spikes(
+        #         axes, ('spikes',),
+        #         db_cat['tl']['z_pre'],
+        #         db_cat['tl']['z_post'])
+
+        #     plot.plot_astro(
+        #         axes, ('astro',),
+        #         db_cat['tl']['ip3'], db_cat['tl']['kp'], db_cat['tl']['ca'], db_cat['tl']['dser'], db_cat['tl']['serca'])
+
+        #     plot.plot_coupling_region(
+        #         axes, ('regions',),
+        #         db_cat['region'])
+
+
+
+    # Look at a number of continuous 10ms bouts of activity
+    # Determine if the Astrocyte responded correctly
+    if args.astro_and_continuous_response or args.all:
+        # Generate single pre, pre, post events in a given time window
+        # and examine astrocyte response.
+        n_synapse = 2
+
+        cfgs, num_cfgs = _cfg_gen(
+            cfg_path,
+            n=n_synapse, ca_th=ca_th, dw=False, c_and=[0,1]
         )
-        for i in range(n_synapse):
-            fig, axes = plot.gen_axes(
-                ('astro', gs[i+1]),
-                fig=fig, axes=axes
-            )
 
-        db_cat = db.cat()
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1000, gen_post=True)
 
-        plot.plot_spikes(
-            axes, ('spikes',),
-            db_cat['tl']['z_pre'],
-            db_cat['tl']['z_post'])
+        db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
+        db_cat = db.filter(invalid=True).cat()
 
-        plot.plot_astro(
-            axes, ('astro',),
-            db_cat['tl']['ip3'], db_cat['tl']['kp'], db_cat['tl']['ca'], db_cat['tl']['dser'], db_cat['tl']['serca'])
+        if len(db_cat) == 0:
+            db_cat = db.slice(0, 10).cat()
 
-        plot.plot_coupling_region(
-            axes, ('regions',),
-            db_cat['region'])
-
+        fig, axes = _graph_n_syn_coupled_astro(db_cat, n_synapse)
+        
         fig_path = "{}.svg".format(db.meta['descr'])
         print('Saving: ', fig_path)
         fig.tight_layout()
-        fig.savefig(fig_path)        
+        fig.savefig(fig_path)
+            
+
             
 
 if __name__ == '__main__':

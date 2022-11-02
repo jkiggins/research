@@ -7,6 +7,8 @@ spike_colors = {
     'pre': 'tab:orange'
 }
 
+dw_colors = ['tab:green', 'tab:purple']
+
 astro_colors = {
     'k+': 'tab:orange',
     'ip3': 'tab:blue',
@@ -53,6 +55,15 @@ def gen_axes(*gridspecs, fig=None, axes=None, figsize=None):
     return fig, axes
 
 
+def xlim(axes, xlim):
+    for k, axs in axes.items():
+        if type(axs) == list:
+            for ax in axs:
+                ax.set_xlim(xlim)
+        else:
+            axs.set_xlim(xlim)
+
+
 def plot_spikes(axes, loc, z_pre, z_post):
     # Locate axis for plotting, expecting one axis
     ax = _locate_ax(axes, loc)
@@ -79,6 +90,28 @@ def plot_spikes(axes, loc, z_pre, z_post):
     ax.set_xlim(-10, z_pre.shape[0] + 10)
 
 
+def plot_dw(axes, loc, dw):
+    ax = _locate_ax(axes, loc)
+    
+    nsyns = dw.shape[-1]
+
+    for i in range(nsyns):
+        ax.plot(dw[:, i].tolist(), color=dw_colors[i])
+
+    ax.set_xlim(-10, dw.shape[0] + 10)
+
+
+def plot_w(axes, loc, w):
+    ax = _locate_ax(axes, loc)
+    
+    nsyns = w.shape[-1]
+
+    for i in range(nsyns):
+        ax.plot(w[:, i].tolist(), color=dw_colors[i])
+
+    ax.set_xlim(-10, w.shape[0] + 10)
+    
+
 def plot_astro(axes, loc, ip3, kp, ca, dser, serca):
     # Locate axes for plotting, expecting n_synapse axes
     axs = _locate_ax(axes, loc)
@@ -91,7 +124,7 @@ def plot_astro(axes, loc, ip3, kp, ca, dser, serca):
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("Concentrations")
         ax.plot(ip3[:, i], color=astro_colors['ip3'], label='ip3')
-        # ax.plot(kp[:, i], color=astro_colors['k+'], label='k+')
+        ax.plot(kp[:, i], color=astro_colors['k+'], label='k+')
         ax.plot(ca[:, i], color=astro_colors['ca'], label='ca')
         ax.plot(dser[:, i], color=astro_colors['dser'], label='D-Serine')
         ax.plot(serca[:, i], color=astro_colors['serca'], label='Serca')

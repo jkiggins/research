@@ -44,15 +44,15 @@ astro_plasticity:
   alpha_ip3: 1.0
   pre_reset_on_spike: False
 
-  tau_kp: 80.0
+  tau_kp: 100.0
   alpha_kp: 1.2
   post_reset_on_spike: False
 
   ltd: 0.0
-  dw_ltd: 0.95
+  dw_ltd: 0.1
 
   ltp: 0.0
-  dw_ltp: 1.05
+  dw_ltp: 0.5
 
   local:
     stdp: [0, 1]
@@ -70,13 +70,13 @@ astro_plasticity:
 
 #### LIF Parameter sets ####
 nice_lif_params: &nice_lif_params
-  v_reset: -0.2
+  v_reset: -0.4
   v_leak: 0.0
   v_th: 0.2
   method: 'heaviside'
   alpha: 1.0  # doesn't matter if ^ is heaviside, see threshold.py
-  tau_mem: 120.0
-  tau_syn: 500.0  # 1000 means no memory, since the entire value of i will decay each step
+  tau_mem: 350.0
+  tau_syn: 600.0  # 1000 means no memory, since the entire value of i will decay each step
 
 sim:
   dt: 0.001

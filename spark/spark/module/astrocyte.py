@@ -79,7 +79,6 @@ class Astro:
 
         # ------------ Effect on Synaptic Weight --------------
         state, eff = astro_step_signal(state, self.params)
-        eff = 1.0
         # if self.params['weight_update'] == 'thr':
         #     state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
         #     eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr

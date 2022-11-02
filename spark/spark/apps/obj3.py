@@ -161,18 +161,21 @@ def _graph_n_syn_cat(db, graphs=None, xlim=None):
 
 
 
-def _graph_n_syn_coupled_astro(db_rec, n_synapse):
-    gs = plot.gs(n_synapse + 2, 1)
-    fig, axes = plot.gen_axes(
-        ('spikes', gs[0]),
-        ('regions', gs[-1]),
-        figsize=(15,12),
-    )
-    for i in range(n_synapse):
+def _graph_n_syn_coupled_astro(db_rec, n_synapse, fig=None, axes=None):
+
+    if fig is None or axes is None:
+        gs = plot.gs(n_synapse + 2, 1)
         fig, axes = plot.gen_axes(
-            ('astro', gs[i+1]),
-            fig=fig, axes=axes
+            ('spikes', gs[0]),
+            ('regions', gs[-1]),
+            figsize=(15,12),
         )
+
+        for i in range(n_synapse):
+            fig, axes = plot.gen_axes(
+                ('astro', gs[i+1]),
+                fig=fig, axes=axes
+            )
 
     plot.plot_spikes(
         axes, ('spikes',),
@@ -183,13 +186,45 @@ def _graph_n_syn_coupled_astro(db_rec, n_synapse):
         axes, ('astro',),
         db_rec['tl']['ip3'], db_rec['tl']['kp'], db_rec['tl']['ca'], db_rec['tl']['dser'], db_rec['tl']['serca'])
 
-    plot.plot_coupling_region(
-        axes, ('regions',),
-        db_rec['region'])
+    if 'region' in db_rec:
+        plot.plot_coupling_region(
+            axes, ('regions',),
+            db_rec['region'])
 
 
     return fig, axes
-    
+
+
+def _graph_n_syn_coupled_astro_lif(db_rec, n_synapse, xlim=None):
+    gs = plot.gs(n_synapse + 3, 1)
+    fig, axes = plot.gen_axes(
+        ('spikes', gs[0]),
+        ('dw', gs[-2]),
+        ('w', gs[-1]),
+        figsize=(15,12),
+    )
+
+    for i in range(n_synapse):
+        fig, axes = plot.gen_axes(
+            ('astro', gs[i+1]),
+            fig=fig, axes=axes
+        )
+
+    _graph_n_syn_coupled_astro(db_rec, n_synapse, fig=fig, axes=axes)
+
+    plot.plot_dw(
+        axes, ('dw',),
+        db_rec['tl']['dw'])
+
+    plot.plot_w(
+        axes, ('w',),
+        db_rec['tl']['w'])
+
+    if not (xlim is None):
+        plot.xlim(axes, xlim)
+
+    return fig, axes
+
 
 def _graph_n_syn(db, xlim=None, w=None, prefix=None, graphs=None):
     descr = db.meta['descr']
@@ -332,13 +367,14 @@ def _cfg_gen(
 
     return cfgs, num_cfgs
 
-
-def _exp_n_syn_coupled_astro(
+def _exp_n_syn_coupled_astro_lif(
     rt_gen,
     num_cfgs,
     sim=False,
     keep_state=False,
-    sim_name='_exp_{}_syn_astro'
+    dw=False,
+    sim_name='_exp_{}_syn_astro',
+    descr='snn_{}s1a_and'
 ):
     seed_many()
 
@@ -360,7 +396,44 @@ def _exp_n_syn_coupled_astro(
                     db = ExpStorage(path=db_path)
                     return db
 
-            db.meta['descr'] = 'astro_{}s1a_and'.format(n)
+            db.meta['descr'] = descr.format(n)
+
+        sim_lif_astro_net(cfg, spikes, db, dw=dw, keep_state=keep_state)
+
+    return db
+
+    
+def _exp_n_syn_coupled_astro(
+    rt_gen,
+    num_cfgs,
+    sim=False,
+    keep_state=False,
+    sim_name='_exp_{}_syn_astro',
+    descr='astro_{}s1a_and'
+):
+    seed_many()
+
+    db = ExpStorage()
+
+    n = None
+    spikes = None
+    for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
+        assert (n is None) or (n == cfg['linear_params']['synapse'])
+
+        # Attempt to load db, assume number of synapse doesn't change
+        if n is None:
+            n = cfg['linear_params']['synapse']
+            sim_name = sim_name.format(n)
+
+            db_path = Path("{}.db".format(sim_name))
+            if not sim:
+                if db_path.exists():
+                    db = ExpStorage(path=db_path)
+                    return db
+
+            if keep_state:
+                descr = descr + '_cont'
+            db.meta['descr'] = descr.format(n)
 
         sim_astro(cfg, spikes, db, keep_state=keep_state)
 
@@ -407,6 +480,14 @@ def _exp_n_syn_coupled(
                 return db
 
         sim_lif_astro_net(cfg, [spikes], db, dw=cfg['sim']['dw'])
+
+    num_invalid = 0
+    for i, db_rec in enumerate(db):
+        db_rec['region'] = astro_and_region(db_rec['tl'])
+        db_rec['invalid'] = not astro_check_respose(db_rec['tl'], db_rec['region'][0])
+        
+        if db_rec['invalid']:
+            num_invalid += 1
 
     db.meta['descr'] = sim_name
     db.save(db_path)
@@ -461,6 +542,7 @@ def _parse_args():
     parser.add_argument('--astro-nsyn-and', action='store_true')
     parser.add_argument('--astro-and-spike-response', action='store_true')
     parser.add_argument('--astro-and-continuous-response', action='store_true')
+    parser.add_argument('--astro-and-lif', action='store_true')
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--sim', action='store_true')
 
@@ -484,7 +566,7 @@ def _main(args):
     ca_th = 0.8
     xlim = (75, 100)
 
-    if args.astro_nsyn_poisson or args.all:
+    if args.astro_nsyn_poisson:
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
             n=2, ca_th=ca_th, dw=False,
@@ -511,7 +593,7 @@ def _main(args):
         )
 
 
-    if args.astro_nsyn_and or args.all:
+    if args.astro_nsyn_and:
         # Examine response to single spiking events (on each synapse) with settle time between
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
@@ -578,15 +660,20 @@ def _main(args):
         #         fig=fig, axes=axes
         #     )
 
-        db_cat = db.filter(invalid=False).cat()
+        db_invalid = db.filter(invalid=True)
+        if len(db_invalid) > 10:
+            db_cat = db_invalid.slice(0, 10).cat()
+        elif len(db_invalid) == 0:
+            db_cat = db.slice(0, 10).cat()
+        else:
+            db_cat = db_invalid.cat()
 
-        if len(db_cat) > 0:
-            fig, axes = _graph_n_syn_coupled_astro(db_cat, n_synapse)
+        fig, axes = _graph_n_syn_coupled_astro(db_cat, n_synapse)
 
-            fig_path = "{}.svg".format(db.meta['descr'])
-            print('Saving: ', fig_path)
-            fig.tight_layout()
-            fig.savefig(fig_path)
+        fig_path = "{}.svg".format(db.meta['descr'])
+        print('Saving: ', fig_path)
+        fig.tight_layout()
+        fig.savefig(fig_path)
 
 
         # if len(db_cat) > 0:
@@ -619,21 +706,49 @@ def _main(args):
 
         cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1000, gen_post=True)
 
-        db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
-        db_cat = db.filter(invalid=True).cat()
+        db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim, keep_state=True)
 
-        if len(db_cat) == 0:
-            db_cat = db.slice(0, 10).cat()
+        invalid_regions = {}
+        for i, db_rec in enumerate(db):
+            if db_rec['invalid'] and not (db_rec['region'][0] in invalid_regions):
+                invalid_regions[db_rec['region'][0]] = None
+                db_rec['graph'] = True
+                if i > 0: db[i - 1]['graph'] = True
+                if i < len(db) - 1: db[i + 1]['graph'] = True
 
-        fig, axes = _graph_n_syn_coupled_astro(db_cat, n_synapse)
+            if len(invalid_regions) == 5:
+                break
+
+
+        db_graph = db.filter(graph=True).cat()
+
+        fig, axes = _graph_n_syn_coupled_astro(db_graph, n_synapse)
+
+        fig_path = "{}.svg".format(db.meta['descr'])
+        print('Saving: ', fig_path)
+        fig.tight_layout()
+        fig.savefig(fig_path)
+
+
+    # Look at a number of continuous 10ms bouts of inputs, simulate an Astro-LIF Configuration
+    if args.astro_and_lif or args.all:
+        n_synapse = 2
+
+        cfgs, num_cfgs = _cfg_gen(
+            cfg_path,
+            n=n_synapse, ca_th=ca_th, dw=False, c_and=[0,1]
+        )
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=100, gen_post=False)
+
+        db = _exp_n_syn_coupled_astro_lif(cfg_and_spikes, num_cfgs, sim=args.sim, dw=True, keep_state=True)
+
+        fig, axes = _graph_n_syn_coupled_astro_lif(db.cat(), n_synapse, xlim=None)
         
         fig_path = "{}.svg".format(db.meta['descr'])
         print('Saving: ', fig_path)
         fig.tight_layout()
         fig.savefig(fig_path)
-            
 
-            
 
 if __name__ == '__main__':
     args = _parse_args()

@@ -93,12 +93,14 @@ class LifAstroNet(LifNet):
 
         eff, self.astro_state = self.astro(self.astro_state, z_pre=z_pre, z_post=z_post)
 
+        if torch.any(eff > 0.0):
+            print("eff: ", eff)
+
         if dw:
             self.linear.weight[0] = torch.clamp(
-                self.linear.weight[0] * eff,
+                self.linear.weight[0] + eff,
                 self.cfg['linear_params']['min'],
                 self.cfg['linear_params']['max'])
-
 
         return z_post, eff, self.neuron_state, self.astro_state, self.linear
 
@@ -276,23 +278,27 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
         
         if len(snn_output) == 5:
             tl['ca'] = torch.zeros((n_spikes, n_synapse))
-            tl['a'] = torch.zeros((n_spikes, n_synapse))
+            # tl['a'] = torch.zeros((n_spikes, n_synapse))
             tl['dw'] = torch.zeros((n_spikes, n_synapse))
             tl['ip3'] = torch.zeros((n_spikes, n_synapse))
             tl['kp'] = torch.zeros((n_spikes, n_synapse))
             tl['w'] = torch.zeros((n_spikes, n_synapse))
             tl['w'][0] = snn.linear.weight[:]
+            tl['dser'] = torch.zeros((n_spikes, n_synapse))
+            tl['serca'] = torch.zeros((n_spikes, n_synapse))
 
     if len(snn_output) == 2:
         z, n_state = snn_output
     elif len(snn_output) == 5:
         # z_post, eff, self.neuron_state, self.astro_state, self.linear
-        z, a, n_state, a_state, linear = snn_output
-        weight_update = torch.logical_not(torch.isclose(a, torch.as_tensor(1.0))).float()
+        z, eff, n_state, a_state, linear = snn_output
+        # weight_update = torch.logical_not(torch.isclose(a, torch.as_tensor(1.0))).float()
 
         tl['ca'][i] = a_state['ca']
-        tl['a'][i] = weight_update
-        tl['dw'][i] = a
+        tl['dser'][i] = a_state['dser']
+        tl['serca'][i] = a_state['serca']
+        # tl['a'][i] = weight_update
+        tl['dw'][i] = eff
         tl['ip3'][i] = a_state['ip3']
         tl['kp'][i] = a_state['kp']
         tl['w'][i] = linear.weight[:]
@@ -325,8 +331,6 @@ def _sim_snn(snn, spikes, dw=True):
     tl = None
     for i, s in enumerate(spikes):
         tl = _sim_snn_step(snn, tl, spikes, s, i, dw=dw)
-        # snn_output = snn(s)
-        # tl = _store_snn_step(tl, i, sim_len, snn, snn_output, s)
 
     return tl
 
@@ -345,8 +349,6 @@ def _sim_astro(astro, spikes, astro_state):
 def gen_rate_spikes(spec):
     spike_trains = []
 
-    print("spec: ", spec)
-    
     torch.manual_seed(12343210938)
     for r, steps in spec:
         spike_trains.append(spiketrain.poisson([r], steps).transpose(1,0))
@@ -629,13 +631,20 @@ def plot_1nNs1a(
             ax.legend()
 
 
-def sim_lif_astro_net(cfg, spike_trains, db, dw=True):
+def sim_lif_astro_net(cfg, spike_trains, db, dw=True, keep_state=False):
     # Sim
-    for spikes in spike_trains:
-        snn = LifAstroNet(cfg)
+    snn = None
+    for i, spikes in enumerate(spike_trains):
+        # print(i, ": ")
+        if snn is None:
+            snn = LifAstroNet(cfg)
+
         tl = _sim_snn(snn, spikes, dw=dw)
 
         db.store({'spikes': spikes, 'tl': tl, 'w': snn.linear.weight[0]})
+
+        if not keep_state:
+            snn = None
 
     return db
 
@@ -795,8 +804,6 @@ def graph_dw_dt(db, title="", graph_text=""):
     for i, (delta_t, by_spike_delta) in enumerate(db.group_by('delta_t').items()):
         weight_change = by_spike_delta[0]['dw']
 
-        print("dw: ", weight_change)
-
         points.append(
             (float(delta_t), float(weight_change))
         )
@@ -871,25 +878,20 @@ def astro_check_respose(tl, region):
 
     val_res = True
 
-    print("Checking tl against {}".format(region))
-
     if region in ['other-influence', 'and']:
         val_res = torch.all(yes_serca == any_pre_spike) and torch.all(no_dser)
-        if not val_res:
-            print("not other-influence, or and: {} != {}".format(yes_serca, any_pre_spike))
+        # if not val_res:
+        #     print("not other-influence, or and: {} != {}".format(yes_serca, any_pre_spike))
 
     elif region == 'ltp':
         val_res = torch.all(no_serca) and torch.all(yes_dser_ltp)
-        if not val_res:
-            print("not ltp: torch.all({}) != True".format(yes_dser_ltp))
+        # if not val_res:
+        #     print("not ltp: torch.all({}) != True".format(yes_dser_ltp))
 
     elif region == 'early-spike':
         val_res = torch.any(yes_dser_ltd)
-        if not val_res:
-            print("not early-spike: torch.any({}) != True".format(yes_dser_ltd))
-
-    if not (val_res):
-        print("{} ({}) Invalid".format(region, i))
+        # if not val_res:
+        #     print("not early-spike: torch.any({}) != True".format(yes_dser_ltd))
 
     return val_res
 

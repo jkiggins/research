@@ -199,7 +199,15 @@ def astro_step_signal(state, params):
     if syns is None:
         return state, None
 
-    eff = torch.zeros_like(state['ca'])
+    dw_mult = params['dw'] == 'dw_mult'
+    dw_add = params['dw'] == 'dw_add'
+    dw_params = params[params['dw']]
+
+    if dw_mult:
+        eff = torch.ones_like(state['ca'])
+    elif dw_add:
+        eff = torch.zeros_like(state['ca'])
+
     eff_syns = eff[syns]
 
     ca = state['ca'][syns]
@@ -212,8 +220,12 @@ def astro_step_signal(state, params):
     wh_ltd = torch.where(dser == -1.0)
     wh_ltp = torch.where(dser == 1.0)
 
-    eff_syns[wh_ltd] = -1.0 * ca[wh_ltd] * params['dw_ltd']
-    eff_syns[wh_ltp] = ca[wh_ltp] * params['dw_ltp']
+    if dw_mult:
+        eff_syns[wh_ltd] = 1.0 - torch.abs(ca[wh_ltd] * dw_params['dw_ltd'])
+        eff_syns[wh_ltp] = 1.0 + torch.abs(ca[wh_ltp] * dw_params['dw_ltp'])
+    elif dw_add:
+        eff_syns[wh_ltd] = -ca[wh_ltd] * dw_params['dw_ltd']
+        eff_syns[wh_ltp] = ca[wh_ltp] * dw_params['dw_ltp']
 
     ca[wh_ltd] = 0.0
     ca[wh_ltp] = 0.0

@@ -44,20 +44,31 @@ astro_plasticity:
   alpha_ip3: 1.0
   pre_reset_on_spike: False
 
-  tau_kp: 100.0
+  tau_kp: 80.0
   alpha_kp: 1.2
   post_reset_on_spike: False
 
-  ltd: 0.0
-  dw_ltd: 0.1
 
-  ltp: 0.0
-  dw_ltp: 0.5
+  dw_mult: &dw_mult
+    ltd: 0.0
+    dw_ltd: 0.03
+
+    ltp: 0.0
+    dw_ltp: 0.2
+    
+  dw_add: &dw_add
+    ltd: 0.0
+    dw_ltd: 0.01
+
+    ltp: 0.0
+    dw_ltp: 0.1
+
+  dw: dw_mult
 
   local:
-    stdp: [0, 1]
-    ip3_ca: [0, 1]
-  
+    stdp: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    ip3_ca: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
   coupling:
     and: null
     nand: null

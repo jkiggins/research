@@ -7,7 +7,7 @@ spike_colors = {
     'pre': 'tab:orange'
 }
 
-dw_colors = ['tab:green', 'tab:purple']
+dw_colors = ['tab:green', 'tab:purple', 'tab:red']
 
 astro_colors = {
     'k+': 'tab:orange',
@@ -96,7 +96,8 @@ def plot_dw(axes, loc, dw):
     nsyns = dw.shape[-1]
 
     for i in range(nsyns):
-        ax.plot(dw[:, i].tolist(), color=dw_colors[i])
+        colors_i = i % len(dw_colors)
+        ax.plot(dw[:, i].tolist(), color=dw_colors[colors_i])
 
     ax.set_xlim(-10, dw.shape[0] + 10)
 
@@ -107,7 +108,8 @@ def plot_w(axes, loc, w):
     nsyns = w.shape[-1]
 
     for i in range(nsyns):
-        ax.plot(w[:, i].tolist(), color=dw_colors[i])
+        colors_i = i % len(dw_colors)
+        ax.plot(w[:, i].tolist(), color=dw_colors[colors_i])
 
     ax.set_xlim(-10, w.shape[0] + 10)
     

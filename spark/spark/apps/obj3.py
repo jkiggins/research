@@ -37,130 +37,6 @@ def _print_sim(name):
     print("##### Simulation: {} #####".format(name))
 
 
-def _graph_sweep_w(db):
-    w_points = None
-
-    for d in db:
-        ca_abs_max_idx = d['tl']['ca'].abs().argmax(dim=0)
-        ca_max = d['tl']['ca'][ca_abs_max_idx].max()
-
-        w_point = torch.as_tensor([*d['w'], ca_max]).reshape(1, -1)
-
-        # Build tensor of weights and Ca activity
-        if w_points is None:
-            w_points = w_point
-        else:
-            w_points = torch.cat((w_points, w_point), axis=0)
-
-    w0 = torch.unique(w_points[:, 0])
-    w1 = torch.unique(w_points[:, 1])
-
-    fig = plt.Figure(figsize=(20,20))
-    ax = fig.add_subplot(111)
-    ax.set_title("Ca Threshold Events Given synaptic weights w0 and w1")
-    ax.set_yticks(
-        list(range(len(w1))),
-        labels=["{:2.4f}".format(float(a)) for a in w1],
-        rotation=45)
-    ax.set_ylabel('W0')
-
-    ax.set_xticks(
-        list(range(len(w0))),
-        labels=["{:2.4f}".format(float(a)) for a in w0])
-    ax.set_xlabel('W1')
-
-    heat_img = torch.zeros((len(w0), len(w1)))
-
-    assert len(w0) * len(w1) == w_points.shape[0]
-
-    for i in range(w_points.shape[0]):
-        x = i // len(w1)
-        y = i % len(w1)
-
-        ca_act = w_points[i, 2]
-        w0_i = w_points[i, 0]
-        w1_i = w_points[i, 1]
-
-        heat_img[x, y] = ca_act
-        ax.text(
-            y, x,
-            "{:1.2f}".format(float(heat_img[x, y])),
-            ha="center", va="center", color="w")
-
-    ax.imshow(heat_img)
-    fig.tight_layout()
-
-    fig_path = "{}_syn0.svg".format(db.meta['descr'])
-    print("Saving: ", fig_path)
-    fig.savefig(fig_path)
-
-
-def _graph_n_syn_cat(db, graphs=None, xlim=None):
-    def _cat_dict(d_a, d_b):
-        _next = [(d_a, d_b)]
-        while len(_next) > 0:
-            a, b = _next.pop(0)
-
-            for k in a:
-                if not (k in b):
-                    continue
-
-                if type(a[k]) == dict:
-                    _next.append((a[k], b[k]))
-                elif type(a[k]) == torch.Tensor:
-                    a[k] = torch.cat((a[k], b[k]))
-                else:
-                    raise ValueError("Can't merge type: {}", type(a[k]))
-
-        return d_a
-
-
-    descr = db.meta['descr']
-
-    db_rec_cat = None
-    for db_rec in db:
-        if db_rec_cat is None:
-            db_rec_cat = db_rec
-            continue
-
-        db_rec_cat = _cat_dict(db_rec_cat, db_rec)
-
-    fig, axes = gen_sgnn_axes(
-        2,
-        offset=True,
-        figsize=(18, 14),
-        graphs=graphs
-    )
-
-    graph_sgnn(db_rec_cat, fig, axes, 0, plot=graphs)
-
-
-    if not (xlim is None):
-        descr = descr + "_xlim"
-        i = 0
-        for _, ax in axes.items():
-            # ax is [sp0, sp1, ...] where spN is [syn0, syn1, ...] or just spN
-            if type(ax) == list:
-                assert len(ax) == 1
-                ax = ax[0]
-            else:
-                raise ValueError("Expected each axis to be a list of axes, one for each subplot")
-
-            if not (type(ax) == list):
-                ax = [ax]
-
-            for a in ax:
-                a.set_xlim(*xlim)
-    else:
-        descr = descr + "_tl"
-
-
-    fig_path = "{}.svg".format(descr)
-    print("Saving: ", fig_path)
-    fig.savefig(fig_path)
-
-
-
 def _graph_n_syn_coupled_astro(db_rec, n_synapse, fig=None, axes=None):
 
     if fig is None or axes is None:
@@ -311,8 +187,11 @@ def _cfg_gen(
     n=2,
     astro_p=True,
     w_sweep=None,
+    all_stdp=True,
+    all_ip3_ca=True,
     dw=True,
     c_and=[],
+    all_and=False,
     c_nand=[],
     ca_th=None):
     """
@@ -330,6 +209,14 @@ def _cfg_gen(
                 cfg['astro_params'] = cfg['astro_plasticity']
             if not (ca_th is None):
                 cfg['astro_params']['ca_th'] = ca_th
+
+            # Figure out synapse association with STDP, ip3->ca, and coupling
+            if all_stdp:
+                cfg['astro_params']['local']['stdp'] = list(range(n))
+            if all_ip3_ca:
+                cfg['astro_params']['local']['ip3_ca'] = list(range(n))
+            if all_and:
+                c_and = list(range(n))
 
             if any([(i in c_nand) for i in c_and]):
                 raise ValueError("There can't be overlap between c_and and c_nand")
@@ -592,54 +479,16 @@ def _main(args):
             xlim=xlim,
         )
 
-
-    if args.astro_nsyn_and:
-        # Examine response to single spiking events (on each synapse) with settle time between
-        cfgs, num_cfgs = _cfg_gen(
-            cfg_path,
-            n=2, ca_th=ca_th, dw=False, c_and=[0,1],
-            w_sweep=w_sweep)
-
-        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=5, padding=40)
-        db = _exp_n_syn_coupled(cfg_and_spikes, num_cfgs, sim=args.sim, sim_name='snn_1n{}s1a_and_poisson')
-
-        _graph_sweep_w(db)
-
-        _graph_n_syn(
-            db, w=w_inspect,
-            prefix = ('w={}', 'w'),
-            graphs = ['spikes', 'astro', 'neuron']
-        )
-
-        _graph_n_syn(
-            db, w=w_inspect,
-            prefix = ('w={}', 'w'),
-            graphs = ['spikes', 'astro'],
-            xlim=xlim,
-        )
-
-        # Examine response to the same set of spikes repeated multiple times, each time with a different weight value
-        cfgs, num_cfgs = _cfg_gen(
-            cfg_path,
-            n=2, ca_th=ca_th, dw=False, c_and=[0,1],
-            w_sweep=w_sweep)
-        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1)
-
-        db = _exp_n_syn_coupled(cfg_and_spikes, num_cfgs, sim=args.sim, sim_name='snn_1n{}s1a_and_poisson_fixed')
-
-        _graph_n_syn_cat(db, graphs=['spikes', 'astro'], xlim=(300,800))
-        
-
     # Look at a number of 10ms bouts of activity
     # Determine if the Astrocyte responded correctly
     if args.astro_and_spike_response or args.all:
         # Generate single pre, pre, post events in a given time window
         # and examine astrocyte response.
-        n_synapse = 2
+        n_synapse = 9
 
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
-            n=n_synapse, ca_th=ca_th, dw=False, c_and=[0,1]
+            n=n_synapse, ca_th=ca_th, dw=False, all_and=True
         )
 
         cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1000, gen_post=True)
@@ -697,7 +546,7 @@ def _main(args):
     if args.astro_and_continuous_response or args.all:
         # Generate single pre, pre, post events in a given time window
         # and examine astrocyte response.
-        n_synapse = 2
+        n_synapse = 3
 
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
@@ -732,13 +581,13 @@ def _main(args):
 
     # Look at a number of continuous 10ms bouts of inputs, simulate an Astro-LIF Configuration
     if args.astro_and_lif or args.all:
-        n_synapse = 2
+        n_synapse = 4
 
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
-            n=n_synapse, ca_th=ca_th, dw=False, c_and=[0,1]
+            n=n_synapse, ca_th=ca_th, dw=False, all_and=True
         )
-        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=100, gen_post=False)
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=500, gen_post=False)
 
         db = _exp_n_syn_coupled_astro_lif(cfg_and_spikes, num_cfgs, sim=args.sim, dw=True, keep_state=True)
 

@@ -78,6 +78,7 @@ class Astro:
         state = astro_step_and_coupling(state, self.params)
 
         # ------------ Effect on Synaptic Weight --------------
+        eff = torch.zeros_like(state['ca'])
         state, eff = astro_step_signal(state, self.params)
         # if self.params['weight_update'] == 'thr':
         #     state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u

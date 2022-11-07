@@ -44,12 +44,13 @@ class LifNet:
 
         self.linear = nn.Linear(self.num_synapse, 1, bias=False)
 
-        for i in range(mu.numel()):
+        for i in range(self.num_synapse):
             if self.cfg['linear_params']['init'] == 'normal':
+                mu_i = i % len(mu)
                 nn.init.normal_(
                     self.linear.weight[0][i],
-                    mean=mu[i],
-                    std=std[i])
+                    mean=mu[mu_i],
+                    std=std[mu_i])
 
             elif self.cfg['linear_params']['init'] == 'fixed':
                 self.linear.weight[0][i] = mu[i]
@@ -79,6 +80,8 @@ class LifAstroNet(LifNet):
         super(LifAstroNet, self).__init__(cfg, *args, **kwargs)
         
         self.astro = Astro.from_cfg(cfg['astro_params'], cfg['linear_params']['synapse'], self.dt)
+        self.dw_mult = cfg['astro_params']['dw'] == 'dw_mult'
+        self.dw_add = cfg['astro_params']['dw'] == 'dw_add'
         self.astro_state = None
 
 
@@ -97,8 +100,13 @@ class LifAstroNet(LifNet):
             print("eff: ", eff)
 
         if dw:
+            if self.dw_mult:
+                new_w = self.linear.weight[0] * eff
+            elif self.dw_add:
+                new_w = self.linear.weight[0] + eff
+            
             self.linear.weight[0] = torch.clamp(
-                self.linear.weight[0] + eff,
+                new_w,
                 self.cfg['linear_params']['min'],
                 self.cfg['linear_params']['max'])
 

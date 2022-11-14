@@ -15,7 +15,6 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from time import time
-import copy
 
 class LifNet:
     def __init__(self, cfg, mu=None):
@@ -95,9 +94,6 @@ class LifAstroNet(LifNet):
         z_post, self.neuron_state = self.neuron(z, self.neuron_state)
 
         eff, self.astro_state = self.astro(self.astro_state, z_pre=z_pre, z_post=z_post)
-
-        if torch.any(eff > 0.0):
-            print("eff: ", eff)
 
         if dw:
             if self.dw_mult:
@@ -649,7 +645,7 @@ def sim_lif_astro_net(cfg, spike_trains, db, dw=True, keep_state=False):
 
         tl = _sim_snn(snn, spikes, dw=dw)
 
-        db.store({'spikes': spikes, 'tl': tl, 'w': snn.linear.weight[0]})
+        db.store({'spikes': spikes, 'tl': tl, 'w': snn.linear.weight[0], 'n': cfg['linear_params']['synapse']})
 
         if not keep_state:
             snn = None
@@ -678,7 +674,7 @@ def sim_astro(cfg, spike_trains, db, keep_state=False):
             astro = Astro.from_cfg(cfg['astro_params'], cfg['linear_params']['synapse'], cfg['sim']['dt'])
 
         tl, state = _sim_astro(astro, spikes, state)
-        db.store({'spikes': spikes, 'tl': tl})
+        db.store({'spikes': spikes, 'tl': tl, 'n': cfg['linear_params']['synapse']})
 
         if not keep_state:
             state = None
@@ -884,24 +880,24 @@ def astro_check_respose(tl, region):
     yes_dser_ltp = torch.any(tl['dser'] > 0.5, dim=0)
     yes_dser_ltd = torch.any(tl['dser'] < -0.5, dim=0)
 
-    val_res = True
+    valid_res = True
 
     if region in ['other-influence', 'and']:
-        val_res = torch.all(yes_serca == any_pre_spike) and torch.all(no_dser)
-        # if not val_res:
-        #     print("not other-influence, or and: {} != {}".format(yes_serca, any_pre_spike))
+        valid_res = torch.equal(yes_serca, any_pre_spike) and torch.all(no_dser)
+        # if not valid_res:
+        #     print("not other-influence, or and: {} != {} or not all({})".format(yes_serca, any_pre_spike, no_dser))
 
     elif region == 'ltp':
-        val_res = torch.all(no_serca) and torch.all(yes_dser_ltp)
+        valid_res = torch.all(no_serca) and torch.all(yes_dser_ltp)
         # if not val_res:
         #     print("not ltp: torch.all({}) != True".format(yes_dser_ltp))
 
     elif region == 'early-spike':
-        val_res = torch.any(yes_dser_ltd)
+        valid_res = torch.any(yes_dser_ltd)
         # if not val_res:
         #     print("not early-spike: torch.any({}) != True".format(yes_dser_ltd))
 
-    return val_res
+    return valid_res
 
 
 def astro_and_region(tl):

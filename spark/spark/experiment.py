@@ -217,7 +217,7 @@ class ExpStorage:
     def slice(self, start, stop, interval=1):
         db = ExpStorage()
         db.meta = copy.deepcopy(self.meta)
-        db.prefix = copy.deepcopy(self.prefix)
+        db.prefix = copy.deepcopy(self._prefix)
 
         for i in range(start, stop, interval):
             db.store(self.db[i])
@@ -319,9 +319,9 @@ class ExpStorage:
                         continue
 
                     # Put primatives in 1-d lists
-                    if type(a[k]) in [bool, tuple]:
+                    if type(a[k]) in [bool, tuple, float, int]:
                         a[k] = [a[k]]
-                    if type(b[k]) in [bool, tuple]:
+                    if type(b[k]) in [bool, tuple, float, int]:
                         b[k] = [b[k]]
 
                     if type(a[k]) == dict:
@@ -334,12 +334,7 @@ class ExpStorage:
                         if b[k].shape == torch.Size([]):
                             b[k] = b[k].reshape(1)
                             
-                        try:
-                            a[k] = torch.cat((a[k], b[k]))
-                        except:
-                            import code
-                            code.interact(local=dict(globals(), **locals()))
-                            exit(1)
+                        a[k] = torch.cat((a[k], b[k]))
                             
                     elif type(a[k]) == list and type(b[k]) == list:
                         a[k] = a[k] + b[k]
@@ -415,10 +410,10 @@ class ExpStorage:
         """
         Build a new ExpStorage based on match_fn and filter functions
         """
-        
+
         records = ExpStorage()
-        records.meta = copy.deepcopy(records)
-        records.prefix = copy.deepcopy(self.prefix)
+        records.meta = copy.deepcopy(self.meta)
+        records.prefix = copy.deepcopy(self._prefix)
 
         for d in self.db:
             # If filter is defined, and returns False, ignore this entry

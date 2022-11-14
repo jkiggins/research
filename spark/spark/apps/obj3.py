@@ -71,22 +71,36 @@ def _graph_n_syn_coupled_astro(db_rec, n_synapse, fig=None, axes=None):
     return fig, axes
 
 
-def _graph_n_syn_coupled_astro_lif(db_rec, n_synapse, xlim=None):
-    gs = plot.gs(n_synapse + 3, 1)
-    fig, axes = plot.gen_axes(
-        ('spikes', gs[0]),
-        ('dw', gs[-2]),
-        ('w', gs[-1]),
-        figsize=(15,12),
-    )
+def _graph_n_syn_coupled_astro_lif(db_rec, n_synapse, xlim=None, w_dw_only=False):
 
-    for i in range(n_synapse):
+    if w_dw_only:
+        n_plots = 2
+    else:
+        n_plots = n_synapse + 3
+            
+    gs = plot.gs(n_plots, 1)
+
+    if w_dw_only:
         fig, axes = plot.gen_axes(
-            ('astro', gs[i+1]),
-            fig=fig, axes=axes
+            ('dw', gs[0]),
+            ('w', gs[1]),
+            figsize=(15,8),
         )
 
-    _graph_n_syn_coupled_astro(db_rec, n_synapse, fig=fig, axes=axes)
+    else:
+        fig, axes = plot.gen_axes(
+            ('spikes', gs[0]),
+            ('dw', gs[-2]),
+            ('w', gs[-1]),
+            figsize=(15,12),
+        )
+        for i in range(n_synapse):
+            fig, axes = plot.gen_axes(
+                ('astro', gs[i+1]),
+                fig=fig, axes=axes
+            )
+
+        _graph_n_syn_coupled_astro(db_rec, n_synapse, fig=fig, axes=axes)
 
     plot.plot_dw(
         axes, ('dw',),
@@ -184,9 +198,9 @@ def _spikes_gen(
     
 def _cfg_gen(
     cfg_path,
-    n=2,
     astro_p=True,
     w_sweep=None,
+    n=2,
     all_stdp=True,
     all_ip3_ca=True,
     dw=True,
@@ -198,35 +212,41 @@ def _cfg_gen(
     Generate some number of configs based on params
     """
 
-    def cfg_apply_settings(cfgs):
+    def cfg_apply_settings(cfgs, **kwargs):
         """
         Static Settings that don't result in additional configs
         """
-        for cfg in cfgs:
-            cfg['linear_params']['synapse'] = n
-            cfg['sim']['dw'] = dw
-            if astro_p:
-                cfg['astro_params'] = cfg['astro_plasticity']
-            if not (ca_th is None):
-                cfg['astro_params']['ca_th'] = ca_th
 
-            # Figure out synapse association with STDP, ip3->ca, and coupling
-            if all_stdp:
-                cfg['astro_params']['local']['stdp'] = list(range(n))
-            if all_ip3_ca:
-                cfg['astro_params']['local']['ip3_ca'] = list(range(n))
-            if all_and:
-                c_and = list(range(n))
+        if 'n' in kwargs:
+            n = kwargs['n']
+        if 'w' in kwargs:
+            cfg['linear_params']['mu'] = w
+            cfg['linear_params']['init'] = 'fixed'
 
-            if any([(i in c_nand) for i in c_and]):
-                raise ValueError("There can't be overlap between c_and and c_nand")
+        cfg['linear_params']['synapse'] = n
+        cfg['sim']['dw'] = dw
+        if astro_p:
+            cfg['astro_params'] = cfg['astro_plasticity']
+        if not (ca_th is None):
+            cfg['astro_params']['ca_th'] = ca_th
 
-            if all([i < n for i in c_and]):
-                cfg['astro_params']['coupling']['and'] = c_and
-            if all([i < n for i in c_nand]):
-                cfg['astro_params']['coupling']['nand'] = c_nand
+        # Figure out synapse association with STDP, ip3->ca, and coupling
+        if all_stdp:
+            cfg['astro_params']['local']['stdp'] = list(range(n))
+        if all_ip3_ca:
+            cfg['astro_params']['local']['ip3_ca'] = list(range(n))
+        if all_and:
+            c_and = list(range(n))
 
-            yield cfg
+        if any([(i in c_nand) for i in c_and]):
+            raise ValueError("There can't be overlap between c_and and c_nand")
+
+        if all([i < n for i in c_and]):
+            cfg['astro_params']['coupling']['and'] = c_and
+        if all([i < n for i in c_nand]):
+            cfg['astro_params']['coupling']['nand'] = c_nand
+
+        return cfg
 
 
     def cfg_sweep_w(cfgs):
@@ -238,21 +258,41 @@ def _cfg_gen(
 
         for cfg in cfgs:
             for w in all_w:
-                cfg['linear_params']['mu'] = w
-                cfg['linear_params']['init'] = 'fixed'
-
+                cfg = cfg_apply_settings(cfg, w=w)
                 yield cfg
 
+
+    def cfg_sweep_n(cfgs):
+        """
+        For each input config, generate N configs, one for each value n
+        """
+
+        for cfg in cfgs:
+            for n_i in n:
+                cfg = cfg_apply_settings(cfg, n=n_i)
+                yield cfg
+
+    # Fix input types
+    if type(n) in [int, float]:
+        n = [n]
+
+    # Get config from file
     cfg = config.Config(cfg_path)
+    cfgs = [cfg]
+    
     num_cfgs = 1
 
-    cfgs = cfg_apply_settings([cfg])
+    # Always apply a number of synapses
+    cfgs = cfg_sweep_n(cfgs)
+    num_cfgs *= len(n)
 
+    # Sweep W
     if w_sweep:
         cfgs = cfg_sweep_w(cfgs)
         num_cfgs *= w_sweep[2]**2
 
     return cfgs, num_cfgs
+
 
 def _exp_n_syn_coupled_astro_lif(
     rt_gen,
@@ -272,24 +312,23 @@ def _exp_n_syn_coupled_astro_lif(
     for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
         assert (n is None) or (n == cfg['linear_params']['synapse'])
 
-        # Attempt to load db, assume number of synapse doesn't change
-        if n is None:
-            n = cfg['linear_params']['synapse']
-            sim_name = sim_name.format(n)
+        # if n is None:
+        #     n = cfg['linear_params']['synapse']
+        #     sim_name = sim_name.format(n)
 
-            db_path = Path("{}.db".format(sim_name))
-            if not sim:
-                if db_path.exists():
-                    db = ExpStorage(path=db_path)
-                    return db
+        #     db_path = Path("{}.db".format(sim_name))
+        #     if not sim:
+        #         if db_path.exists():
+        #             db = ExpStorage(path=db_path)
+        #             return db
 
-            db.meta['descr'] = descr.format(n)
+        db.meta['descr'] = descr
 
         sim_lif_astro_net(cfg, spikes, db, dw=dw, keep_state=keep_state)
 
     return db
 
-    
+
 def _exp_n_syn_coupled_astro(
     rt_gen,
     num_cfgs,
@@ -302,25 +341,23 @@ def _exp_n_syn_coupled_astro(
 
     db = ExpStorage()
 
+    if keep_state:
+        descr = descr + '_cont'
+    db.meta['descr'] = descr
+
     n = None
     spikes = None
     for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
-        assert (n is None) or (n == cfg['linear_params']['synapse'])
+        # # Attempt to load db, assume number of synapse doesn't change
+        # if n is None:
+        #     n = cfg['linear_params']['synapse']
+        #     sim_name = sim_name.format(n)
 
-        # Attempt to load db, assume number of synapse doesn't change
-        if n is None:
-            n = cfg['linear_params']['synapse']
-            sim_name = sim_name.format(n)
-
-            db_path = Path("{}.db".format(sim_name))
-            if not sim:
-                if db_path.exists():
-                    db = ExpStorage(path=db_path)
-                    return db
-
-            if keep_state:
-                descr = descr + '_cont'
-            db.meta['descr'] = descr.format(n)
+        #     db_path = Path("{}.db".format(sim_name))
+        #     if not sim:
+        #         if db_path.exists():
+        #             db = ExpStorage(path=db_path)
+        #             return db
 
         sim_astro(cfg, spikes, db, keep_state=keep_state)
 
@@ -428,7 +465,7 @@ def _parse_args():
     parser.add_argument('--astro-nsyn-poisson', action='store_true')
     parser.add_argument('--astro-nsyn-and', action='store_true')
     parser.add_argument('--astro-and-spike-response', action='store_true')
-    parser.add_argument('--astro-and-continuous-response', action='store_true')
+    parser.add_argument('--astro-and-cont', action='store_true')
     parser.add_argument('--astro-and-lif', action='store_true')
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--sim', action='store_true')
@@ -484,7 +521,39 @@ def _main(args):
     if args.astro_and_spike_response or args.all:
         # Generate single pre, pre, post events in a given time window
         # and examine astrocyte response.
-        n_synapse = 9
+        n_synapse = [2,3,4]
+
+        cfgs, num_cfgs = _cfg_gen(
+            cfg_path,
+            n=n_synapse, ca_th=ca_th, dw=False, all_and=True
+        )
+        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1000, gen_post=True)
+
+        db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
+
+        for n, db_syn in db.group_by('n').items():
+            db_invalid = db_syn.filter(invalid=True)
+            print("n = {}: {}/{} invalid".format(n, len(db_invalid), len(db_syn)))
+            if len(db_invalid) > 10:
+                db_cat = db_invalid.slice(0, 10).cat()
+            elif len(db_invalid) == 0:
+                db_cat = db_syn.slice(0, 10).cat()
+            else:
+                db_cat = db_invalid.cat()
+
+            fig, axes = _graph_n_syn_coupled_astro(db_cat, n)
+
+            fig_path = "{}.svg".format(db_syn.meta['descr'].format(n))
+            print('Saving: ', fig_path)
+            fig.tight_layout()
+            fig.savefig(fig_path)
+
+    # Look at a number of continuous 10ms bouts of activity
+    # Determine if the Astrocyte responded correctly
+    if args.astro_and_cont or args.all:
+        # Generate single pre, pre, post events in a given time window
+        # and examine astrocyte response.
+        n_synapse = [2,3,4]
 
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
@@ -493,95 +562,32 @@ def _main(args):
 
         cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1000, gen_post=True)
 
-        db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
-
-        # Graph: spikes, synapse specific ip3, k+ and Ca, category of event (AND, Early spike, etc..)
-        # Layout: Spikes in a SP (lables on X axis) Other traces in separate SPs with labels in title
-        # gs = plot.gs(n_synapse + 2, 1)
-        # fig, axes = plot.gen_axes(
-        #     ('spikes', gs[0]),
-        #     ('regions', gs[-1]),
-        #     figsize=(15,12),
-        # )
-        # for i in range(n_synapse):
-        #     fig, axes = plot.gen_axes(
-        #         ('astro', gs[i+1]),
-        #         fig=fig, axes=axes
-        #     )
-
-        db_invalid = db.filter(invalid=True)
-        if len(db_invalid) > 10:
-            db_cat = db_invalid.slice(0, 10).cat()
-        elif len(db_invalid) == 0:
-            db_cat = db.slice(0, 10).cat()
-        else:
-            db_cat = db_invalid.cat()
-
-        fig, axes = _graph_n_syn_coupled_astro(db_cat, n_synapse)
-
-        fig_path = "{}.svg".format(db.meta['descr'])
-        print('Saving: ', fig_path)
-        fig.tight_layout()
-        fig.savefig(fig_path)
-
-
-        # if len(db_cat) > 0:
-        #     plot.plot_spikes(
-        #         axes, ('spikes',),
-        #         db_cat['tl']['z_pre'],
-        #         db_cat['tl']['z_post'])
-
-        #     plot.plot_astro(
-        #         axes, ('astro',),
-        #         db_cat['tl']['ip3'], db_cat['tl']['kp'], db_cat['tl']['ca'], db_cat['tl']['dser'], db_cat['tl']['serca'])
-
-        #     plot.plot_coupling_region(
-        #         axes, ('regions',),
-        #         db_cat['region'])
-
-
-
-    # Look at a number of continuous 10ms bouts of activity
-    # Determine if the Astrocyte responded correctly
-    if args.astro_and_continuous_response or args.all:
-        # Generate single pre, pre, post events in a given time window
-        # and examine astrocyte response.
-        n_synapse = 3
-
-        cfgs, num_cfgs = _cfg_gen(
-            cfg_path,
-            n=n_synapse, ca_th=ca_th, dw=False, c_and=[0,1]
-        )
-
-        cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=1000, gen_post=True)
-
         db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim, keep_state=True)
 
-        invalid_regions = {}
-        for i, db_rec in enumerate(db):
-            if db_rec['invalid'] and not (db_rec['region'][0] in invalid_regions):
-                invalid_regions[db_rec['region'][0]] = None
-                db_rec['graph'] = True
-                if i > 0: db[i - 1]['graph'] = True
-                if i < len(db) - 1: db[i + 1]['graph'] = True
+        for n, db_syn in db.group_by('n').items():
+            invalid_regions = {}
+            for i, db_rec in enumerate(db_syn):
+                if db_rec['invalid'] and not (db_rec['region'][0] in invalid_regions):
+                    invalid_regions[db_rec['region'][0]] = None
+                    db_rec['graph'] = True
+                    if i > 0: db_syn[i - 1]['graph'] = True
+                    if i < len(db_syn) - 1: db_syn[i + 1]['graph'] = True
 
-            if len(invalid_regions) == 5:
-                break
+                if len(invalid_regions) == 5:
+                    break
 
+            db_graph = db_syn.filter(graph=True).cat()
 
-        db_graph = db.filter(graph=True).cat()
+            fig, axes = _graph_n_syn_coupled_astro(db_graph, n)
 
-        fig, axes = _graph_n_syn_coupled_astro(db_graph, n_synapse)
-
-        fig_path = "{}.svg".format(db.meta['descr'])
-        print('Saving: ', fig_path)
-        fig.tight_layout()
-        fig.savefig(fig_path)
-
+            fig_path = "{}_invalid.svg".format(db_syn.meta['descr'].format(n))
+            print('Saving: ', fig_path)
+            fig.tight_layout()
+            fig.savefig(fig_path)
 
     # Look at a number of continuous 10ms bouts of inputs, simulate an Astro-LIF Configuration
     if args.astro_and_lif or args.all:
-        n_synapse = 4
+        n_synapse = [2,3,4]
 
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
@@ -591,12 +597,27 @@ def _main(args):
 
         db = _exp_n_syn_coupled_astro_lif(cfg_and_spikes, num_cfgs, sim=args.sim, dw=True, keep_state=True)
 
-        fig, axes = _graph_n_syn_coupled_astro_lif(db.cat(), n_synapse, xlim=None)
+        # Graph for each distinct value of n
+        for n, db_syn in db.group_by('n').items():
+            fig, axes = _graph_n_syn_coupled_astro_lif(db_syn.cat(), n, xlim=None, w_dw_only=True)
+
+            descr = db.meta['descr'].format(n)
         
-        fig_path = "{}.svg".format(db.meta['descr'])
-        print('Saving: ', fig_path)
-        fig.tight_layout()
-        fig.savefig(fig_path)
+            fig_path = "{}.svg".format(descr)
+            print('Saving: ', fig_path)
+            fig.tight_layout()
+            fig.savefig(fig_path)
+
+            # Limit X range
+            fig, axes = _graph_n_syn_coupled_astro_lif(db_syn.cat(), n, xlim=(0,200))
+
+            descr = "{}_xlim".format(db.meta['descr'].format(n))
+        
+            fig_path = "{}.svg".format(descr)
+            print('Saving: ', fig_path)
+            fig.tight_layout()
+            fig.savefig(fig_path)
+
 
 
 if __name__ == '__main__':

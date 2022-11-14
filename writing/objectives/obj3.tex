@@ -27,60 +27,108 @@ approach is employed in a learning task where a multi-synapse view is critical.
 %%   which then refills
 %%   - Relative strength of plasticity
 
-
 \section{Synaptic Coupling}
-This chapter introduces the concept of synaptic coupling. This addition to the
-Astrocyte model is inspired by the cell-level \ca responses Astrocytes
-exhibit. Figure \ref{fig:astro:syn_coupling} shows the progression of the
-Astrocyte model to support coupling. Synaptic coupling works by defining a
-regional control area of the astrocyte, which is connected to a subset of the
-total synapses influenced by an Astrocyte. At this regional level, the Astrocyte
-implements some function across N synapses. \ca local to each synapse propagates
-up to the regional level. To facilitate this function, additional chemical
-signals pass down from regional level, to local.
+This chapter introduces the concept of synaptic coupling. This is an
+intermediate between the strictly local response that has been explored thus
+far, and the slower cell-level responses directly observed in biology. With
+synaptic coupling, there is a regional response to a hand-full of synapses.
+This response is fast (unlike the cell-level \ca responses), operating at the
+speed of pre and post-synaptic spikes. Some in the Computational and
+Neuroscience communities believe similar intermediate astrocyte responses occur
+in nature, but that researchers don't have the capabilities to observe them
+yet. In any case, synaptic coupling fits the common theme of multi-level
+integration, and is shown to be critical in an example learning task. Figure
+\ref{fig:astro:syn_coupling} shows the progression of the Astrocyte model from
+exhibiting a strictly local responses, to support coupling. There are three
+major changes to the model from previous iterations.
+
+\begin{enumerate}
+\item The \ca response generated local to a synapse propagates up to the
+  regional level. This is consistent with the observation of CICR explored in
+  Chapter \ref{chapter:background}.
+\item At the regional level, there is some function implemented by the
+  Astrocyte, which directs plasticity across any connected synapses.
+\item At the regional level, two additional internal signals \dser and
+  \serca are introduced. These can be though of as chemical signals which can
+  propagate from the regional level, down to a given synapse. They are
+  responsible for triggering a weight change locally, or causing
+  degredataion/re-uptake of \ipt, \kp, and \ca.
+\end{enumerate}
 
 \asvgf{figures/1nNs1a_diagram_obj3.svg}{Astrocyte Functional Diagram for
-  Multi-Synapse Synaptic Coupling}{fig:astro:syn_coupling}{0.5}
+  Multi-Synapse Synaptic Coupling}{fig:astro:syn_coupling}{0.5} 
 
-\subsection{AND Coupling}
+\section{Synaptic AND Coupling}
 The first function explored for multi-synapse Astrocyte plasticity is logical
 AND. This is implemented by a single Astrocyte, influencing N synapses of a
-single LIF neuron (Nn1s1a). AND coupling can be defined in terms of single
-spikes as shown in Figure \ref{fig:logical-and-coupling}.
+single LIF neuron (Nn1s1a). The expected behavior of an LIF neuron implementing
+AND can be defined in terms of single spikes as shown in Figure
+\ref{fig:logical-and-coupling}.
 
 \asvgf{figures/AstroAndCoupling.svg}{Logical Definition for AND
   Coupling}{fig:logical-and-coupling}{0.5}
 
 In Figure \ref{fig:logical-and-coupling} each of the blue or orange boxes
 represents a spike, either pre-synaptic, or post-synaptic. Figure
-\ref{fig:global-v-local-and-coupling'} shows the difference between the local
+\ref{fig:global-v-local-and-coupling} shows the difference between the local
 Astrocyte response, vs. the global response required to implement logical
-AND. In most situations, the regional control logic will need to provide input
-to the local level, in order for weight updates to converge on an AND
-function. To implement this, first the typical activity local to a
-synapse is considered, see Figure \ref{fig:local-ca-global-response}. These \ca
-responses propagate, and are readily available at the global/regional
-level. Using the \ca transients from each synapse, the global logic determines
-if weights should change on a given synapse, and if so, in what direction. To
-communicate the proper response, two internal chemical signals are
-employed. \dser which triggers a weight change at a synapse and \serca, which
-triggers a reset, or re-uptake of \ca, \ipt, and \kp.
+AND. Without any context of the response from other synapses, a strictly local
+rule isn't able to correctly converge to an AND function. In most situations
+outlined, the regional control logic will need to signal the correct response to
+one or more synapses.
+
+To implement this, first the typical activity local to a synapse is considered,
+see Figure \ref{fig:local-ca-global-response}. These \ca responses propagate,
+and are readily available at the global/regional level. Using the \ca transients
+from each synapse, the global logic determines if weights should change on a
+given synapse, and if so, in what direction. To communicate the proper response
+\dser (which triggers a weight change at a synapse) and \serca, (which triggers
+a reset) signals are passed from the regional control level, to individual
+synapses.
+
+%% Define equations which outline the logic of AND coupling
 
 \asvgf{figures/AstroAndCoupling_implementation.svg}{Comparison of Astrocyte
   Response Locally, and the Desired AND Coupling
   Response}{fig:global-v-local-and-coupling}{0.5}
 
 \asvgf{figures/AstroAndCoupling_signals.svg}{Logical Definition for AND
-  Coupling}{fig:logical-and-coupling}{0.5}
+  Coupling}{fig:local-ca-global-response}{0.5}
 
-In order to test the Astrocyte response and tune parameters, some timing
-constraints must be defined. Initially, a single timing constraint
-$\delta_{ptp}=10ms$ will be used. This implies that the time between the
-first pre-synaptic spike, to the first (possibly only) post-synaptic spike must
-be no more than this value to ensure proper behavior. With this timing
-constraint a variety of pre-pre-post spiking events can be generated in a
-two-synapse configuration. This experiment will remove the influence of synaptic
-weights and LIF neuron dynamics, focusing solely on Astrocyte response \ca.
+In essence, all spiking activity on N synapses (for the purpose of implementing
+AND) fall into one of the following categories.
+\begin{itemize}
+\item AND - The neuron behaved correctly, this is either $pre_0, pre_1, ...,
+  pre_n \implies post_o$ or $others -> \neg post_0$ : Reset all synapses
+\item Other-influence - This situation occurs when $post_o$ comes before all
+  $pre_i$ inputs. This implies something happening outside the control of
+  associated synapses. It doesn't make sense to change the weight in this case,
+  as it is unknown why there was a $post_0$ spike. In addition, the LIF neuron
+  may be in a refractory period, and it wouldn't make sense to try and update
+  weights during that: Reset all synapses.
+\item Early-Spike - If $post_0$ occurs before all spiking inputs $pre_0, pre_1,
+  ..., pre_N$ have presented. This would indicate one or more of the input
+  synapses have weights that are too high: LTD on synapses that received inputs.
+\item LPT - If input spikes arrive at $pre_0, pre_1, ..., pre_N$ and there is no
+  post-synaptic spike $post_0$, this implies weight values are too low: trigger
+  LTP on all synapses.
+\end{itemize}
+
+Which of these categories a given set of inputs and response belongs to, depends
+on some model parameters.. Namely, the timing constants and thresholds in
+Equations \ref{eq:} to \ref{eq:}. Given a set of parameters, there is a
+deterministic window of time spikes must fall into in order to be considered for
+a particular response. Outside this window, from the perspective of the
+Astrocyte, those spikes never happened. This window is dependent on many
+parameters however, and possibly changes given previous activity. Instead of
+solving for the exact point in time a spikes falls out of the time window, a
+lower bound is defined, $\delta_{ptp}=10ms$. The Astrocyte will be tuned to
+guarantee proper behavior if spikes fall within this window. This implies that
+the time between the first pre-synaptic spike, to the first (possibly only)
+post-synaptic spike must be no more than this value. With this timing constraint
+a variety of pre-pre-post spiking events can be generated in a two-synapse
+configuration. This experiment will remove the influence of synaptic weights and
+LIF neuron dynamics, focusing solely on Astrocyte response \ca.
 
 Figure \ref{fig:2n1a_and_response} Shows the response of a single Astrocyte to
 two pre-synaptic spiking inputs, and single post-synaptic spiking outputs. Spike
@@ -90,55 +138,132 @@ continuous in time, the Astrocyte's internal state is reset between each.
 
 \asvgf{figures/artifacts/obj3/astro_2s1a_and.svg}{Astrocyte with AND coupling
   response to two pre-synaptic spiking inputs, and a single post-synaptic spike
-  randomly generated}{0.5}
+  randomly generated}{fig:2n1a_and_response}{0.4}
 
-For the limited number of examples in Figure \ref{fig:2n1a_and_response} it is
-shown that the Astrocyte performs the correct computation. A more exhaustive
-search, consisting of 10,000 10ms bouts, showed zero mismatches from the expected
-response outlined in Figure \ref{fig:logical-and-coupling}. Though this is a
-good indication, real-world inputs won't present in 
-nice 10ms packets, or at least the goal is not to be constrained in such a
-way. A continuous set of inputs is explored next, with inputs generated by
-concatenating a number of 10ms bouts in time. In this configuration, there are
-some situations where the Astrocyte does not respond as expected, in general
-this is due to a \ca deviation from zero, at the boundary where generated 10ms
-bouts are joined. These situations made up $\approx 12\%$ of possible inputs. Figure
-\ref{fig:astro_2s1a_and_cont} shows some of the failure cases encountered across
-10,000 10ms bouts.
+For the limited number of examples in Figure \ref{fig:2n1a_and_response}, the
+Astrocyte performs correct computations. This can be observed by comparing the
+ground-truth AND-coupling region at the bottom, with the \dser and \serca
+activity. For example: when the region is ``Early Spike'', \dser is $-1.0$ for a
+single time-step, indicating LTD on that synapse. Automating this comparison
+process, an error rate can be computed, where each 10ms bout is labeled as a
+match, or mis-match. A more exhaustive search, consisting
+of 10,000 10ms bouts, showed zero mis-matches from the expected result, Equation
+\ref{eq:astro_2syn_exaust} shows that 10,000 iterations should be sufficient to
+cover the entire input space for two synapses. Figures
+\ref{fig:3n1a_and_response} and \ref{fig:4n1a_and_response} show the same success
+for three and four synapses, which is supported by the 10k simulation test.
 
-\asvgf{figures/artifacts/obj3/astro_2s1a_and_cont.svg}{Astrocyte with AND coupling
+\asvgf{figures/artifacts/obj3/astro_3s1a_and.svg}{Astrocyte with AND coupling
+  response to three pre-synaptic spiking inputs, and a single post-synaptic spike
+  randomly generated}{fig:3n1a_and_response}{0.4}
+
+\asvgf{figures/artifacts/obj3/astro_4s1a_and.svg}{Astrocyte with AND coupling
+  response to four pre-synaptic spiking inputs, and a single post-synaptic spike
+  randomly generated}{fig:4n1a_and_response}{0.4}
+
+Though simulations thus far are a good indication of a performant Astrocyte
+model; Real-world inputs won't present in nice 10ms packets, or at least the
+goal is not to be constrained in such a way. A continuous set of inputs is
+explored next, with inputs generated by concatenating a number of 10ms bouts in
+time. In this configuration, there are some situations where the Astrocyte does
+not respond as expected (a mis-match from ground truth), in general this is due
+to a \ca deviation from zero, at the boundary where generated 10ms bouts are
+joined. These situations made up $\approx 14\%$ of inputs, across 10,000 10ms
+bouts. Figure \ref{fig:astro_2s1a_and_cont} shows some of the failure cases
+encountered.
+
+\asvgf{figures/artifacts/obj3/astro_2s1a_and_cont_invalid.svg}{Astrocyte with AND coupling
   response to a continuous timeline of two pre-synaptic spiking inputs, and a
-  single post-synaptic spike randomly generated}{0.5}
+  single post-synaptic spike randomly generated}{fig:astro_2s1a_and_cont}{0.4}
+
+When considering $n=3$ and $n=4$ synapses with continuous randomly generated
+spiking inputs, the error rate observed is consistent with that of $n=2$. For
+$n=3$ there are 283 mismatches out of 2000 10ms bouts (14.15 \% error). For
+$n=4$, there are 416 mismatches out of 3000 (13.9 \% error).
 
 Initial simulations which have isolated the Astrocyte and provided random
 inputs, indicate that in a majority of cases, the Astrocyte is capable of
 directing plasticity correctly to implement an AND function. The
 \dser and \serca signaling reflects the activity of the global AND logic, and
-the polarity of \dser matches the desired weight update. In the case of Figure
-\ref{fig:astro_2s1a_and_cont}, in only 12\% of 10ms bouts does the observed
-Astrocyte response deviate from the Ground Truth.
+the polarity of \dser matches the desired weight update. A fairly consistent
+error rate of 14 \% is observed, which is theorized to be low enough for proper
+convergence to implement AND.
 
-Closing the loop fully, the weight update behavior outlined in equaion
+Closing the loop fully, the weight update behavior outlined in equation
 \ref{eq:astro_and_dw} is implemented. With that addition, an Astrocyte-LIF (1n2s1a)
 configuration was simulated, given the same continuous inputs generated by
 concatenating 10ms bouts, but only of pre-synaptic spikes for $n=2$
 synapses. Where before, post-synaptic spikes were also randomly generated, now
 any post-synaptic activity is driven by an LIF neuron with synaptic weights.
-The default synaptic weight is $\approx 0.7$. Figure \ref{fig:snn_2s1a_and}
-shows
+The default synaptic weight is $\approx 0.7$.
 
-\asvgf{figures/artifacts/obj3/snn_2s1a_and.svg}{Simulation of Astrocyte/LIF
+\begin{align}
+  dw_{syn} = ca_{syn} * lr_{ltp} \text{if $ca_{syn}$ > 0} \\
+  dw_{syn} = ca_{syn} * lr_{ltd} \text{if $ca_{syn}$ < 0} \\
+\end{align}
+
+\asvgf{figures/artifacts/obj3/snn_2s1a_and_xlim.svg}{Simulation of Astrocyte/LIF
   network in the 2s1n1a configuration, with the Astrocyte directing synaptic
-  plasticity}{0.5}
+  plasticity}{fig:snn_2s1a_and}{0.4}
 
-Initially, 
-neuron to fire. As expected, the Astrocyte traces showed \dser signals
-arriving at both synapses for all inputs that satisfied an AND
-condition. Completing the link, and allowing \ca to drive plasticity, showed
-weight updates corresponding to the \dser signals and \ca
-concentration. Overall, with these simple inputs, 
+\asvgf{figures/artifacts/obj3/snn_2s1a_and.svg}{Weight change in the 2s1n1a
+  configuration, with the Astrocyte directing synaptic
+  plasticity}{fig:snn_2s1a_and_w_dw}{0.4}
+
+Looking at Figure \ref{fig:snn_2s1a_and}: Initially, synaptic weight values are
+too high, and the neuron fires in response to a single pre-synaptic spike. As
+expected, the Astrocyte traces show \dser signals arriving at the offending
+synapses, triggering LTD. Completing the link, and allowing \ca to drive
+plasticity, showed weight updates corresponding to the \dser signals and \ca
+concentration. As the simulation progresses, weight values decrease, and the LIF
+neuron begins to fire in response to two pre-synaptic spikes. There was a slight
+over-correction, and some LTP events occur, bringing the weights back
+up. Eventually, the synaptic weights converge and offer a good approximation of
+an AND function over the inputs.
+
+Under the limited test conditions, Figure \ref{fig:snn_2s1a_and} demonstrates
+success for coordinated Astrocyte plasticity. This convergence to an AND
+function needs further exploration. Since the coordinated plasticity was
+developed to work with N synapses, it is important to evaluate other
+configurations besides $n=2$.
+
+\asvgf{figures/artifacts/obj3/snn_3s1a_and.svg}{Weight change in the 3s1n1a
+  configuration, with the Astrocyte directing synaptic
+  plasticity}{fig:snn_3s1a_and_w_dw}{0.4}
+
+\asvgf{figures/artifacts/obj3/snn_4s1a_and.svg}{Weight change in the 4s1n1a
+  configuration, with the Astrocyte directing synaptic
+  plasticity}{fig:snn_4s1a_and_w_dw}{0.4}
 
 \section{Summary}
+%% Though there is a lack of general consensus, much of the Neuroscience literature
+%% suggests that Astrocytes have a fast local response to synaptic activity, which
+%% is then integrated to a cell-level response. Taking inspiration from this
+%% multi-level integration approach, the Astrocyte model is extended. At the local
+%% level, \ipt, \kp, and \ca dynamics remain mostly the same compared to previous
+%% chapters. The \ca signals are generated local to the synapse, but now, in
+%% addition they propagate up to a regional level. At this multi-synapse, regional
+%% level \ca responses from multiple synapses are integrated and a response
+%% generated. This response then travels back down via internal (to the astrocyte)
+%% chemical signals to one or more synapses, affecting local plasticity. The two
+%% regional functions are explored in this chapter, AND and NAND. In general, the
+%% Astrocyte will drive weight values towards implementing the desired function,
+%% detecting behavior that is not in alignment and updating weights
+%% accordingly. For these functions in particular, having a multi-synapse view of
+%% activity is critical. It is shown that in most cases, the locally controlled
+%% plasticity explored in chapter two would result in incorrect weight
+%% updates. With the regional logic mostly in control of when, and in what
+%% direction weights move, local dynamics are responsible for the magnitude of a
+%% weight change. In this way, global and local dynamics work together to implement
+%% a coordinated learning model.
+
+%% With this approach, it was shown that convergence to implementation of an AND
+%% function could be achieved with 2, 3, and 4 synapse configurations. Each
+%% consisting of a single LIF neuron, single Astrocyte. It was difficult to
+%% determine a common set of parameters which gave optimal convergence across the
+%% different number of synapses, but parameters were found that provided
+%% convergence in each case.
+
 Though there is a lack of general consensus, much of the Neuroscience literature
 suggests that Astrocytes have a fast local response to synaptic activity, which
 is then integrated to a cell-level response. Taking inspiration from this

@@ -5,10 +5,18 @@ from .threshold import threshold
 import torch.jit
 
 def _get_syns(params, name=None, coupled=False):
-    if name in params['coupling'] and len(params['coupling'][name]) > 0:
+    has_coupling = name in params['coupling'] \
+        and not (params['coupling'][name] is None) \
+        and len(params['coupling'][name]) > 0
+
+    if  has_coupling:
         return params['coupling'][name]
-    
-    if name in params['local'] and len(params['local'][name]) > 0:
+
+    has_local = name in params['local'] \
+        and not (params['local'][name] is None) \
+        and len(params['local'][name]) > 0
+
+    if has_local:
         return params['local'][name]
 
     if coupled:
@@ -16,6 +24,8 @@ def _get_syns(params, name=None, coupled=False):
         for _, syns in params['coupling'].items():
             if not (syns is None):
                 c_syns = c_syns + syns
+        if len(c_syns) == 0:
+            c_syns = None
 
         return c_syns
 
@@ -100,25 +110,31 @@ def astro_step_prod_ca(state, params):
 
 
 def astro_step_ordered_prod_ca(state, params):
-
     syns = _get_syns(params, 'ordered_prod')
+
     if syns is None:
         return state
 
-    raise NotImplementedError("Synapse selection not implemented")
+    ip3 = state['ip3'][syns]
+    kp = state['kp'][syns]
+    ca = state['ca'][syns]
 
-    du = state['ip3'] * state['kp']
+    dca = ip3 * kp
 
-    post_pre_diff = state['kp'] - state['ip3']
+    post_pre_diff = (kp * params['alpha_kp']) - (ip3 * params['alpha_ip3'])
 
-    if post_pre_diff < params['u_step_params']['ltd']:
-        du = -du
-    elif post_pre_diff > params['u_step_params']['ltp']:
+    if post_pre_diff < params['ordered_prod']['ltd']:
+        dca = -dca
+    elif post_pre_diff > params['ordered_prod']['ltp']:
         pass
     else:
-        du = torch.as_tensor(0.0)
+        dca = torch.as_tensor(0.0)
 
-    state['ca'] = state['ca'] + du
+    ca = ca + dca
+
+    state['ca'][syns] = ca
+    state['ip3'][syns] = ip3
+    state['kp'][syns] = kp
 
     return state
 
@@ -150,7 +166,12 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
 
     ca = state['ca'][syns]
     dca = torch.zeros_like(ca)
-    z_pre = z_pre[syns]
+    try:
+        z_pre = z_pre[syns]
+    except:
+        import code
+        code.interact(local=dict(globals(), **locals()))
+        exit(1)
     kp = state['kp'][syns]
     ip3 = state['ip3'][syns]
 
@@ -193,22 +214,20 @@ def astro_reset_signal(state):
     return state
     
     
-def astro_step_signal(state, params):
+def astro_step_signal(state, eff, params):
     syns = _get_syns(params, coupled=True)
 
     if syns is None:
-        return state, None
+        return state, eff
+
+    eff_syns = eff[syns]
 
     dw_mult = params['dw'] == 'dw_mult'
     dw_add = params['dw'] == 'dw_add'
-    dw_params = params[params['dw']]
 
-    if dw_mult:
-        eff = torch.ones_like(state['ca'])
-    elif dw_add:
-        eff = torch.zeros_like(state['ca'])
-
-    eff_syns = eff[syns]
+    eff_syns = torch.ones_like(eff_syns)
+    if dw_add:
+        eff_syns = torch.zeros_like(eff_syns)
 
     ca = state['ca'][syns]
     ip3 = state['ip3'][syns]
@@ -221,9 +240,11 @@ def astro_step_signal(state, params):
     wh_ltp = torch.where(dser == 1.0)
 
     if dw_mult:
+        dw_params = params[params['dw']]
         eff_syns[wh_ltd] = 1.0 - torch.abs(ca[wh_ltd] * dw_params['dw_ltd'])
         eff_syns[wh_ltp] = 1.0 + torch.abs(ca[wh_ltp] * dw_params['dw_ltp'])
     elif dw_add:
+        dw_params = params[params['dw']]
         eff_syns[wh_ltd] = -ca[wh_ltd] * dw_params['dw_ltd']
         eff_syns[wh_ltp] = ca[wh_ltp] * dw_params['dw_ltp']
 
@@ -287,22 +308,36 @@ def astro_track_activity(state, params):
     
 
 # Apply a threshold
-def astro_step_thr(state, params):
-    u_spike_low = state['ca'] < -(params['ca_th'])
-    u_spike_high = state['ca'] > params['ca_th']
+def astro_step_thr(state, eff, params):
+    syns = _get_syns(params, 'ca_thr')
+    if syns is None:
+        return state, eff
 
-    l_no_spike = torch.logical_not(
-        torch.logical_or(u_spike_low,  u_spike_high))
+    ca = state['ca'][syns]
+    eff_syns = eff[syns]
 
-    wh_no_spike = torch.where(l_no_spike)
-    wh_spike = torch.where(torch.logical_not(l_no_spike))
+    wh_ltp = torch.where(ca > params['ca_th'])
+    wh_ltd = torch.where(ca < -(params['ca_th']))
 
-    u_spike = u_spike_low * -1.0 + u_spike_high * 1.0
-    u_spike[wh_no_spike] = torch.as_tensor(0.0)
+    dw_params = params[params['dw']]
+    eff_syns = torch.zeros_like(eff_syns)
 
-    state['ca'][wh_spike] = torch.as_tensor(0.0)
+    if params['dw'] == 'dw_mult':
+        eff_syns = torch.ones_like(eff_syns)
+        if dw_params['prop_ca']:
+            eff_syns[wh_ltd] = 1.0 - torch.abs(ca[wh_ltd] * dw_params['dw_ltd'])
+            eff_syns[wh_ltp] = 1.0 + torch.abs(ca[wh_ltp] * dw_params['dw_ltp'])
+        else:
+            eff_syns[wh_ltd] = dw_params['dw_ltd']
+            eff_syns[wh_ltp] = dw_params['dw_ltp']
+
+    ca[wh_ltp] = torch.as_tensor(0.0)
+    ca[wh_ltd] = torch.as_tensor(0.0)
+
+    state['ca'][syns] = ca
+    eff[syns] = eff_syns
     
-    return state, u_spike
+    return state, eff
 
 
 def astro_step_and_coupling(state, params):

@@ -17,6 +17,11 @@ astro_colors = {
     'serca': 'tab:red',
 }
 
+lif_colors = {
+    'v_psp': 'tab:blue',
+    'v_mem': 'tab:purple',
+}
+
 region_colors = {
     'and': 'tab:orange',
     'ltp': 'tab:red',
@@ -25,10 +30,13 @@ region_colors = {
     'n/a': 'tab:green',
 }
 
-def _locate_ax(axes, loc):
+def _locate_ax(axes, loc, as_list=False):
     axs = axes
     for l in loc:
         axs = axs[l]
+
+    if as_list and (not isinstance(axs, list)):
+        axs = [axs]
 
     return axs
     
@@ -114,26 +122,53 @@ def plot_w(axes, loc, w):
     ax.set_xlim(-10, w.shape[0] + 10)
     
 
-def plot_astro(axes, loc, ip3, kp, ca, dser, serca):
-    # Locate axes for plotting, expecting n_synapse axes
-    axs = _locate_ax(axes, loc)
+def plot_lif(axes, loc, v_psp, v_mem):
+    axs = _locate_ax(axes, loc, as_list=True)
 
     n_synapse = len(axs)
-    assert n_synapse == ip3.shape[-1]
+    
+    assert n_synapse == v_psp.shape[-1]
+
+    for i, ax in enumerate(axs):
+        ax.set_title("LIF Neuron Voltages: S{}".format(i))
+        ax.set_xlabel("Time (ms)")
+        ax.set_ylabel("Voltage")
+        ax.plot(v_psp[:, i], color=lif_colors['v_psp'], label='Synaptic Voltage')
+        ax.plot(v_mem[:, i], color=lif_colors['v_mem'], label='Membrane Voltage')
+
+        ax.legend()
+
+        ax.set_xlim(-10, v_mem.shape[0] + 10)
+    
+    
+def plot_astro(axes, loc, ip3, kp, ca, dser, serca, no_legend=False):
+    # Locate axes for plotting, expecting n_synapse axes
+    axs = _locate_ax(axes, loc, as_list=True)
+
+    n_synapse = len(axs)
+
+    traces = [ip3, kp, ca, dser, serca]
+    duration = None
+    for t in traces:
+        if not (t is None):
+            duration = t.shape[0]
+            assert n_synapse == t.shape[-1]
 
     for i, ax in enumerate(axs):
         ax.set_title("Local Astrocyte State: S{}".format(i))
         ax.set_xlabel("Time (ms)")
         ax.set_ylabel("Concentrations")
-        ax.plot(ip3[:, i], color=astro_colors['ip3'], label='ip3')
-        ax.plot(kp[:, i], color=astro_colors['k+'], label='k+')
-        ax.plot(ca[:, i], color=astro_colors['ca'], label='ca')
-        ax.plot(dser[:, i], color=astro_colors['dser'], label='D-Serine')
-        ax.plot(serca[:, i], color=astro_colors['serca'], label='Serca')
 
-        ax.legend()
+        if not (ip3 is None): ax.plot(ip3[:, i], color=astro_colors['ip3'], label='ip3')
+        if not (kp is None): ax.plot(kp[:, i], color=astro_colors['k+'], label='k+')
+        if not (ca is None): ax.plot(ca[:, i], color=astro_colors['ca'], label='ca')
+        if not (dser is None): ax.plot(dser[:, i], color=astro_colors['dser'], label='D-Serine')
+        if not (serca is None): ax.plot(serca[:, i], color=astro_colors['serca'], label='Serca')
 
-        ax.set_xlim(-10, ip3.shape[0] + 10)
+        ax.set_xlim(-10, duration + 10)
+
+        if not no_legend:
+            ax.legend()
 
 
 def plot_coupling_region(axes, loc, regions):
@@ -304,3 +339,27 @@ class Axis:
 
         self.event_offset = line_offsets[-1] + 1
         self.plot_count += 1
+
+
+
+## Legacy Functions ##
+def plot_events(ax, events, colors=None, offset=0):
+    event_idxs = []
+    max_x = 0
+    for z in events:
+        if type(z) != np.ndarray:
+            z = np.array(z)
+            
+        event_idx = np.where(z > 0)[0]
+        max_x = max(len(z), max_x)
+        event_idxs.append(event_idx.tolist())
+
+    line_offsets = [i + offset for i in range(len(event_idxs))]
+
+    ax.eventplot(event_idxs,
+                 lineoffsets=line_offsets,
+                 linelengths=0.5,
+                 colors=colors)
+    ax.set_xlim((0, max_x))
+
+    return ax

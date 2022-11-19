@@ -17,14 +17,16 @@ import copy
 def sim_astro_probe(cfg, spikes, db, weight=1.0):
     astro = Astro.from_cfg(cfg['astro_params'], 1, cfg['sim']['dt'])
 
+    n_synapse = 1
+
     state = None
     timeline = {
-        'ca': torch.zeros(len(spikes)),
-        'eff': torch.zeros(len(spikes)),
-        'ip3': torch.zeros(len(spikes)),
-        'kp': torch.zeros(len(spikes)),
-        'z_pre': torch.zeros(len(spikes)),
-        'z_post': torch.zeros(len(spikes)),
+        'ca': torch.zeros(len(spikes), n_synapse),
+        'eff': torch.zeros(len(spikes), n_synapse),
+        'ip3': torch.zeros(len(spikes), n_synapse),
+        'kp': torch.zeros(len(spikes), n_synapse),
+        'z_pre': torch.zeros(len(spikes), n_synapse),
+        'z_post': torch.zeros(len(spikes), n_synapse),
     }
 
     last_u = torch.as_tensor(0.0)
@@ -32,7 +34,7 @@ def sim_astro_probe(cfg, spikes, db, weight=1.0):
     # Simulate
     for i, (z_pre, z_post) in enumerate(spikes):
         eff, state = astro(state, z_pre=z_pre*weight, z_post=z_post)
-        
+
         timeline['ca'][i] = state['ca']
         timeline['eff'][i] = eff
         timeline['ip3'][i] = state['ip3']
@@ -44,7 +46,7 @@ def sim_astro_probe(cfg, spikes, db, weight=1.0):
             timeline['max_u'] = state['ca']
             timeline['last_u'] = last_u
             timeline['ip3_at_max'] = state['ip3']
-            timeline['kp_at_max'] = state['kp']                
+            timeline['kp_at_max'] = state['kp']
         last_u = state['ca']
 
     db.store({'timeline': timeline})
@@ -90,7 +92,7 @@ def graph_dw_dt(db, title="", graph_text=""):
     ax.text(
         -0.05, 0.8,
         graph_text,
-        bbox=plot.plt_round_bbox)
+    )
 
     fig.tight_layout()
 

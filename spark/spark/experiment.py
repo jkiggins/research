@@ -70,15 +70,13 @@ def load_or_run(fn, path, sim=False):
     return db
 
 
-def lif_astro_name(astro_params):
-    mode = astro_params['mode']
-    weight_update = astro_params['weight_update']
-    u_step_mode = astro_params['u_step_params']['mode']
+def lif_astro_name(params):
+    if params['local']['ordered_prod'] == [0]:
+        local_descr = 'ord'
+    elif params['local']['stdp'] == [0]:
+        local_descr = 'stdp'
 
-    if u_step_mode == 'u_ordered_prod':
-        u_step_mode = 'ord'
-
-    return "m-{}_u-{}_w-{}".format(mode, u_step_mode, weight_update)
+    return "l-{}_w-{}".format(local_descr, params['dw'])
 
 
 def cfg_text(cfg, astro=True, linear=False):
@@ -254,7 +252,7 @@ class ExpStorage:
         elif type(val) == dict:
             val = tuple(zip(dict.keys(), dict.values()))
         elif type(val) == np.ndarray:
-            val = tuple(map(tuple, val.tolist()))
+            val = tuple(map(tuple, val.squeeze().tolist()))
             
         return val
 
@@ -376,6 +374,7 @@ class ExpStorage:
 
             if not (g_key in group_keys):
                 group_keys.append(g_key)
+
 
         # Use the gather function to grab records for each unique group key
         for g_key in group_keys:

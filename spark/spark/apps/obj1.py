@@ -42,6 +42,7 @@ def _sim_dw_dt_sweep(cfg, db):
     pulse_pair_spikes = spiketrain.pre_post_pair(spike_deltas, cfg['sim']['dt'])
     
     for spike_delta, spikes in zip(spike_deltas, pulse_pair_spikes):
+        spikes = spikes.unsqueeze(-1)
         db = sim_astro_probe(cfg, spikes, db)
         tl = db.last()['timeline']
         eff = tl['eff']
@@ -64,10 +65,10 @@ def _exp_classic_stdp(cfg_path, sim=False):
         return dbs
 
     cfg = config.Config(cfg_path)
-    tau_ltp = cfg['classic_stdp']['tau_ip3']
-    alpha_ltp = cfg['classic_stdp']['alpha_pre']
-    tau_ltd = cfg['classic_stdp']['tau_kp']
-    alpha_ltd = cfg['classic_stdp']['alpha_post']
+    tau_ltp = cfg['astro_plasticity']['tau_ip3']
+    alpha_ltp = cfg['astro_plasticity']['alpha_ip3']
+    tau_ltd = cfg['astro_plasticity']['tau_kp']
+    alpha_ltd = cfg['astro_plasticity']['alpha_kp']
 
     spike_deltas = torch.linspace(-0.05, 0.05, 50)
 
@@ -92,7 +93,7 @@ def _exp_classic_stdp(cfg_path, sim=False):
 
 def _exp_dw_dt_sweep(cfg_path, sim=False):
     astro_param_sets = [
-        ('Classic STDP', 'classic_stdp'),
+        ('Classic STDP', 'astro_plasticity'),
         ('Anti STDP', 'anti_stdp'),
         ('LTP Bias', 'ltp_bias'),
         ('LTD Bias', 'ltd_bias'),
@@ -113,10 +114,13 @@ def _exp_dw_dt_sweep(cfg_path, sim=False):
         cfg['astro_params'] = cfg[p_key]
         cfg['astro_params']['weight_update'] = 'thr'
         cfg['astro_params']['ca_th'] = 100000.0
+        cfg['astro_params']['local']['ca_thr'] = [0]
+        cfg['astro_params']['local']['stdp'] = [0]
+        cfg['astro_params']['dw'] = 'dw_mult'
+
 
         # Sims with rate-based response
         db = ExpStorage()
-        cfg['astro_params']['u_step_params']['mode'] = 'u_ordered_prod'
         db.meta['descr'] = "1n1s1a_rp_{}_dwdt_{}".format(lif_astro_name(cfg['astro_params']), p_key)
         db.meta['name'] = p_name
         _sim_dw_dt_sweep(cfg, db)
@@ -124,7 +128,6 @@ def _exp_dw_dt_sweep(cfg_path, sim=False):
 
         # Sims with temporal response
         db = ExpStorage()
-        cfg['astro_params']['u_step_params']['mode'] = 'stdp'
         cfg['astro_params']['weight_update'] = 'thr'
         cfg['astro_params']['ca_th'] = 100000.0
         db.meta['descr'] = "1n1s1a_tp_{}_dwdt_{}".format(lif_astro_name(cfg['astro_params']), p_key)
@@ -143,7 +146,8 @@ def _exp_sweep_tau_ca(cfg_path, sim=False):
     db_name = '_exp_sweep_tau_ca.db'
     
     cfg = config.Config(cfg_path)
-    cfg['astro_params'] = cfg['classic_stdp']
+    cfg['astro_params'] = cfg['astro_plasticity']
+    cfg['astro_params']['local']['stdp'] = [0]
     
     # Sweep tau_ca
     if not sim:
@@ -157,10 +161,12 @@ def _exp_sweep_tau_ca(cfg_path, sim=False):
     # Spikes for sim
     spike_trains = []
     impulse_spikes = spiketrain.impulse(0, 10, 100).repeat((2,1)).transpose(1,0)
+    impulse_spikes = impulse_spikes.unsqueeze(-1)
+
     spike_trains.append(impulse_spikes)
     for r in [0.1, 0.5, 0.7]:
         spike_trains.append(
-            spiketrain.poisson([r, r], 100).transpose(1,0)
+            spiketrain.poisson([r, r], 100).transpose(1,0).unsqueeze(-1)
         )
     
     suffix = ['impulse', 'p0.1', 'p0.5', 'p0.7']
@@ -182,44 +188,46 @@ def _graph_sweep_tau_ca(db):
     records_by_spikes = db.group_by('spikes')
     for i, (_, by_spike) in enumerate(records_by_spikes.items()):
         fig = plt.Figure(figsize=(6.4, 7.5))
+        gs = plot.gs(2,1)
+        fig, axes = plot.gen_axes(
+            ('astro', gs[0]),
+            ('spikes', gs[1]),
+            figsize=(15,10),
+        )
         fig.suptitle("Astrocyte Response to Different Values of Ca Tau")
 
-        ax = fig.add_subplot(3, 1, 1)
-        ax.set_title("Astrocyte Ca")
-        ax.set_xlabel("Time (ms)")
-        ax.set_ylabel("[Ca]")
+        suffix = by_spike[0]['suffix']
 
-        # Plot u for each tau on a single plot
+        # Plot Ca for each tau on a single plot
+        first = True
         for d in by_spike:
             tl = d['timeline']
             spikes = d['spikes']
-            ax.plot(tl['ca'], label='tau_ca={}'.format(d['tau_ca']))
-            ax.set_xlim((0, len(tl['z_pre'])))
-            # ax.legend()
 
-        # ip3, kp, and spikes are the same across varying u
-        suffix = by_spike[0]['suffix']
-        tl = by_spike[0]['timeline']
-        ip3 = tl['ip3']
-        kp = tl['kp']
+            if first:
+                plot.plot_astro(
+                    axes, ('astro',),
+                    tl['ip3'],tl['kp'],tl['ca'],
+                    None,None
+                )
+                first = False
+            else:
+                plot.plot_astro(
+                    axes, ('astro',),
+                    None, None, tl['ca'],
+                    None,None,
+                    no_legend=True
+                )
 
-        ax = fig.add_subplot(3,1,2)
-        ax.set_title("Astrocyte Input Traces")
-        ax.set_xlabel("Time (ms)")
-        ax.set_ylabel("[IP3],[K+]")
-        c1 = ax.plot(ip3, label='ip3')[0].get_color()
-        c2 = ax.plot(kp, label='k+')[0].get_color()
-        ax.legend()
+        plot.plot_spikes(
+            axes, ('spikes',),
+            tl['z_pre'], tl['z_post']
+        )
 
-        ax = fig.add_subplot(3,1,3)
-        ax.set_ylabel("Spikes")
-        ax.set_xlabel("Time (ms)")
-        
-        plot.plot_events(ax, spikes.transpose(1,0).tolist(), colors=(c1,c2))
-        ax.set_title("Pre and Post-synapic Spikes")
-
+        fig_path = "sweep_u_tau_{}.svg".format(suffix)
+        print("Saving: ", fig_path)
         fig.tight_layout()
-        fig.savefig("sweep_u_tau_{}.svg".format(suffix))
+        fig.savefig(fig_path)
 
 ######## Sweep ip3 ########
 def _sweep_pre_alpha_tau_vals(all_tau_ip3, all_alpha_ip3, spike_trains):
@@ -238,7 +246,8 @@ def _exp_sweep_pre_alpha_tau(cfg_path, sim=False):
     db = ExpStorage()
     
     cfg = config.Config(cfg_path)
-    cfg['astro_params'] = cfg['classic_stdp']
+    cfg['astro_params'] = cfg['astro_plasticity']
+    cfg['astro_params']['local']['stdp'] = [0]
     
     alpha_ip3_vals = torch.linspace(0.1, 1.0, 3)
     tau_ip3_vals = torch.logspace(1, 3, 5)
@@ -247,10 +256,14 @@ def _exp_sweep_pre_alpha_tau(cfg_path, sim=False):
     spike_trains = []
     spikes = spiketrain.impulse(0, 10, 100).transpose(1,0)
     spikes = torch.cat((spikes, torch.zeros(100, 1)), axis=1)
+    spikes = spikes.unsqueeze(-1)
+
     spike_trains.append(spikes)
     for r in [0.1, 0.5, 0.7]:
         spikes = spiketrain.poisson(r, 100).transpose(1,0)
-        spikes = torch.cat((spikes, torch.zeros(100, 1)), axis=1)
+        spikes = spikes.unsqueeze(-1)
+        
+        spikes = torch.cat((spikes, torch.zeros(100, 1, 1)), axis=1)
         spike_trains.append(spikes)
 
 
@@ -258,7 +271,7 @@ def _exp_sweep_pre_alpha_tau(cfg_path, sim=False):
     sweep_params = _sweep_pre_alpha_tau_vals(tau_ip3_vals, alpha_ip3_vals, spike_trains)
     for tau_ip3, alpha_ip3, spikes in tqdm(sweep_params, desc='ip3-alpha/tau'):
         cfg('astro_params.tau_ip3', tau_ip3)
-        cfg('astro_params.alpha_pre', alpha_ip3)
+        cfg('astro_params.alpha_ip3', alpha_ip3)
 
         sim_astro_probe(cfg, spikes, db)
         
@@ -304,12 +317,10 @@ def _graph_sweep_pre_alpha_tau(db):
         ax.set_title("Spikes over time")
         ax.legend(['Z In'])
 
+        fig_path = 'sweep-alpha_tau-ip3-spike{:1.3f}.svg'.format(torch.mean(spikes))
+        print("Saving: ", fig_path)
         fig.tight_layout()
-        fig.savefig(
-            'sweep-alpha_tau-ip3-spike{:1.3f}.svg'.format(
-                torch.mean(spikes)
-            )
-        )
+        fig.savefig(fig_path)  
 
 
 ######## Heatmap: tau_ca vs spike rate -> effect waiting time ########
@@ -322,8 +333,11 @@ def _exp_heatmap_tau_ca_thr_events(cfg_path, sim=False):
     db = ExpStorage()
 
     cfg = config.Config(cfg_path)
-    cfg['astro_params'] = cfg['classic_stdp']
+    cfg['astro_params'] = cfg['astro_plasticity']
     cfg['astro_params']['ca_th'] = 2.5
+    cfg['astro_params']['local']['stdp'] = [0]
+    cfg['astro_params']['local']['ca_thr'] = [0]
+    cfg['astro_params']['dw'] = 'dw_mult'
     
     spike_rate_range = torch.linspace(0.05, 0.8, 20)
     tau_range = torch.linspace(50, 500, 20)
@@ -340,6 +354,7 @@ def _exp_heatmap_tau_ca_thr_events(cfg_path, sim=False):
             cfg('astro_params.tau_ca', tau_ca)
 
             spikes = spiketrain.poisson([spike_rate]*2, 1000).transpose(1,0)
+            spikes = spikes.unsqueeze(-1)
 
             sim_astro_probe(cfg, spikes, db)
 
@@ -385,8 +400,11 @@ def _graph_heatmap_tau_ca_thr_events(db):
                 ha="center", va="center", color="w")
 
     ax.imshow(heat_img)
+
+    fig_path = "heatmap_spike-rate_tau_ca.svg"
+    print("Saving: ", fig_path)
     fig.tight_layout()
-    fig.savefig("heatmap_spike-rate_tau_ca.svg")
+    fig.savefig(fig_path)
 
 
 def _exp_heatmap_alpha_thr_events(cfg_path, sim=False):
@@ -398,8 +416,11 @@ def _exp_heatmap_alpha_thr_events(cfg_path, sim=False):
     db = ExpStorage()
 
     cfg = config.Config(cfg_path)
-    cfg['astro_params'] = cfg['classic_stdp']
+    cfg['astro_params'] = cfg['astro_plasticity']
+    cfg['astro_params']['local']['ca_thr'] = [0]
+    cfg['astro_params']['local']['stdp'] = [0]
     cfg['astro_params']['ca_th'] = 10.0
+    cfg['astro_params']['dw'] = 'dw_mult'
     
     spike_rate_range = torch.linspace(0.05, 0.8, 20)
     alpha_range = torch.linspace(0.1, 2.0, 20)
@@ -412,10 +433,11 @@ def _exp_heatmap_alpha_thr_events(cfg_path, sim=False):
     # Simulate
     for spike_rate in tqdm(spike_rate_range, desc='spike-rate/alpha'):
         for alpha in alpha_range:
-            cfg('astro_params.alpha_pre', alpha)
-            cfg('astro_params.alpha_post', alpha)
+            cfg('astro_params.alpha_ip3', alpha)
+            cfg('astro_params.alpha_kp', alpha)
 
             spikes = spiketrain.poisson([spike_rate]*2, 1000).transpose(1,0)
+            spikes = spikes.unsqueeze(-1)
 
             sim_astro_probe(cfg, spikes, db)
 
@@ -461,8 +483,11 @@ def _graph_heatmap_alpha_thr_events(db):
                 ha="center", va="center", color="w")
 
     ax.imshow(heat_img)
+
+    fig_path = "heatmap_spike-rate_alpha.svg"
+    print("Saving: ", fig_path)
     fig.tight_layout()
-    fig.savefig("heatmap_spike-rate_alpha.svg")
+    fig.savefig(fig_path)
 
 
 def _graph_exp_tp_w_sweep(db):
@@ -518,9 +543,14 @@ def _graph_exp_w_tl(dbs, xlim=None):
 
     fig, axes = gen_sgnn_axes(1, graphs, offset=True)
 
+    axes['spikes'][0].set_title("Pre and Post-synaptic Spikes")
+
     # Each db gets its own subplot on the graph
     for i, db in enumerate(dbs):
 
+        # Set title
+        axes['astro-ca'][i].set_title(db.meta['title'])
+        
         # Each db contains multiple runs with different weight values
         # Graph the timelines offset, on the same axis
         records_by_w = db.filter(tl_graph=True).group_by('w')
@@ -536,24 +566,33 @@ def _graph_exp_w_tl(dbs, xlim=None):
                 prefix = "w=" + ",".join(prefix)
             else:
                 prefix = 'w={:4.2f}'.format(w)
-            
-            graph_sgnn(
-                by_w[0],
-                fig,
-                axes,
-                i,
-                plot=['spikes', 'astro-ca'],
-                prefix=prefix)
+
+            if i == 0:
+                graph_sgnn(
+                    by_w[0],
+                    fig,
+                    axes,
+                    i,
+                    plot=['spikes', 'astro-ca'],
+                    prefix=prefix)
+            else:
+                graph_sgnn(
+                    by_w[0],
+                    fig,
+                    axes,
+                    i,
+                    plot=['astro-ca'],
+                    prefix=prefix)
 
         if not (xlim is None):
             if 'astro-ca' in axes:
-                axes['astro-ca'][i][0].set_xlim(*xlim)
+                axes['astro-ca'][i].set_xlim(*xlim)
             if 'astro' in axes:
-                axes['astro'][i][0].set_xlim(*xlim)
+                axes['astro'][i].set_xlim(*xlim)
 
     fig_path = "{}_tl.svg".format(db.meta['descr'])
     if not (xlim is None):
-        axes['spikes'][0][0].set_xlim(*xlim)
+        axes['spikes'][0].set_xlim(*xlim)
         fig_path = "{}_tl.svg".format(db.meta['descr'] + '_xlim')
         
     print("Saving: ", fig_path)
@@ -566,10 +605,10 @@ def _sim_rate_w_impulse(cfg, spikes, db, tl_graph_idx, all_w, desc=""):
         cfg['linear_params']['mu'] = w
 
         if i in tl_graph_idx:
-            db.prefix({'w': w, 'tl_graph': True})
+            db.prefix({'tl_graph': True})
         else:
-            db.prefix({'w': w})
-
+            db.prefix({'tl_graph': False})
+        
         sim_lif_astro_net(cfg, spikes, db, dw=False)
         db.last()['ca-act'] = db.last()['tl']['ca'].sum()
 
@@ -579,20 +618,22 @@ def _exp_rate_w_impulse(cfg_path, sim=False):
     db_name = "_exp_rate_w_impulse_{}.db"
 
     dbs = []
-    dbs = try_load_dbs(db_name, many=True)
-    if len(dbs) > 0:
-        return dbs
+    if not sim:
+        dbs = try_load_dbs(db_name, many=True)
+        if len(dbs) > 0:
+            return dbs
 
     with torch.no_grad():
         # Sim w/ out ltd/ltp thresholds
         cfg = config.Config(cfg_path)
         cfg['astro_params'] = cfg['anti_stdp']
-        cfg['astro_params']['u_step_params']['mode'] = 'u_ordered_prod'
-        cfg['astro_params']['weight_update'] = 'thr'
         cfg['astro_params']['ca_th'] = 2.5
+        cfg['astro_params']['local']['ca_thr'] = [0]
+        cfg['astro_params']['dw'] = 'dw_mult'
+        cfg['astro_params']['local']['ordered_prod'] = [0]
 
-        cfg['astro_params']['u_step_params']['ltd'] = 0.0
-        cfg['astro_params']['u_step_params']['ltp'] = 0.0
+        cfg['astro_params']['ordered_prod']['ltd'] = 0.0
+        cfg['astro_params']['ordered_prod']['ltp'] = 0.0
 
         spikes = gen_rate_spikes([
             (0.3, cfg['sim']['steps'])
@@ -609,11 +650,12 @@ def _exp_rate_w_impulse(cfg_path, sim=False):
         db.meta['title'] = "Astrocyte Response to Different Weight Values, with No Tolerance"
 
         _sim_rate_w_impulse(cfg, spikes, db, tl_graph_idx, all_w, 'Astro Sweep W (no tol)')
+        print("db tl_graph len: ", len(db.filter(tl_graph=True)))
         dbs.insert(0, db)
 
         # Sim w/ thresholds
-        cfg['astro_params']['u_step_params']['ltd'] = -1.75
-        cfg['astro_params']['u_step_params']['ltp'] = 1.75
+        cfg['astro_params']['ordered_prod']['ltd'] = -1.75
+        cfg['astro_params']['ordered_prod']['ltp'] = 1.75
 
         db = ExpStorage()
         db.meta['descr'] = "astro_rp_many-w"
@@ -622,17 +664,18 @@ def _exp_rate_w_impulse(cfg_path, sim=False):
         for i, w in enumerate(tqdm(all_w, desc='Astro w/band sweep')):
             cfg['linear_params']['mu'] = w
             for j, band in enumerate(all_band):
-                cfg['astro_params']['u_step_params']['ltd'] = -band
-                cfg['astro_params']['u_step_params']['ltp'] = band
+                cfg['astro_params']['ordered_prod']['ltd'] = -band
+                cfg['astro_params']['ordered_prod']['ltp'] = band
 
                 if i in tl_graph_idx and band == 1.75:
-                    db.prefix({'w': w, 'band': band, 'tl_graph': True})
+                    db.prefix({'band': band, 'tl_graph': True})
                 else:
-                    db.prefix({'w': w, 'band': band})
+                    db.prefix({'band': band})
 
                 sim_lif_astro_net(cfg, spikes, db, dw=False)
                 db.last()['ca-act'] = db.last()['tl']['ca'].sum()
 
+        print("db tl_graph len: ", len(db.filter(tl_graph=True)))
         dbs.insert(0, db)
 
     for i, db in enumerate(dbs):
@@ -646,6 +689,9 @@ def _exp_astro_impulse(cfg_path):
     with torch.no_grad():
         cfg = config.Config(cfg_path)
         cfg['astro_params'] = cfg['astro_plasticity']
+        cfg['astro_params']['local']['stdp'] = [0]
+        cfg['astro_params']['local']['ca_thr'] = [0]
+        cfg['astro_params']['dw'] = 'dw_mult'
 
         spikes = gen_ramp_impulse_spikes()
 
@@ -662,22 +708,19 @@ def _sim_pulse_pair_w_impulse(cfg, db, spikes, all_w, all_ca_thr, tl_graph_idx, 
     for i, w in enumerate(tqdm(all_w, desc='Astro Sweep W (thr)')):
         for j, ca_thr in enumerate(all_ca_thr):
             if (i in tl_graph_idx) and ca_thr == tl_ca:
-                # db.prefix({'w': w, 'ca_th': ca_thr, 'tl_graph': True})
                 db.prefix({'ca_th': ca_thr, 'tl_graph': True})
             else:
-                # db.prefix({'w': w, 'ca_th': ca_thr})
                 db.prefix({'ca_th': ca_thr})
 
             cfg['linear_params']['mu'] = w
             cfg['astro_params']['ca_th'] = ca_thr
             sim_lif_astro_net(cfg, spikes, db, dw=False)
-            db.last()['ca-act'] = db.last()['tl']['a'].sum()
+            db.last()['ca-act'] = db.last()['tl']['eff'].sum()
             
 
 def _exp_pulse_pair_w_impulse(
     cfg_path,
     sim=False,
-    dca_max=None,
     poisson_impulse=False,
     tl_w = [0.8112, 1.0, 1.2],
     tl_ca_thr = 2.5
@@ -693,9 +736,6 @@ def _exp_pulse_pair_w_impulse(
         db_path += "_poisson"
     db_path += "_impulse"
     
-    if dca_max:
-        db_path += "_dca"
-
     db_path = Path(db_path + ".db")
 
     if not sim:
@@ -706,6 +746,9 @@ def _exp_pulse_pair_w_impulse(
     with torch.no_grad():
         cfg = config.Config(cfg_path)
         cfg['astro_params'] = cfg['astro_plasticity']
+        cfg['astro_params']['local']['stdp'] = [0]
+        cfg['astro_params']['local']['ca_thr'] = [0]
+        cfg['astro_params']['dw'] = 'dw_mult'
 
         db = ExpStorage()
         db.meta['descr'] = "astro_tp_many-w"
@@ -714,10 +757,6 @@ def _exp_pulse_pair_w_impulse(
 
         if poisson_impulse:
             db.meta['descr'] += '_poisson'
-
-        if not (dca_max is None):
-            cfg['astro_params']['dca_max'] = dca_max
-            db.meta['descr'] += '_dca'
 
         spikes = gen_impulse_spikes(10, num_impulses=15, poisson=poisson_impulse)
         all_w = torch.linspace(0.75, 2.0, 100)
@@ -791,33 +830,29 @@ def _graph_lif_sample(db):
     name = db.meta['name']
 
     assert len(db) == 1
-    tl = db[0]['tl']
 
-    fig = plt.Figure()
+    # Generate and arrage Figure
+    gs = plot.gs(2,1)
+    fig, axes = plot.gen_axes(
+        ('lif', gs[0]),
+        ('spikes', gs[1]),
+    )
     fig.suptitle("LIF Neuron Response")
-
-    # Traces
-    i_n = tl['i_n'].squeeze().tolist()
-    v_n = tl['v_n'].squeeze().tolist()
-    z_pre = tl['z_pre'].squeeze().int().tolist()
-    z_post = tl['z_post'].squeeze().int().tolist()
-
     
-    ax = fig.add_subplot(211)
-    ax.set_title("Neuron Current and Membrane Voltage")
-    ax.set_xlabel("Time (ms)")
-    ax.set_ylabel("Magnitude")
-    c1 = ax.plot(i_n, label='Synapse Current')[0].get_color()
-    c2 = ax.plot(v_n, label='Membrane Voltage')[0].get_color()
-    ax.legend()
+    # Traces
+    tl = db[0]['tl']
+    v_psp = tl['i_n']
+    v_mem = tl['v_n']
+    z_pre = tl['z_pre']
+    z_post = tl['z_post']
 
-    # Spikes
-    ax = fig.add_subplot(212)
-    plot.plot_events(ax, [z_pre, z_post], colors=[c1,c2])
-    ax.legend(['z_pre', 'z_post'])
+    plot.plot_spikes(axes, ('spikes',), z_pre, z_post)
+    plot.plot_lif(axes, ('lif',), v_psp, v_mem)
 
+    fig_path = "{}.svg".format(name)
+    print("Saving: ", fig_path)
     fig.tight_layout()
-    fig.savefig("{}.svg".format(name))
+    fig.savefig(fig_path)
 
 
 def _parse_args():
@@ -853,8 +888,11 @@ def _main(args):
         
         for db in dbs:
             fig = graph_dw_dt(db)
+
+            fig_path = "{}.svg".format(db.meta['descr'])
+            print("Saving: ", fig_path)
             fig.tight_layout()
-            fig.savefig("{}.svg".format(db.meta['descr']))
+            fig.savefig(fig_path)
 
     if args.astro_param_sweep or args.all:
         _print_sim("Astro Param Sweep")
@@ -878,8 +916,10 @@ def _main(args):
         dbs = _exp_dw_dt_sweep(cfg_path, sim=args.sim)
         for db in dbs:
             fig = graph_dw_dt(db)
+            fig_path = "{}.svg".format(db.meta['descr'])
+            print("Saving: ", fig_path)
             fig.tight_layout()
-            fig.savefig("{}.svg".format(db.meta['descr']))
+            fig.savefig(fig_path)
 
 
     if args.astro_weight_sweep or args.all:
@@ -898,14 +938,15 @@ def _main(args):
         db = _exp_pulse_pair_w_impulse(
             cfg_path,
             tl_w = [1.0, 1.2, 1.8],
-            tl_ca_thr = 2.0,
+            tl_ca_thr = 2.5,
             sim=args.sim,
             poisson_impulse=True)
+
         _graph_exp_w_tl([db])
         _graph_exp_w_tl([db], xlim=(655, 670))
         _graph_exp_tp_w_sweep(db)
 
-        db = _exp_pulse_pair_w_impulse(cfg_path, sim=args.sim, dca_max=1.0)
+        db = _exp_pulse_pair_w_impulse(cfg_path, sim=args.sim)
         _graph_exp_tp_w_sweep(db)
 
 

@@ -4,13 +4,45 @@
 %
 
 \chapter{Future Work} \label{chapter:future-work}
-Talk about additional work surrounding harmony between local and global
-plasticity rules, and how it would be worth-while to explore different
-configurations.
+This work covers a broad range of topics, and explores work in fields that are
+still largely in their infancy. Plasticity, while well-defined in some areas of
+machine learning, isn't as clear-cut in spiking neural networks. Further,
+Astrocyte-Neuron interactions, aren't well understood in the Neuroscience
+community, and the mathematical model representing them vary widely as a
+result. The goal of this work was to extract some useful features, given what is
+known about Astrocyte-Neuron interactions, using a simple model. This was
+achieved, but the path taken leaves many interesting questions unanswered, and
+opens the door to future work.
 
-Talk about Astrocyte's as a framework for three-factor learning.
+\section{Astrocyte Local Learning}
+Local learning in this work was limited to two different types of inputs, and
+the Astrocyte wasn't evaluated against any particular learning objective with
+those input. Some interesting properties were teased out, such as the tendency of
+the Astrocyte to change weights, seeking a state with low \ca response to
+inputs. This is good, as that low \ca response configuration can be leveraged,
+to direct an Astrocyte to a particular goal. The threshold function
+\emph{Dw(\ca)} is fairly simple, more complicated functions should be explored
+here, to determine what temporal features an Astrocyte can learn.
 
-Talk about self-repair with addtion of IP3 -> Ca
+\section{Multi Synapse Plasticity}
+This work just scratches the surface of what should be explored in a
+mutli-synapse configuration. One of the best next steps however, is to explore
+input and learning objective pairings that allow for local and global dynamics
+to work together with plasticity. A harmonious relationship between global and
+local dynamics would allow a global rule to operate on a longer time-scale, and
+implement a higher-level function.
+
+%% \section{Multi Neuron and Synapse Coordination}
+
+\section{Supervised Learning}
+
+Astrocytes offer an interesting opportunity to work in tandom with a supervisory
+learning signal. In may cases, especially with a longer running task-based
+learning objective, feedback from a supervisory signal is sparse in
+time. Astrocytes are in a fantastic position to bridge this gap. They can
+maintain \ca concentrations over longer time-scales, and use their connections
+and internal states to direct plasticity intelligently, given a global and
+non-specific learning signal.
 
 \chapter{Conclusion} \label{chapter:conclusion}
 

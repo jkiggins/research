@@ -1,76 +1,63 @@
 #### Astrocyte Parameter sets
-classic_stdp: &classic_stdp
+astro_plasticity: &astro_plasticity
   mode: plasticity
     
   tau_ca: 50.0
   ca_th: 100000.0
 
   tau_ip3: 100.0
-  alpha_pre: 1.0
+  alpha_ip3: 1.0
   pre_reset_on_spike: False
 
   tau_kp: 100.0
-  alpha_post: 1.0
+  alpha_kp: 1.0
   post_reset_on_spike: False
-
-  dca_max: 100000.0
-
-  weight_update: thr
-
-  u_step_params:
-    mode: stdp
+  
+  ordered_prod:
     ltd: 0.0
     dw_ltd: 0.95
-
     ltp: 0.0
     dw_ltp: 1.05
 
-astro_plasticity:
-  tau_ca: 50.0
-  ca_th: 2.5
-
-  tau_ip3: 100.0
-  alpha_pre: 1.0
-  pre_reset_on_spike: False
-
-  tau_kp: 100.0
-  alpha_post: 1.0
-  post_reset_on_spike: False
-
-  dca_max: 100000.0
-
-  u_step_params:
-    mode: stdp
-    ltd: 0.0
+  dw_mult:
+    prop_ca: False
     dw_ltd: 0.95
-
-    ltp: 0.0
     dw_ltp: 1.05
 
-  weight_update: thr
-  ip3_kp_activity_thr: 0.2
+  dw: null
+
+  local:
+    stdp: null
+    ca_thr: null
+    ordered_prod: null
+    ip3_ca: null
+    
+  coupling:
+    and: null
+    nand: null
+
 
 anti_stdp: &anti_stdp
-  __inherit__: *classic_stdp
-  alpha_pre: -1.0
-  alpha_post: -1.0
+  __inherit__: *astro_plasticity
+  alpha_ip3: -1.0
+  alpha_kp: -1.0
 
 ltp_bias: &ltp_bias
-  __inherit__: *classic_stdp
+  __inherit__: *astro_plasticity
   tau_ip3: 30
 
 ltd_bias: &ltd_bias
-  __inherit__: *classic_stdp
+  __inherit__: *astro_plasticity
   tau_kp: 30
 
 ltp_dt_shift: &ltp_dt_shift
-  __inherit__: *classic_stdp
+  __inherit__: *astro_plasticity
   u_step_params:
     ltd: -0.5
     ltp: -0.5
 
 ltd_dt_shift: &ltd_dt_shift
-  __inherit__: *classic_stdp
+  __inherit__: *astro_plasticity
   u_step_params:
     ltp: 0.5
     ltd: 0.5

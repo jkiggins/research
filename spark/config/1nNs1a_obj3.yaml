@@ -7,6 +7,7 @@ classic_stdp: &classic_stdp
 
   and_th: 0.5
   and_ltp_th: 0.01
+
   tau_ip3: 100.0
   alpha_pre: 1.0
   pre_reset_on_spike: False

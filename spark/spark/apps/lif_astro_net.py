@@ -95,6 +95,8 @@ class LifAstroNet(LifNet):
 
         eff, self.astro_state = self.astro(self.astro_state, z_pre=z_pre, z_post=z_post)
 
+        # print("eff: {}, dw_mult: {}, dw_add: {}".format(eff, self.dw_mult, self.dw_add))
+
         if dw:
             if self.dw_mult:
                 new_w = self.linear.weight[0] * eff
@@ -232,7 +234,7 @@ class LifAxis:
 
         ytick = (line_offsets[len(line_offsets) // 2], label)
         self.lif_ax_yticks(ytick, append=True)
-
+        
         self.ax.eventplot(event_idxs,
                      lineoffsets=line_offsets,
                      linelengths=0.5,
@@ -283,6 +285,7 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
         if len(snn_output) == 5:
             tl['ca'] = torch.zeros((n_spikes, n_synapse))
             # tl['a'] = torch.zeros((n_spikes, n_synapse))
+            tl['eff'] = torch.zeros((n_spikes, n_synapse))
             tl['dw'] = torch.zeros((n_spikes, n_synapse))
             tl['ip3'] = torch.zeros((n_spikes, n_synapse))
             tl['kp'] = torch.zeros((n_spikes, n_synapse))
@@ -302,6 +305,7 @@ def _store_snn_step(tl, i, spikes, snn, snn_output, s):
         tl['dser'][i] = a_state['dser']
         tl['serca'][i] = a_state['serca']
         # tl['a'][i] = weight_update
+        tl['eff'][i] = eff
         tl['dw'][i] = eff
         tl['ip3'][i] = a_state['ip3']
         tl['kp'][i] = a_state['kp']
@@ -335,6 +339,7 @@ def _sim_snn(snn, spikes, dw=True):
     tl = None
     for i, s in enumerate(spikes):
         tl = _sim_snn_step(snn, tl, spikes, s, i, dw=dw)
+
 
     return tl
 
@@ -554,7 +559,8 @@ def plot_1nNs1a(
         if not (plot is None) and not (g in plot):
             continue
 
-        ax = g_axes[idx]
+        g_idx = min(idx, len(g_axes)-1)
+        ax = g_axes[g_idx]
         # Neuron plot
         if g == 'neuron' and 'neuron' in plot:
             ax.plot(tl['v_n'].squeeze().tolist(), label='{}'.format(prefix))
@@ -566,10 +572,10 @@ def plot_1nNs1a(
             events = []
             events = events + [tl['z_pre'][:, i] for i in range(tl['z_pre'].shape[1])]
             legend = ['pre-s{}'.format(i) for i in range(len(events))]
-            
+
             ax.plot_events(
                 events,
-                colors=['tab:blue']*nsyns + ['tab:orange'],
+                colors=['tab:blue']*nsyns,
             )
             
         elif g == 'spikes' and 'spikes' in plot:
@@ -603,7 +609,7 @@ def plot_1nNs1a(
 
                 if i == 0 and ax.plot_count == 3:
                     line_ip3.set_label('IP3')
-                    line_ip3.set_label('K+')
+                    line_kp.set_label('K+')
                     line_ca.set_label('Ca')
                     ax.legend()
 
@@ -639,7 +645,6 @@ def sim_lif_astro_net(cfg, spike_trains, db, dw=True, keep_state=False):
     # Sim
     snn = None
     for i, spikes in enumerate(spike_trains):
-        # print(i, ": ")
         if snn is None:
             snn = LifAstroNet(cfg)
 

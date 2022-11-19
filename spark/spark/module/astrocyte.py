@@ -49,8 +49,8 @@ class Astro:
         state = astro_step_z_pre(z_pre, state, self.params, self.dt)
         state = astro_step_z_post(z_post, state, self.params, self.dt)
 
-        if self.params['weight_update'] == 'ip3_k+_fall':
-            state = astro_track_activity(state, self.params)
+        # if self.params['weight_update'] == 'ip3_k+_fall':
+        #     state = astro_track_activity(state, self.params)
             # print("act_gt_thr: ", state['act_gt_thr'], end=' ')
 
         # ------------ Reset global -> local signaling ------------
@@ -72,16 +72,19 @@ class Astro:
         #     state = astro_step_u_stdp(state, self.params, z_pre=z_pre, z_post=z_post)
 
         # state = astro_step_prod_ca(state, self.params)
-        # state = astro_step_ordered_prod_ca(state, self.params)
+        state = astro_step_ordered_prod_ca(state, self.params)
         state = astro_step_ip3_ca(state, self.params, self.dt)
         state = astro_step_stdp_ca(state, self.params, z_pre=z_pre, z_post=z_post)
         state = astro_step_and_coupling(state, self.params)
 
+
         # ------------ Effect on Synaptic Weight --------------
         eff = torch.zeros_like(state['ca'])
-        state, eff = astro_step_signal(state, self.params)
+        state, eff = astro_step_thr(state, eff, self.params)
+        state, eff = astro_step_signal(state, eff, self.params)
+
         # if self.params['weight_update'] == 'thr':
-        #     state, u_spike = astro_step_thr(state, self.params)  # Apply thr to u
+        #       # Apply thr to u
         #     eff = astro_step_effect_weight(u_spike, self.params)  # Get effect based on u exceeding thr
 
         # elif self.params['weight_update'] == 'prop':

@@ -1,5 +1,6 @@
 /literature
 /writing/*.out
+/writing/*.bbl
 /writing/*.pdf
 /writing/*.log
 /writing/*.blg

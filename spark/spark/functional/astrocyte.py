@@ -166,12 +166,7 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
 
     ca = state['ca'][syns]
     dca = torch.zeros_like(ca)
-    try:
-        z_pre = z_pre[syns]
-    except:
-        import code
-        code.interact(local=dict(globals(), **locals()))
-        exit(1)
+    z_pre = z_pre[syns]
     kp = state['kp'][syns]
     ip3 = state['ip3'][syns]
 
@@ -189,8 +184,13 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
     wh_ltp = torch.where(bool_ltp)
 
     # Peform LTP/LTD across astrocyte processes
-    dca[wh_ltd] = -kp[wh_ltd] * params['alpha_kp']
-    dca[wh_ltp] = ip3[wh_ltp] * params['alpha_ip3']
+    sign_ltd = torch.where(
+        kp[wh_ltd] > params['stdp']['ltd'],1.0,-1.0)
+    dca[wh_ltd] = sign_ltd * kp[wh_ltd] * params['alpha_kp']
+
+    sign_ltp = torch.where(
+        ip3[wh_ltp] > params['stdp']['ltp'], -1.0, 1.0)
+    dca[wh_ltp] = sign_ltp * ip3[wh_ltp] * params['alpha_ip3']
 
     ca = ca + dca
     

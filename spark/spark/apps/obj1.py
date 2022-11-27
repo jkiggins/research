@@ -23,7 +23,8 @@ from .lif_astro_net import (
     sim_lif_astro_net,
     graph_lif_astro_compare,
     gen_dw_w_axes,
-    graph_dw_w
+    graph_dw_w,
+    astro_dwdt_text
 )
 
 from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
@@ -81,6 +82,7 @@ def _exp_classic_stdp(cfg_path, sim=False):
 
     db = ExpStorage()
     db.meta['descr'] = 'closed_form_stdp'
+    db.meta['name'] = "Closed Form of STDP"
     for dw_i, dt_i in zip(dw, spike_deltas):
         db.store({'delta_t': dt_i, 'dw': dw_i})
     dbs.append(db)
@@ -112,26 +114,29 @@ def _exp_dw_dt_sweep(cfg_path, sim=False):
         cfg = config.Config(cfg_path)
         # Set params to only explore ca response, and not react to the value
         cfg['astro_params'] = cfg[p_key]
-        cfg['astro_params']['weight_update'] = 'thr'
         cfg['astro_params']['ca_th'] = 100000.0
         cfg['astro_params']['local']['ca_thr'] = [0]
-        cfg['astro_params']['local']['stdp'] = [0]
+        cfg['astro_params']['local']['ordered_prod'] = [0]
+        cfg['astro_params']['local']['stdp'] = None
         cfg['astro_params']['dw'] = 'dw_mult'
-
 
         # Sims with rate-based response
         db = ExpStorage()
         db.meta['descr'] = "1n1s1a_rp_{}_dwdt_{}".format(lif_astro_name(cfg['astro_params']), p_key)
         db.meta['name'] = p_name
+        db.meta['graph_text'] = astro_dwdt_text(cfg, ordered_prod=True)
         _sim_dw_dt_sweep(cfg, db)
         dbs.append(db)
 
         # Sims with temporal response
         db = ExpStorage()
-        cfg['astro_params']['weight_update'] = 'thr'
         cfg['astro_params']['ca_th'] = 100000.0
+        cfg['astro_params']['local']['ordered_prod'] = None
+        cfg['astro_params']['local']['stdp'] = [0]
         db.meta['descr'] = "1n1s1a_tp_{}_dwdt_{}".format(lif_astro_name(cfg['astro_params']), p_key)
         db.meta['name'] = p_name
+        db.meta['graph_text'] = astro_dwdt_text(cfg, stdp=True)
+
         _sim_dw_dt_sweep(cfg, db)
         dbs.append(db)
 
@@ -194,7 +199,7 @@ def _graph_sweep_tau_ca(db):
             ('spikes', gs[1]),
             figsize=(15,10),
         )
-        fig.suptitle("Astrocyte Response to Different Values of Ca Tau")
+        fig.suptitle("Astrocyte Response to Different Values of $\tau_{{ca}}$")
 
         suffix = by_spike[0]['suffix']
 
@@ -371,12 +376,12 @@ def _graph_heatmap_tau_ca_thr_events(db):
 
     fig = plt.Figure(figsize=(20,20))
     ax = fig.add_subplot(111)
-    ax.set_title("Mean Ca Threshold Event Waiting Time Given Poisson Spike Rate vs. Ca Tau")
+    ax.set_title("Mean time for $Ca^{2+} > thr_{{ca}}$ Given Poisson Spike Rate vs. $\tau_{ca}$")
     ax.set_yticks(
         list(range(len(tau_range))),
         labels=["{:2.4f}".format(float(a)) for a in tau_range],
         rotation=45)
-    ax.set_ylabel('Ca Tau')
+    ax.set_ylabel('$\tau_{ca}$')
 
     ax.set_xticks(
         list(range(len(spike_rate_range))),
@@ -454,7 +459,7 @@ def _graph_heatmap_alpha_thr_events(db):
 
     fig = plt.Figure(figsize=(20,20))
     ax = fig.add_subplot(111)
-    ax.set_title("Mean Ca Threshold Event Waiting Time Given Poisson Spike Rate vs. Pathway Alphas")
+    ax.set_title("Mean time for $Ca^{2+} > thr_{ca}$ Given Poisson Spike Rate and $alpha_{ip3/k+}$")
     ax.set_yticks(
         list(range(len(alpha_range))),
         labels=["{:2.4f}".format(float(a)) for a in alpha_range],
@@ -500,10 +505,10 @@ def _graph_exp_tp_w_sweep(db):
     for i, (ca_thr, by_ca_thr) in enumerate(records_by_ca_thr.items()):
         fig, axes = graph_dw_w(
             by_ca_thr, fig, axes,
-            title='Ca Threshold = {:4.2f}'.format(ca_thr),
+            title='Astrocyte $Ca^{{2+}}$ Response with $thr_{{ca}}$ = {:4.2f}'.format(ca_thr),
             sp=i
         )
-            
+   
     fig_path = "{}_sweep.svg".format(db.meta['descr'])
     print("Saving: ", fig_path)
     fig.tight_layout()
@@ -520,7 +525,7 @@ def _graph_exp_rp_w_sweep(db):
     for i, (band, by_band) in enumerate(records_by_band.items()):
         fig, axes = graph_dw_w(
             by_band, fig, axes,
-            title='Tolerance Band = {:4.2f}'.format(band),
+            title='Simulation With $thr_{{ltp/ltd}}={:4.2f}$'.format(band),
             sp=i)
 
     fig_path = "{}_sweep.svg".format(db.meta['descr'])
@@ -543,7 +548,7 @@ def _graph_exp_w_tl(dbs, xlim=None):
 
     fig, axes = gen_sgnn_axes(1, graphs, offset=True)
 
-    axes['spikes'][0].set_title("Pre and Post-synaptic Spikes")
+    axes['spikes'][0].set_title("Pre and Post-Synaptic Spikes")
 
     # Each db gets its own subplot on the graph
     for i, db in enumerate(dbs):
@@ -610,7 +615,8 @@ def _sim_rate_w_impulse(cfg, spikes, db, tl_graph_idx, all_w, desc=""):
             db.prefix({'tl_graph': False})
         
         sim_lif_astro_net(cfg, spikes, db, dw=False)
-        db.last()['ca-act'] = db.last()['tl']['ca'].sum()
+
+        db.last()['ca-act'] = (db.last()['tl']['ca']).sum()
 
 
 def _exp_rate_w_impulse(cfg_path, sim=False):
@@ -647,7 +653,7 @@ def _exp_rate_w_impulse(cfg_path, sim=False):
 
         db = ExpStorage()
         db.meta['descr'] = "astro_rp_many-w"
-        db.meta['title'] = "Astrocyte Response to Different Weight Values, with No Tolerance"
+        db.meta['title'] = "Astrocyte Response given $w$ with $thr_{{ltp/ltd}}=0$"
 
         _sim_rate_w_impulse(cfg, spikes, db, tl_graph_idx, all_w, 'Astro Sweep W (no tol)')
         print("db tl_graph len: ", len(db.filter(tl_graph=True)))
@@ -659,7 +665,9 @@ def _exp_rate_w_impulse(cfg_path, sim=False):
 
         db = ExpStorage()
         db.meta['descr'] = "astro_rp_many-w"
-        db.meta['title'] = "Astrocyte Response to Different Weight Values, with Tolerance Band"
+        db.meta['title'] = \
+            "Astrocyte Response given $w$ with $thr_{{ltp/ltd}}={}$".format(
+                cfg['astro_params']['ordered_prod']['ltp'])
 
         for i, w in enumerate(tqdm(all_w, desc='Astro w/band sweep')):
             cfg['linear_params']['mu'] = w
@@ -715,7 +723,8 @@ def _sim_pulse_pair_w_impulse(cfg, db, spikes, all_w, all_ca_thr, tl_graph_idx, 
             cfg['linear_params']['mu'] = w
             cfg['astro_params']['ca_th'] = ca_thr
             sim_lif_astro_net(cfg, spikes, db, dw=False)
-            db.last()['ca-act'] = db.last()['tl']['eff'].sum()
+
+            db.last()['ca-act'] = (db.last()['tl']['eff'] - 1.0).sum()
             
 
 def _exp_pulse_pair_w_impulse(
@@ -753,7 +762,7 @@ def _exp_pulse_pair_w_impulse(
         db = ExpStorage()
         db.meta['descr'] = "astro_tp_many-w"
 
-        db.meta['title'] = "Astrocyte Response to Impulse inputs for Different weight Values with {:4.2f} Ca Threshold".format(cfg['astro_params']['ca_th'])
+        db.meta['title'] = "Astrocyte Response to Impulse input given $w$ with $thr_{{ca}}={:4.2f}$".format(cfg['astro_params']['ca_th'])
 
         if poisson_impulse:
             db.meta['descr'] += '_poisson'
@@ -887,7 +896,7 @@ def _main(args):
         dbs = _exp_classic_stdp(cfg_path, sim=args.sim)
         
         for db in dbs:
-            fig = graph_dw_dt(db)
+            fig = graph_dw_dt(db, title=db.meta['name'])
 
             fig_path = "{}.svg".format(db.meta['descr'])
             print("Saving: ", fig_path)
@@ -914,8 +923,13 @@ def _main(args):
         _print_sim("Astro Spike Pairs")
         seed_many()
         dbs = _exp_dw_dt_sweep(cfg_path, sim=args.sim)
+
         for db in dbs:
-            fig = graph_dw_dt(db)
+            fig = graph_dw_dt(
+                db,
+                title=db.meta['name'],
+                graph_text=db.meta['graph_text']
+            )
             fig_path = "{}.svg".format(db.meta['descr'])
             print("Saving: ", fig_path)
             fig.tight_layout()

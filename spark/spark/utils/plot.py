@@ -30,6 +30,8 @@ region_colors = {
     'n/a': 'tab:green',
 }
 
+plt_round_box = dict(facecolor='none', edgecolor='tab:blue', boxstyle='round')
+
 def _locate_ax(axes, loc, as_list=False):
     axs = axes
     for l in loc:

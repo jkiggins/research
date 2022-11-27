@@ -492,21 +492,24 @@ def gen_sgnn_axes(
 
     fig = plt.Figure(figsize=figsize)
 
-    graph_to_title = {
-        'spikes': "Astrocyte and Neuron Events for Synapse",
-        'pre-spikes': "Pre-synaptic Spikes for Synapse",
-        'neuron': "Neuron Membrane Voltage",
-        'astro': "Astrocyte Traces, Synapse",
-        'astro-ca': "Astrocyte Calcium Response, Synapse",
-        'weight': "Synapse Weight",
-        'regions': "Activity Regions"
+    graph_to_labels = {
+        'spikes': ("Spikes", None),
+        'pre-spikes': ("Pre-synaptic Spikes", None),
+        'neuron': ("Neuron Membrane Voltage", "Voltage"),
+        'astro': ("Astrocyte Traces, Synapse", "Concentration"),
+        'astro-ca': ("Astrocyte Calcium Response", "Concentration"),
+        'weight': ("Synapse Weight", "Magnitude"),
+        'regions': ("Activity Regions", None)
     }
 
     axes = {g: [] for g in graphs}
     
     for gs_idx, g in enumerate(graphs):
         ax = fig.add_subplot(gs[gs_idx, 0])
-        ax.set_title(graph_to_title[g])
+        title, ylabel = graph_to_labels[g]
+        ax.set_title(title)
+        if ylabel:
+            ax.set_ylabel(ylabel)
         ax = LifAxis(ax, offset=offset)
 
         axes[g].append(ax)
@@ -610,18 +613,19 @@ def plot_1nNs1a(
                 if i == 0 and ax.plot_count == 3:
                     line_ip3.set_label('IP3')
                     line_kp.set_label('K+')
-                    line_ca.set_label('Ca')
+                    line_ca.set_label('$Ca^{2+}$')
                     ax.legend()
 
             elif g == 'astro-ca' and ('astro-ca' in plot):
                 lines = ax.plot(tl['ca'][:, i].tolist(), color=graph_color)
+                ax.set_ylabel("Astrocyte [$Ca^{2+}$]")
                 # Only label the fist synapses' graph, and reuse the color for all other synapses
+
+                print(f"offset: {idx}, synapse: {i}")
                 if i == 0:
                     graph_color = lines[0].get_color()
-
-                    if ax.plot_count == 1:
-                        lines[0].set_label(prefix)
-                        ax.legend()
+                    lines[0].set_label(prefix)
+                    ax.legend()
 
             elif g == 'weight' and 'weight' in plot:
                 ax.plot(tl['w'][:,i], marker='.', label='{}'.format(prefix))
@@ -703,19 +707,22 @@ def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''
         ncols = 1
         gs = GridSpec(nrows, ncols)
 
-        graph_to_title = {
-            'spikes': "Astrocyte and Neuron Events Synapse {}",
-            'neuron': "Neuron Membrane Voltage",
-            'astro': "Astrocyte Traces, Synapse {}",
-            'astro-ca': "Astrocyte Calcium Concentration, Synapse {}",
-            'weight': "Synapse {} Weight"
+        graph_to_labels = {
+            'spikes': ("Spikes {}", None),
+            'neuron': ("Neuron Membrane Voltage", "Volts"),
+            'astro': ("Astrocyte Traces, Synapse {}", "Concentration"),
+            'astro-ca': ("Astrocyte Calcium, Synapse {}", "Concentration"),
+            'weight': ("Synapse {} Weight", "Magnitude")
         }
 
         axes = {g: [] for g in graphs}
 
         for gs_idx, g in enumerate(graphs):
             ax = fig.add_subplot(gs[gs_idx, 0])
-            ax.set_title(graph_to_title[g].format(0))
+            title, ylabel = graph_to_labels[g]
+            ax.set_title(title.format(0))
+            if ylabel:
+                ax.set_ylabel(ylabel)
             axes[g].append(ax)
     
     # Graph
@@ -805,7 +812,7 @@ def _graph_dw_dt(points, ax, text):
 def graph_dw_dt(db, title="", graph_text=""):
     # Graph
     points = []
-
+    
     # Only one plot for now
     fig, axes = gen_dw_dt_axes(1)
 
@@ -834,9 +841,8 @@ def gen_dw_w_axes(n_plots, titles=None, spikes=False, size=(16, 8)):
     axes = []
 
     for i in range(n_plots):
-
         ax = fig.add_subplot(gs[i])
-        ax.set_ylabel("Number of Ca Threshold Events")
+        ax.set_ylabel("Number of times $Ca^{2+} > thr_{ca}$")
         ax.set_xlabel("Synaptic Weight")
         ax.grid(True)
 
@@ -858,6 +864,10 @@ def graph_dw_w(db, fig, axes, prefix=None, title=None, sp=0):
         points[-1][2:4] = [ca.min(), ca.max()]
 
     points = torch.as_tensor(points)
+
+    # import code
+    # code.interact(local=dict(globals(), **locals()))
+    # exit(1)
 
     axes[sp].errorbar(
         points[:, 0],
@@ -939,3 +949,23 @@ def astro_and_region(tl):
         return ('ltp', duration)
 
     return ('n/a', duration)
+
+
+def astro_dwdt_text(cfg, ordered_prod=False, stdp=False):
+    astro_cfg = cfg['astro_params']
+    text = ""
+    text += f"IP3 Alpha: {astro_cfg['alpha_ip3']}\n"
+    text += f"K+ Alpha: {astro_cfg['alpha_kp']}\n"
+    text += f"IP3 Tau: {astro_cfg['tau_ip3']}\n"
+    text += f"K+ Tau: {astro_cfg['tau_kp']}\n"
+
+    if ordered_prod:
+        text += f"LTD thr: {astro_cfg['ordered_prod']['ltd']}\n"
+        text += f"LTP thr: {astro_cfg['ordered_prod']['ltp']}\n"
+
+    if stdp:
+        text += f"LTD thr: {astro_cfg['stdp']['ltd']}\n"
+        text += f"LTP thr: {astro_cfg['stdp']['ltp']}\n"
+
+
+    return text

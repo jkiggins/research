@@ -9,8 +9,8 @@ addition to the experimental evidence, Astrocytes are well placed to control
 synaptic plasticity at many levels. Drilling down to the level of the
 synapse, astrocytes monitor synaptic activity chemically, and respond
 quickly with a variety of gliotransmitters, some of which are known to be
-critical for LTP/LTD \cite{min_2012}. This fast local activity, which takes
-the form of Ca2+ transients in Astrocyte end-foot processes is integrated
+critical for \Gls{ltp}/\Gls{ltd} \cite{min_2012}. This fast local activity, which takes
+the form of \ca transients in Astrocyte end-foot processes is integrated
 into a cell-level response, and can travel to distant synapses.
 
 The goal in Chapter \ref{chapter:obj2} is to explore Astrocyte mediated synaptic
@@ -37,10 +37,10 @@ identified and the effect of parameters on these features explored.
 %% \scriptsize
 %% \begin{tabular}{lrrrrrr}\toprule
 %% Astrocyte Feature &Primary Author &References &Astrocyte Model &Functional Model in Primary Work &Adaption in This Work \\\midrule
-%% Ca Mediated increase in Synaptic Current &Wade &Wade2011, Wade2012 &Lin and Rizel or Variation &IP3 = L(incoming spikes), d\_ca = L(IP3) + L(Ca) - NL(Ca) &i = z*w + i\_astro \\
-%% Ca Mediated increase in Synaptic Weight &De Pitta &DePitta2016 &Lin and Rizel or Variation &Ca -> Glu -> increased PR &Threshold on Ca + constant multiplier to drive weight increase. Weight incrase is proportional to Ca, subject to a maximum change and scale factor \\
-%% Modulation of Ca Based STDP Curve &De Pitta &DePitta2016 &Lin and Rizel or Variation &Shifting and modulation of Ca based two-threshold STDP &Differential Tau paramters on IP3 and K+ to achieve a similar result \\
-%% Gating of LTP/LTD With D-Serine release &No primary Author & & &D-serine release opens the gate for synaptic plasticity through other mechanisms &The astrocyte drives plasticity, based on internal state including pesudo ip3, k+ and Ca \\
+%% Ca Mediated increase in Synaptic Current &Wade &Wade2011, Wade2012 &Lin and Rizel or Variation &\ipt = L(incoming spikes), d\_ca = L(\ipt) + L(Ca) - NL(Ca) &i = z*w + i\_astro \\
+%% Ca Mediated increase in Synaptic Weight &De Pitta &DePitta2016 &Lin and Rizel or Variation &Ca -> \Gls{glu} -> increased PR &Threshold on Ca + constant multiplier to drive weight increase. Weight incrase is proportional to Ca, subject to a maximum change and scale factor \\
+%% Modulation of Ca Based STDP Curve &De Pitta &DePitta2016 &Lin and Rizel or Variation &Shifting and modulation of Ca based two-threshold STDP &Differential Tau paramters on \ipt and \kp to achieve a similar result \\
+%% Gating of \Gls{ltp}/\Gls{ltd} With D-Serine release &No primary Author & & &D-serine release opens the gate for synaptic plasticity through other mechanisms &The astrocyte drives plasticity, based on internal state including pesudo ip3, k+ and Ca \\
 %% Working Memory &Gordleeva &Gordleeva2021 &Lin and Rizel or Variation &Astrocyte Calcium persists, and changes network sensitivity to prompt inputs & \\
 %% \bottomrule
 %% \end{tabular}
@@ -53,16 +53,16 @@ identified and the effect of parameters on these features explored.
 
 \section{\ca Threshold Triggered Weight Update}
 One key Astrocyte property highlighted in Chapter \ref{chapter:background} is
-the concept of CICR. Essentially, Astrocytes integrate synaptic activity into a
+the concept of \Gls{cicr}. Essentially, Astrocytes integrate synaptic activity into a
 \ca response, once that \ca concentration exceeds a threshold, there is a
 cascade of events resulting in both \ca propagation to the cell body, and the
-release of glio-transmitters into the synaptic cleft. This concept of CICR, fits
+release of glio-transmitters into the synaptic cleft. This concept of \Gls{cicr}, fits
 well into the current model, and will be explored in this chapter as the
 mechanism that drives weight change.
 
 In the context of this work's Astrocyte model, as \ca values increase and exceed
 a threshold $thr_{ca}$, a weight change will occur at the synapse, and the \ca
-value degraded to zero, representing the re-uptake of \ca observed with CICR in
+value degraded to zero, representing the re-uptake of \ca observed with \Gls{cicr} in
 biology. Tuning this threshold value, should lead to some improvements for both
 weight convergence given a set of inputs, and tolerance to overall noise in the
 system.
@@ -140,7 +140,7 @@ weight update will depend on a series of
 causal or anti-causal spiking events. The need for multiple events leads to 
 increased confidence in each weight change, and can filter out some random spike
 associations due to noise.  Furthermore, the approach has support from existing
-Neuroscience and Engineering literature, and is similar to CICR, where calcium
+Neuroscience and Engineering literature, and is similar to \Gls{cicr}, where calcium
 levels crossing some threshold lead to a release of gliotransmitters locally. In
 the case of this work, that Gliotransmitter release is modeled as a change in
 synaptic weight.
@@ -182,7 +182,7 @@ what happens when there are additional input spikes after a post-synaptic
 spike. In this case classic STDP would decrease the weight, while the Astrocyte
 integrates this event into \ca. Those input spikes are eventually associated
 with an additional down-stream spike, forming a causal relationship and \ca is
-increased. Overall this leads to LTP, with the potential LTD events being
+increased. Overall this leads to \Gls{ltp}, with the potential \Gls{ltd} events being
 smoothed out.
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_astro_0.svg}{
@@ -263,7 +263,7 @@ or no weight update. With higher initial weight values the Astrocyte model was
 able to converge as with previous simulations, while the STDP diverged towards a
 weight value of zero. The Astrocyte model converged to a weight value as a
 function of the initial weight, specifically the next stable configuration from
-Figure \ref{fig:astro:tp_many_w_sweep} that can be reached by LTP. This is a key
+Figure \ref{fig:astro:tp_many_w_sweep} that can be reached by \Gls{ltp}. This is a key
 property of the weight update mechanics, in that the system seeks a stable
 configuration.
 
@@ -308,7 +308,7 @@ configurations lead to divergence to the maximum weight value ($20$), or
 exhibited similar instability to what has been observed thus far.
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_tau_astro_0.svg}{Astrocyte
-  Response to Different Values for K+ and IP3 Pathway $\tau$}{fig:sweep:astro_tau}{0.4}
+  Response to Different Values for \kp and \ipt Pathway $\tau$}{fig:sweep:astro_tau}{0.4}
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_tau_classic_0.svg}{Classic
   STDP Response to Different Values for Pre and Post-synaptic Trace

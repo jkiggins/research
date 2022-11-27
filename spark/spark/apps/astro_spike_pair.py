@@ -92,6 +92,7 @@ def graph_dw_dt(db, title="", graph_text=""):
     ax.text(
         -0.05, 0.8,
         graph_text,
+        bbox=plot.plt_round_box
     )
 
     fig.tight_layout()

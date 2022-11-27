@@ -172,9 +172,9 @@ networks. From the Neuroscience and engineering literature, it was possible to
 identify the common input and output pathways within the tripartite synapse.
 
 \begin{enumerate}
-  \item Pre-synaptic Glu $\implies$ IP3 Pathway $\implies$ Ca pathway
-  \item Post-synaptic depolarization K+ $\implies$ Ca pathway
-  \item Ca $\implies$ D-serine release (more generally, plasticity modulation)
+  \item Pre-synaptic \Gls{glu} $\implies$ \ipt Pathway $\implies$ \ca pathway
+  \item Post-synaptic depolarization \kp $\implies$ \ca pathway
+  \item \ca $\implies$ D-serine release (more generally, plasticity modulation)
 \end{enumerate}
 
 \asvgf{figures/1n1s1a_diagram.svg}{Astrocyte and Neuron Model Diagram For An LIF
@@ -240,7 +240,7 @@ with any deviations mentioned in the graph.
   \caption{Common Astrocyte Input Pathway Parameters} \label{table:astro_in_path_params}
   \scriptsize
   \begin{tabular}{lrrrrr}\toprule
-    dt &Alpha IP3 &Tau IP3 &Alpha K+ &Tau K+ \\\midrule
+    dt &Alpha \ipt &Tau \ipt &Alpha \kp &Tau \kp \\\midrule
     0.001 s &1 &100 1/s &1 &100 1/s \\
     \bottomrule
   \end{tabular}
@@ -273,8 +273,8 @@ spikes. One approach to achieve this, is to specify a \emph{Ca(ip3, k+)}
 function that considers the magnitude
 of input pathway state variables \ipt and \kp as well as which variable is
 larger (the order). This gives a magnitude and sign to each update to the
-Astrocyte state variable \ca. The value of \ca will eventually leading to LTP or
-LTD when explored in \ref{chapter:obj2}. This approach is outlined by Equations
+Astrocyte state variable \ca. The value of \ca will eventually leading to \Gls{ltp} or
+\Gls{ltd} when explored in \ref{chapter:obj2}. This approach is outlined by Equations
 \ref{eq:astro:rate-u} and \ref{eq:astro:u-reset}, which define the change in
 \ca.
 
@@ -303,7 +303,7 @@ outlined in graphs.
   \caption{Signed Proportional Astrocyte Parameters} \label{table:ordered_prop_params}
   \scriptsize
   \begin{tabular}{lrrrrrr}\toprule
-    dt &Alphas &Tau IP3 &Tau K+ <P Threshold <D Threshold \\\midrule
+    dt &Alphas &Tau \ipt &Tau \kp <P Threshold <D Threshold \\\midrule
     0.001 s &1 &100 1/s &100 1/s &0 &0 \\
     \bottomrule
   \end{tabular}
@@ -350,18 +350,18 @@ curve.
 
 The model has additional parameters beyond what a traditional STDP rule
 would have, and this offers flexibility. By providing asymmetric
-$\tau_{ip3}$ and $\tau_{k+}$ the model can be bias toward LTD/LTP. Figure
-\ref{fig:astro:stdp_ltd_bias} shows this effect for LTD.
+$\tau_{ip3}$ and $\tau_{k+}$ the model can be bias toward \Gls{ltd}/\Gls{ltp}. Figure
+\ref{fig:astro:stdp_ltd_bias} shows this effect for \Gls{ltd}.
 
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_ltd_bias.svg}{Astrocyte-Neuron
-Model Response to Pulse Pairs: LTD Bias}{fig:astro:stdp_ltd_bias}{0.4}
+Model Response to Pulse Pairs: \Gls{ltd} Bias}{fig:astro:stdp_ltd_bias}{0.4}
 
 In addition, threshold parameters $thr_{ltp}$ and $thr_{ltd}$ can be used to
-shift activity from the LTP to LTD region, or vise versa. Figure
+shift activity from the \Gls{ltp} to \Gls{ltd} region, or vise versa. Figure
 \ref{fig:astro:stdp_ltd_shift} shows this shifting behavior.
 
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_ltd_dt_shift.svg}{Astrocyte-Neuron
-Model Response to Pulse Pairs: LTD Shift}{fig:astro:stdp_ltd_shift}{0.4}
+Model Response to Pulse Pairs: \Gls{ltd} Shift}{fig:astro:stdp_ltd_shift}{0.4}
 
 Additional figures can be found in Appendix \ref{appendix:appendix-a}.
 
@@ -378,10 +378,10 @@ variant of STDP has a name from other research it is included.
 STDP Variant &Name from Literature &$alpha_{ip3}$ &$tau_{ip3}$ &$alpha_{k+}$ &$tau_{k+}$ &$tau_u$ &$ltp_{thr}$ &$ltd_{thr}$ &$reset_{ip3}$ &$reset_{k+}$ \\\midrule
 Triplet STDP &Triplet STDP &1 &100 &1 &100 &10000 &0 &0 &Yes &Yes \\
 Classic & &1 &100 &1 &100 &10000 &0 &0 &No &No \\
-LTD Bias & &1 &100 &1 &30 &10000 &0 &0 &No &No \\
-LTP Bias & &1 &30 &1 &100 &10000 &0 &0 &No &No \\
-LTD Shift &Mirror STDP &1 &100 &1 &100 &10000 &0.5 &0.5 &No &No \\
-LTP Shift & &1 &100 &1 &100 &10000 &-0.5 &-0.5 &No &No \\
+\Gls{ltd} Bias & &1 &100 &1 &30 &10000 &0 &0 &No &No \\
+\Gls{ltp} Bias & &1 &30 &1 &100 &10000 &0 &0 &No &No \\
+\Gls{ltd} Shift &Mirror STDP &1 &100 &1 &100 &10000 &0.5 &0.5 &No &No \\
+\Gls{ltp} Shift & &1 &100 &1 &100 &10000 &-0.5 &-0.5 &No &No \\
 Anti-STDP &Anti-STDP, Rev-STDP &-1 &100 &-1 &100 &10000 &0 &0 &No &No \\
 \bottomrule
 \end{tabular}
@@ -460,8 +460,8 @@ d_{ca} = -ca * \tau_{ca} * d_t + T_{delta} \label{eq:astro:temp-u}
 In this case, $z_{post}$ and $z_{pre}$ are pre and post-synaptic spikes that
 the Astrocyte is sensing on a single synapse. The $\alpha_{ip3/k+}$ parameters
 are used to control the magnitude of influence \ipt and \kp have on Astrocyte
-\ca. In addition $\alpha_{ltd/ltp}$ can override default LTP/LTD behavior,
-implementing anti-stdp, or biasing weight updates towards LTP/LTD. Note also,
+\ca. In addition $\alpha_{ltd/ltp}$ can override default \Gls{ltp}/\Gls{ltd} behavior,
+implementing anti-stdp, or biasing weight updates towards \Gls{ltp}/\Gls{ltd}. Note also,
 that Equation \ref{eq:astro:temp-u} implies Astrocyte \ca will decay with each
 time step, but only be influenced by \ipt and \kp when spikes occur, and
 not continuously. If enough \ca accumulates from coordinated spiking events, a
@@ -482,7 +482,7 @@ for simulation are outlined in Table \ref{table:istp_params}.
   \caption{Integrated Spike Timing Astrocyte Parameters} \label{table:istp_params}
   \scriptsize
   \begin{tabular}{lrrrrr}\toprule
-    dt &Alphas &Tau IP3 &Tau K+ &Ca Threshold \\\midrule
+    dt &$\alpha$-s &$\tau$ \ipt &Tau \kp &\ca Threshold \\\midrule
     0.001 s &1 &100 1/s &100 1/s &2.5 \\
     \bottomrule
   \end{tabular}
@@ -612,7 +612,7 @@ that unchecked, STDP will drive synaptic weights to either minimum or maximum
 limits \cite{legenstein_2005}. One of the key features of Astrocyte plasticity
 is an inherent stability at non-maximal weight values. This stability was
 demonstrated in both configurations outlined above, which was exhibited by
-minimal and sub-threshold Ca activity.
+minimal and sub-threshold \ca activity.
 
 Overall, this objective introduces a framework for Astrocyte-LIF Neuron
 computation, and explores two specific models geared towards synaptic

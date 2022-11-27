@@ -44,7 +44,7 @@ major changes to the model from previous iterations.
 
 \begin{enumerate}
 \item The \ca response generated local to a synapse propagates up to the
-  regional level. This is consistent with the observation of CICR explored in
+  regional level. This is consistent with the observation of \Gls{cicr} explored in
   Chapter \ref{chapter:background}.
 \item At the regional level, there is some function implemented by the
   Astrocyte, which directs plasticity across any connected synapses.
@@ -108,10 +108,10 @@ AND) fall into one of the following categories.
   weights during that: Reset all synapses.
 \item Early-Spike - If $post_0$ occurs before all spiking inputs $pre_0, pre_1,
   ..., pre_N$ have presented. This would indicate one or more of the input
-  synapses have weights that are too high: LTD on synapses that received inputs.
+  synapses have weights that are too high: \Gls{ltd} on synapses that received inputs.
 \item LPT - If input spikes arrive at $pre_0, pre_1, ..., pre_N$ and there is no
   post-synaptic spike $post_0$, this implies weight values are too low: trigger
-  LTP on all synapses.
+  \Gls{ltp} on all synapses.
 \end{itemize}
 
 Which of these categories a given set of inputs and response belongs to, depends
@@ -144,7 +144,7 @@ For the limited number of examples in Figure \ref{fig:2n1a_and_response}, the
 Astrocyte performs correct computations. This can be observed by comparing the
 ground-truth AND-coupling region at the bottom, with the \dser and \serca
 activity. For example: when the region is ``Early Spike'', \dser is $-1.0$ for a
-single time-step, indicating LTD on that synapse. Automating this comparison
+single time-step, indicating \Gls{ltd} on that synapse. Automating this comparison
 process, an error rate can be computed, where each 10ms bout is labeled as a
 match, or mis-match. A more exhaustive search, consisting
 of 10,000 10ms bouts, showed zero mis-matches from the expected result, Equation
@@ -213,11 +213,11 @@ The default synaptic weight is $\approx 0.7$.
 Looking at Figure \ref{fig:snn_2s1a_and}: Initially, synaptic weight values are
 too high, and the neuron fires in response to a single pre-synaptic spike. As
 expected, the Astrocyte traces show \dser signals arriving at the offending
-synapses, triggering LTD. Completing the link, and allowing \ca to drive
+synapses, triggering \Gls{ltd}. Completing the link, and allowing \ca to drive
 plasticity, showed weight updates corresponding to the \dser signals and \ca
 concentration. As the simulation progresses, weight values decrease, and the LIF
 neuron begins to fire in response to two pre-synaptic spikes. There was a slight
-over-correction, and some LTP events occur, bringing the weights back
+over-correction, and some \Gls{ltp} events occur, bringing the weights back
 up. Eventually, the synaptic weights converge and offer a good approximation of
 an AND function over the inputs.
 

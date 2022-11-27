@@ -19,6 +19,11 @@ astro_plasticity: &astro_plasticity
     ltp: 0.0
     dw_ltp: 1.05
 
+  stdp:
+    # Defaults should be large, 1000 should do
+    ltp: 1000.0
+    ltd: 1000.0
+
   dw_mult:
     prop_ca: False
     dw_ltd: 0.95
@@ -52,15 +57,22 @@ ltd_bias: &ltd_bias
 
 ltp_dt_shift: &ltp_dt_shift
   __inherit__: *astro_plasticity
-  u_step_params:
+  ordered_prod:
     ltd: -0.5
     ltp: -0.5
+  stdp:
+    ltd: 0.5
+    ltp: 1000.0
 
 ltd_dt_shift: &ltd_dt_shift
   __inherit__: *astro_plasticity
-  u_step_params:
+  ordered_prod:
     ltp: 0.5
     ltd: 0.5
+  stdp:
+    ltd: 1000.0
+    ltp: 0.5
+
 
 sim:
   dt: 0.001

@@ -21,7 +21,7 @@ Astrocyte's internal response, to the learning process, progression of weight
 changes. Novel features of the full astrocyte plasticity model, will be
 identified and the effect of parameters on these features explored.
 
-%% with a single LIF neuron. Existing
+%% with a single \Gls{lif} neuron. Existing
 %% literature outlines many ways that Astrocytes are shown to, are suspected to, or
 %% have been modeled to affect their external environment. Table
 %% \ref{able:obj2_astro_features} outlines these features of Astrocyte and
@@ -290,13 +290,13 @@ Figure \ref{fig:sweep:stdp_dw_factor} shows the response of Classic STDP to
 different $\alpha_{ltp}=\alpha_{ltd}$. In general the response mimics the form
 of the astrocyte weight progression, but exhibits significant instability, and
 does not converge to a stable configuration. Figure \ref{fig:sweep:v_th} depicts
-synaptic weight progression given different values for LIF neuron membrane
+synaptic weight progression given different values for \Gls{lif} neuron membrane
 voltage threshold $v_{th}$. This experiment, meant to rule out a potential
 avenue for increasing stability of Classic STDP further supports the unique
 stability offered by an Astrocyte plasticity approach.
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_lif_v_th_0.svg}{Classic STDP
-  and Astrocyte Response to Different LIF Neuron Voltage Threshold Values}{fig:sweep:v_th}{0.4}
+  and Astrocyte Response to Different \Gls{lif} Neuron Voltage Threshold Values}{fig:sweep:v_th}{0.4}
 
 Figures \ref{fig:sweep:astro_tau} and \ref{fig:sweep:stdp_tau} show various
 weight progressions across three different subplots, with the Figures
@@ -318,7 +318,7 @@ exhibited similar instability to what has been observed thus far.
 
 \section{Summary}
 
-This Chapter builds upon the Astrocyte-LIF models from the previous chapter,
+This Chapter builds upon the Astrocyte-\Gls{lif} models from the previous chapter,
 adding a plasticity step, which translates \ca levels to a change
 in synaptic weight. In order to implement STDP, \ca concentration can be directly
 translated into a weight change. This is the baseline used for comparison with
@@ -335,7 +335,7 @@ Astrocyte model's stable configurations. In addition, and learning and
 convergence are stable in the presence of Gaussian noise.
 
 The observed improvements over classic STDP were demonstrated across a variety
-of parameter values, including varying $tau_{ip3}$, $tau_{k+}$, LIF $V_{th}$,
+of parameter values, including varying $tau_{ip3}$, $tau_{k+}$, \Gls{lif} $V_{th}$,
 and the weight update multiplier. In each case where learning did occur, the
 improvements over classic STDP were observed.
 

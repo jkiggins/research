@@ -22,11 +22,11 @@ plasticity leads to many interesting questions and potential benefits beyond
 existing local learning rules to explore.
 
 \section{Spiking Neuron Model}
-This work makes use of a Leaky Integrate and Fire (LIF) neuron model. LIF
+This work makes use of a Leaky Integrate and Fire (\Gls{lif}) neuron model. \Gls{lif}
 neurons are fairly simple computationally, relying on exponential functions
 and thresholds in the functional definition. While not the most
-bio-realistic (see Figure \ref{fig:sn_model_compare}), LIF neurons exhibit
-rich behavior with few parameters, and are easily extended. In addition, LIF
+bio-realistic (see Figure \ref{fig:sn_model_compare}), \Gls{lif} neurons exhibit
+rich behavior with few parameters, and are easily extended. In addition, \Gls{lif}
 neurons are the most widely used in SNN literature \cite{ponulak_2011}. The
 goal here, is to remain computationally simple, while still leveraging unique
 features found in biology. This same approach used in the Astrocyte Model
@@ -59,15 +59,15 @@ generally a negative voltage $\leq thr_{mem}$, see Equation \ref{eq:lif:reset}.
 v_{mem}(t+1) = v_{mem}(t) * (1 - z_{post}(t)) + z_{post}(t) * v_{reset} \label{eq:lif:reset}
 \end{align}
 
-Figure \ref{fig:1n1s1a_fn_diagram} depicts the LIF neuron described by
+Figure \ref{fig:1n1s1a_fn_diagram} depicts the \Gls{lif} neuron described by
 equations above. Figures \ref{fig:lif:sample_1}, \ref{fig:lif:sample_2}, and
-\ref{fig:lif:sample_3} shows a sample of the LIF responses to a random
+\ref{fig:lif:sample_3} shows a sample of the \Gls{lif} responses to a random
 Poisson input with various parameter values. Table \ref{table:lif_params} shows
 the baseline parameter values, with any differences being outlined in the
 figures.
 
 \begin{table}[!htp]\centering
-  \caption{LIF Neuron Baseline Parameters} \label{table:lif_params}
+  \caption{\Gls{lif} Neuron Baseline Parameters} \label{table:lif_params}
   \scriptsize
   \begin{tabular}{lrrrr}\toprule
     Reset Voltage &Membrane Threshold &Membrane Tau &Synaptic Tau \\\midrule
@@ -76,15 +76,15 @@ figures.
   \end{tabular}
 \end{table}
 
-\asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-500.0.svg}{LIF Neuron
+\asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-500.0.svg}{\Gls{lif} Neuron
 Response To Poisson Input. $tau_{mem}=60$ and
 $tau_{syn}=500$}{fig:lif:sample_1}{0.7}
 
-\asvgf{figures/artifacts/obj1/lif_sample_mem-30.0_syn-500.0.svg}{LIF Neuron
+\asvgf{figures/artifacts/obj1/lif_sample_mem-30.0_syn-500.0.svg}{\Gls{lif} Neuron
 Response To Poisson Input. $tau_{mem}=30$ and
 $tau_{syn}=500$}{fig:lif:sample_2}{0.7}
 
-\asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-250.0.svg}{LIF Neuron
+\asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-250.0.svg}{\Gls{lif} Neuron
 Response To Poisson Input. $tau_{mem}=60$ and
 $tau_{syn}=250$}{fig:lif:sample_3}{0.7}
 
@@ -177,18 +177,18 @@ identify the common input and output pathways within the tripartite synapse.
   \item \ca $\implies$ D-serine release (more generally, plasticity modulation)
 \end{enumerate}
 
-\asvgf{figures/1n1s1a_diagram.svg}{Astrocyte and Neuron Model Diagram For An LIF
+\asvgf{figures/1n1s1a_diagram.svg}{Astrocyte and Neuron Model Diagram For An \Gls{lif}
   Neuron with One Input}{fig:1n1s1a_fn_diagram}{0.4}
 
 Figure \ref{fig:1n1s1a_fn_diagram} outlines the developed tripartite synapse
-model, as well as the internal dynamics of the LIF neuron. Some aspects of this
+model, as well as the internal dynamics of the \Gls{lif} neuron. Some aspects of this
 model are left undefined at first, and different configurations will be explored
 experimentally. These gaps are the function blocks in darker blue. The
 portions of the model which are consistent throughout this work are described
 first, followed by a deeper dive into the remaining functionality. The two input
 pathways, which drive the state values $ip3$ and $k+$ are described by Equations
 \ref{eq:astro:spike-ip3} and \ref{eq:astro:spike-k+}. It should be noted, that
-the Astrocyte response pathways are similar in form to an LIF neuron's membrane
+the Astrocyte response pathways are similar in form to an \Gls{lif} neuron's membrane
 voltage. This decision is driven in part by a simplification on some
 bio-realistic models, but also to demonstrate that key properties of Astrocytes
 are dependent on the pathways and relative time-constants, less then the specifics of
@@ -405,7 +405,7 @@ In Figure \ref{fig:astro:rp_many-w_tl}, the middle plot shows the internal
 response of an Astrocyte to a random Poisson across different weight values. In
 this case, there is significant response from the Astrocyte for weight values of
 $2.0$, with less of a response for $4.0$. This is due to a lower firing rate out
-of the LIF neuron compared to the input. Intuitively there should be a weight
+of the \Gls{lif} neuron compared to the input. Intuitively there should be a weight
 value where the difference between pre and post-synaptic firing rate is
 smallest. For the upper graph $w=10.0$ is close to that point, with only two
 regions in the timeline with any activity.
@@ -548,7 +548,7 @@ downstream neuron fires in time with the upstream. This is a result of a
 convention used in this work that synchronous spikes don't result in any change
 in \ca. This property is very interesting, and shows how the Astrocyte can
 direct weight values to find a low - \ca state. Weight values are directed such
-that the LIF neuron to fires with a specific interval (matching the input), at a
+that the \Gls{lif} neuron to fires with a specific interval (matching the input), at a
 specific point within the input, and a specific number of times within the
 input. Additional spikes, or change in that firing interval results in more
 Astrocyte excitability, which lead to weight changes seeking that low \ca
@@ -614,9 +614,9 @@ is an inherent stability at non-maximal weight values. This stability was
 demonstrated in both configurations outlined above, which was exhibited by
 minimal and sub-threshold \ca activity.
 
-Overall, this objective introduces a framework for Astrocyte-LIF Neuron
+Overall, this objective introduces a framework for Astrocyte-\Gls{lif} Neuron
 computation, and explores two specific models geared towards synaptic
-plasticity. For each of these models, synaptic weight values of an LIF neuron
+plasticity. For each of these models, synaptic weight values of an \Gls{lif} neuron
 (coupled with an Astrocyte) are swept, and stable configurations are identified,
 which represent convergence points in a potential learning rule.
 
@@ -655,7 +655,7 @@ which represent convergence points in a potential learning rule.
 %% STDP variants. Sweeping weight values for particular parameters lead to stable
 %% configurations with minimal \ca response as well.
 
-%% Overall, this objective introduces a framework for Astrocyte-LIF Neuron
+%% Overall, this objective introduces a framework for Astrocyte-\Gls{lif} Neuron
 %% computation, and explores two specific models geared towards synaptic
 %% plasticity. For each of these models, stable configurations are explored, which
 %% represent convergence points in a potential learning rule.

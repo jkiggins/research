@@ -365,7 +365,14 @@ def gen_rate_spikes(spec):
     return spike_trains
 
 
-def gen_and_spikes(n, window=5, num_impulses=5, padding=10, gen_post=False):
+def gen_and_spikes(
+    n,
+    window=5,
+    num_impulses=5,
+    padding=10,
+    gen_post=False,
+    no_post_pre=False,
+):
     if gen_post:
         n += 1
 
@@ -385,6 +392,45 @@ def gen_and_spikes(n, window=5, num_impulses=5, padding=10, gen_post=False):
     spike_val = (spike_val < 0.85) * 1.0
 
     spikes[spikes_ind] = spike_val
+
+    spikes_valid = torch.zeros(spikes.shape[0], dtype=torch.bool)
+
+    if no_post_pre and gen_post:
+        for i, spike_impulse in enumerate(spikes):
+            tl = {
+                'z_pre': spike_impulse[:, 0:-1],
+                'z_post': spike_impulse[:, -1]
+            }
+
+            region = astro_and_region(tl)[0]
+            if region != 'other-influence':
+                spikes_valid[i] = True
+
+        # # Get indicies of pre and post spikes
+        # min_pre_spike_ind = spikes[:,:,0:-1].argmax(dim=1).min(dim=1)[0]
+        # post_exists = torch.any(spikes[:,:,-1] > 0.0, dim=-1)
+        # post_ind = spikes[:, :, -1].argmax(dim=1)
+
+        # # Check if a particular impulse is invalid, given the no_post_pre requirement
+        # impulse_invalid = torch.logical_and(
+        #     post_exists, post_ind <= min_pre_spike_ind)
+
+        # # Get mask for valid impulses
+        # impulse_valid = torch.logical_not(impulse_invalid)
+
+        # spikes = spikes[impulse_valid]
+
+        # # Sanity check
+        # for impulse in spikes:
+        #     min_pre_idx = impulse[:, 0:-1].argmax(dim=0).min()
+        #     post_idx = impulse[:, -1].argmax(dim=0).min()
+
+        #     if post_idx <= min_pre_idx and torch.any(impulse[:, -1] > 0.0):
+        #         import code
+        #         code.interact(local=dict(globals(), **locals()))
+        #         exit(1)
+
+        spikes = spikes[spikes_valid]
 
     return spikes
     

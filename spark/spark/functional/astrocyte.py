@@ -236,8 +236,10 @@ def astro_step_signal(state, eff, params):
     dser = state['dser'][syns]
 
     wh_reset = torch.where(serca == 1.0)
-    wh_ltd = torch.where(dser == -1.0)
-    wh_ltp = torch.where(dser == 1.0)
+    wh_ltd = torch.where(
+        torch.logical_and(dser == -1.0, ca.abs() > params['ca_th']))
+    wh_ltp = torch.where(
+        torch.logical_and(dser == 1.0, ca.abs() > params['ca_th']))
 
     if dw_mult:
         dw_params = params[params['dw']]

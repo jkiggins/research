@@ -17,7 +17,7 @@ from matplotlib.gridspec import GridSpec
 from time import time
 
 class LifNet:
-    def __init__(self, cfg, mu=None):
+    def __init__(self, cfg, mu=None, w=None):
         self.cfg = cfg
         self.dt = cfg['sim']['dt']
 
@@ -56,6 +56,9 @@ class LifNet:
 
             else:
                 raise ValueError("Unknown LIF Init method: {}".format(self.cfg['linear_params']['init']))
+
+        if not (w is None):
+            self.linear.weight[0] = w
 
         self.neuron_state = None
 
@@ -539,7 +542,7 @@ def gen_sgnn_axes(
     fig = plt.Figure(figsize=figsize)
 
     graph_to_labels = {
-        'spikes': ("Spikes", None),
+        'spikes': ("Pre and Postsynaptic Spikes", None),
         'pre-spikes': ("Pre-synaptic Spikes", None),
         'neuron': ("Neuron Membrane Voltage", "Voltage"),
         'astro': ("Astrocyte Traces, Synapse", "Concentration"),
@@ -554,6 +557,7 @@ def gen_sgnn_axes(
         ax = fig.add_subplot(gs[gs_idx, 0])
         title, ylabel = graph_to_labels[g]
         ax.set_title(title)
+        ax.set_xlabel("Time (ms)")
         if ylabel:
             ax.set_ylabel(ylabel)
         ax = LifAxis(ax, offset=offset)
@@ -663,7 +667,9 @@ def plot_1nNs1a(
                     ax.legend()
 
             elif g == 'astro-ca' and ('astro-ca' in plot):
-                lines = ax.plot(tl['ca'][:, i].tolist(), color=graph_color)
+                mark_on = torch.where(tl['eff'] > 1.0)[0].tolist()
+                lines = ax.plot(tl['ca'][:, i].tolist(), '-o', color=graph_color, markevery=mark_on)
+                
                 ax.set_ylabel("Astrocyte [$Ca^{2+}$]")
                 # Only label the fist synapses' graph, and reuse the color for all other synapses
 
@@ -694,18 +700,43 @@ def plot_1nNs1a(
 def sim_lif_astro_net(cfg, spike_trains, db, dw=True, keep_state=False):
     # Sim
     snn = None
-    for i, spikes in enumerate(spike_trains):
+    for i, spikes in enumerate(tqdm(spike_trains, position=1, leave=False)):
         if snn is None:
             snn = LifAstroNet(cfg)
 
         tl = _sim_snn(snn, spikes, dw=dw)
+        # Get error over random 10% of samples
+        random_idx = torch.randperm(spike_trains.shape[0])[0:spike_trains.shape[0] // 10]
+        err = get_lif_astro_net_err(cfg, spike_trains[random_idx], w=snn.linear.weight[0])
 
-        db.store({'spikes': spikes, 'tl': tl, 'w': snn.linear.weight[0], 'n': cfg['linear_params']['synapse']})
+        db.store({'spikes': spikes, 'tl': tl, 'w': snn.linear.weight[0], 'n': cfg['linear_params']['synapse'], 'err': err})
 
         if not keep_state:
             snn = None
 
     return db
+
+
+def get_lif_astro_net_err(cfg, spike_trains, w=None):
+    # Sim
+    err = 0
+    total = 0
+    snn = None
+
+    for i, spikes in enumerate(spike_trains):
+        if snn is None:
+            snn = LifAstroNet(cfg, w=w)
+
+        tl = _sim_snn(snn, spikes, dw=False)
+
+        region = astro_and_region(tl)[0]
+        invalid = not astro_check_respose(tl, region)
+
+        if invalid:
+            err += 1
+        total += 1
+
+    return err/total
 
 
 def sim_lif(cfg, spikes, name='lif_sample'):
@@ -851,16 +882,17 @@ def _graph_dw_dt(points, ax, text):
 
     ax.text(
         -0.05, 0.8,
-        text,
-        bbox=uplot.plt_round_bbox)
+        text)
+        # bbox=uplot.plt_round_bbox)
 
 
-def graph_dw_dt(db, title="", graph_text=""):
+def graph_dw_dt(db, title="", graph_text="", fig=None, axes=None):
     # Graph
     points = []
     
     # Only one plot for now
-    fig, axes = gen_dw_dt_axes(1)
+    if fig is None and axes is None:
+        fig, axes = gen_dw_dt_axes(1)
 
     # Gather dw, dt pairs from sim results
     for i, (delta_t, by_spike_delta) in enumerate(db.group_by('delta_t').items()):
@@ -875,9 +907,7 @@ def graph_dw_dt(db, title="", graph_text=""):
 
     axes[0].set_title("{}: Weight Change vs. Pulse Pair Spike Delta".format(title))
     
-    fig.tight_layout()
-
-    return fig
+    return fig, axes
 
 
 def gen_dw_w_axes(n_plots, titles=None, spikes=False, size=(16, 8)):
@@ -900,7 +930,7 @@ def gen_dw_w_axes(n_plots, titles=None, spikes=False, size=(16, 8)):
     return fig, axes
     
 
-def graph_dw_w(db, fig, axes, prefix=None, title=None, sp=0):
+def graph_dw_w(db, fig, axes, prefix=None, title=None, sp=0, errorbar=False):
     points = []
     for d in db:
         ca = d['tl']['ca']
@@ -915,14 +945,22 @@ def graph_dw_w(db, fig, axes, prefix=None, title=None, sp=0):
     # code.interact(local=dict(globals(), **locals()))
     # exit(1)
 
-    axes[sp].errorbar(
-        points[:, 0],
-        points[:, 1],
-        marker='.',
-        yerr=torch.abs(points[:, 2:4].t()),
-        ecolor='tab:orange',
-        label=prefix
-    )
+    if errorbar:
+        axes[sp].errorbar(
+            points[:, 0],
+            points[:, 1],
+            marker='.',
+            yerr=torch.abs(points[:, 2:4].t()),
+            ecolor='tab:orange',
+            label=prefix
+        )
+    else:
+        axes[sp].plot(
+            points[:, 0],
+            points[:, 1],
+            marker='.',
+            label=prefix
+        )
 
     if title:
         axes[sp].set_title(title)

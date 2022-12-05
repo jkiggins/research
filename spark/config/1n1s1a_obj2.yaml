@@ -26,6 +26,11 @@ astro_plasticity: &astro_plasticity
     dw_ltd: 0.95
     dw_ltp: 1.05
 
+  stdp:
+    # Defaults should be large to not effect default behavior
+    ltp: 1000.0
+    ltd: 1000.0
+
   local:
     stdp: null
     ca_thr: null

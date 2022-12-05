@@ -27,7 +27,8 @@ from .lif_astro_net import (
     astro_dwdt_text
 )
 
-from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
+from .astro_spike_pair import sim_astro_probe, graph_astro_tls
+from .lif_astro_net import graph_dw_dt
 from ..experiment import ExpStorage, VSweep, seed_many, load_or_run, lif_astro_name, try_load_dbs
 
 # Experiments
@@ -535,7 +536,7 @@ def _graph_exp_rp_w_sweep(db):
     fig.savefig(fig_path)
 
 
-def _graph_exp_w_tl(dbs, xlim=None):
+def _graph_exp_w_tl(dbs, xlim=None, ip3_kp=False):
     """
     For each db graph on different subplot, the calcium timeline,
     with synaptic weight value in the title
@@ -543,7 +544,14 @@ def _graph_exp_w_tl(dbs, xlim=None):
 
     fig, axes = None, None
 
-    graphs=['astro-ca']*len(dbs)
+    plot = ['spikes']
+    if ip3_kp:
+        graphs=['astro']*len(dbs)
+        plot.append('astro')
+    else:
+        graphs=['astro-ca']*len(dbs)
+        plot.append('astro-ca')
+        
     graphs.append('spikes')
 
     fig, axes = gen_sgnn_axes(1, graphs, offset=True)
@@ -554,7 +562,7 @@ def _graph_exp_w_tl(dbs, xlim=None):
     for i, db in enumerate(dbs):
 
         # Set title
-        axes['astro-ca'][i].set_title(db.meta['title'])
+        axes[plot[1]][i].set_title(db.meta['title'])
         
         # Each db contains multiple runs with different weight values
         # Graph the timelines offset, on the same axis
@@ -578,7 +586,7 @@ def _graph_exp_w_tl(dbs, xlim=None):
                     fig,
                     axes,
                     i,
-                    plot=['spikes', 'astro-ca'],
+                    plot=plot,
                     prefix=prefix)
             else:
                 graph_sgnn(
@@ -712,6 +720,25 @@ def _exp_astro_impulse(cfg_path):
     return db
 
 
+def _exp_astro_poisson(cfg_path):
+    with torch.no_grad():
+        cfg = config.Config(cfg_path)
+        cfg['astro_params'] = cfg['astro_plasticity']
+        cfg['astro_params']['local']['stdp'] = [0]
+        cfg['astro_params']['local']['ca_thr'] = [0]
+        cfg['astro_params']['dw'] = 'dw_mult'
+
+        spikes = [spiketrain.poisson(0.75, 20).transpose(1,0)]
+
+        db = ExpStorage()
+        db.meta['descr'] = "astro_tp_poisson"
+        db.meta['title'] = "Astrocyte Response to Random Poisson Input"
+
+        sim_lif_astro_net(cfg, spikes, db, dw=False)
+
+    return db
+
+
 def _sim_pulse_pair_w_impulse(cfg, db, spikes, all_w, all_ca_thr, tl_graph_idx, tl_ca):
     for i, w in enumerate(tqdm(all_w, desc='Astro Sweep W (thr)')):
         for j, ca_thr in enumerate(all_ca_thr):
@@ -762,7 +789,7 @@ def _exp_pulse_pair_w_impulse(
         db = ExpStorage()
         db.meta['descr'] = "astro_tp_many-w"
 
-        db.meta['title'] = "Astrocyte Response to Impulse input given $w$ with $thr_{{ca}}={:4.2f}$".format(cfg['astro_params']['ca_th'])
+        db.meta['title'] = "Astrocyte Response to Impulse input given $w$ with $thr_{{ca}}={:4.2f}$".format(tl_ca_thr)
 
         if poisson_impulse:
             db.meta['descr'] += '_poisson'
@@ -772,6 +799,7 @@ def _exp_pulse_pair_w_impulse(
         tl_graphs = torch.as_tensor(tl_w)
 
         all_ca_thr = torch.linspace(2.0, 3.0, 3)
+        # all_ca_thr = torch.linspace(100.0, 100.0, 1)
 
         w_graph_idx = torch.argmin(torch.abs(all_w.reshape(-1, 1) - tl_graphs), axis=0).tolist()
 
@@ -803,7 +831,7 @@ def _exp_lif_sample(cfg_path, sim=False):
     cfg = config.Config(cfg_path)
     cfg['linear_params']['mu'] = 1.0
     spikes = gen_rate_spikes([
-        (0.3, cfg['sim']['steps'])
+        (0.05, cfg['sim']['steps'])
     ])
 
     mem_tau_range = [cfg['lif_params']['tau_mem']]
@@ -835,7 +863,7 @@ def _exp_lif_sample(cfg_path, sim=False):
     return dbs
 
 
-def _graph_lif_sample(db):
+def _graph_lif_sample(db, xlim=None):
     name = db.meta['name']
 
     assert len(db) == 1
@@ -858,6 +886,9 @@ def _graph_lif_sample(db):
     plot.plot_spikes(axes, ('spikes',), z_pre, z_post)
     plot.plot_lif(axes, ('lif',), v_psp, v_mem)
 
+    if not (xlim is None):
+        plot.xlim(axes, xlim)
+
     fig_path = "{}.svg".format(name)
     print("Saving: ", fig_path)
     fig.tight_layout()
@@ -873,6 +904,7 @@ def _parse_args():
     parser.add_argument('--astro-param-sweep', action='store_true')
     parser.add_argument('--astro-weight-sweep', action='store_true')
     parser.add_argument('--astro-impulse', action='store_true')
+    parser.add_argument('--astro-poisson', action='store_true')
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--sim', action='store_true')
 
@@ -889,14 +921,14 @@ def _main(args):
         seed_many()
         dbs = _exp_lif_sample(cfg_path, sim=args.sim)
         for db in dbs:
-            _graph_lif_sample(db)
+            _graph_lif_sample(db, xlim=(0,60))
 
     if args.stdp or args.all:
         seed_many()
         dbs = _exp_classic_stdp(cfg_path, sim=args.sim)
         
         for db in dbs:
-            fig = graph_dw_dt(db, title=db.meta['name'])
+            fig, axes = graph_dw_dt(db, title=db.meta['name'])
 
             fig_path = "{}.svg".format(db.meta['descr'])
             print("Saving: ", fig_path)
@@ -924,44 +956,67 @@ def _main(args):
         seed_many()
         dbs = _exp_dw_dt_sweep(cfg_path, sim=args.sim)
 
+        fig = None
         for db in dbs:
-            fig = graph_dw_dt(
+            fig, axes = graph_dw_dt(
                 db,
                 title=db.meta['name'],
-                graph_text=db.meta['graph_text']
+                graph_text=db.meta['graph_text'],
             )
+
             fig_path = "{}.svg".format(db.meta['descr'])
             print("Saving: ", fig_path)
             fig.tight_layout()
             fig.savefig(fig_path)
 
 
+        fig = None
+        axes = None
+        for db in dbs:
+            fig, axes = graph_dw_dt(
+                db,
+                title=db.meta['name'],
+                graph_text=db.meta['graph_text'],
+                fig=fig, axes=axes
+            )
+
+        fig_path = "astro_dw_dt_all.svg"
+        print("Saving: ", fig_path)
+        fig.tight_layout()
+        fig.savefig(fig_path)
+
+
     if args.astro_weight_sweep or args.all:
         _print_sim("LIF/Astro Weight Sweep")
         seed_many()
         
-        dbs = _exp_rate_w_impulse(cfg_path, sim=args.sim)
-        _graph_exp_w_tl(dbs)
-        _graph_exp_rp_w_sweep(dbs[0])
+        # dbs = _exp_rate_w_impulse(cfg_path, sim=args.sim)
+        # _graph_exp_w_tl(dbs)
+        # _graph_exp_rp_w_sweep(dbs[0])
 
-        db = _exp_pulse_pair_w_impulse(cfg_path, sim=args.sim)
-        _graph_exp_w_tl([db])
-        _graph_exp_w_tl([db], xlim=(590, 630))
-        _graph_exp_tp_w_sweep(db)
+        # db = _exp_pulse_pair_w_impulse(cfg_path, sim=args.sim)
 
         db = _exp_pulse_pair_w_impulse(
             cfg_path,
             tl_w = [1.0, 1.2, 1.8],
             tl_ca_thr = 2.5,
-            sim=args.sim,
-            poisson_impulse=True)
-
+            sim=args.sim)
         _graph_exp_w_tl([db])
-        _graph_exp_w_tl([db], xlim=(655, 670))
+        _graph_exp_w_tl([db], xlim=(580, 640))
         _graph_exp_tp_w_sweep(db)
 
-        db = _exp_pulse_pair_w_impulse(cfg_path, sim=args.sim)
-        _graph_exp_tp_w_sweep(db)
+        # db = _exp_pulse_pair_w_impulse(
+        #     cfg_path,
+        #     tl_w = [1.0, 1.2, 1.8],
+        #     tl_ca_thr = 2.5,
+        #     sim=args.sim,
+        #     poisson_impulse=True)
+        # _graph_exp_w_tl([db])
+        # _graph_exp_w_tl([db], xlim=(655, 670))
+        # _graph_exp_tp_w_sweep(db)
+
+        # db = _exp_pulse_pair_w_impulse(cfg_path, sim=args.sim)
+        # _graph_exp_tp_w_sweep(db)
 
 
     if args.astro_impulse or args.all:
@@ -974,6 +1029,22 @@ def _main(args):
 
         fig, axes = gen_sgnn_axes(1)
         graph_sgnn(db[0], fig, axes, 0)
+        fig_path = "{}.svg".format(db.meta['descr'])
+        print("Saving: ", fig_path)
+        fig.tight_layout()
+        fig.savefig(fig_path)
+
+
+    if args.astro_poisson or args.all:
+        _print_sim("LIF/Astro Poisson, No Dw")
+        seed_many()
+
+        db = _exp_astro_poisson(cfg_path)
+
+        assert len(db) == 1
+
+        fig, axes = gen_sgnn_axes(1, graphs=['spikes','astro'])
+        graph_sgnn(db[0], fig, axes, 0, plot=['spikes','astro'])
         fig_path = "{}.svg".format(db.meta['descr'])
         print("Saving: ", fig_path)
         fig.tight_layout()

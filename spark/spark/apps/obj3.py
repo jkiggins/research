@@ -21,7 +21,8 @@ from .lif_astro_net import (
     gen_and_spikes,
     sim_astro,
     astro_and_region,
-    astro_check_respose
+    astro_check_respose,
+    get_lif_astro_net_err
 )
 
 from .astro_spike_pair import sim_astro_probe, graph_dw_dt, graph_astro_tls
@@ -108,19 +109,27 @@ def _graph_n_syn_coupled_astro_lif(
     n_synapse,
     xlim=None,
     w_dw_only=False,
+    w_only=False,
     fig=None,
     axes=None
 ):
 
     if (fig is None) or (axes is None):
-        if w_dw_only:
+        if w_only:
+            n_plots = 1
+        elif w_dw_only:
             n_plots = 2
         else:
             n_plots = n_synapse + 3
 
         gs = plot.gs(n_plots, 1)
 
-        if w_dw_only:
+        if w_only:
+            fig, axes = plot.gen_axes(
+                ('w', gs[0]),
+                figsize=(8,6),
+            )
+        elif w_dw_only:
             fig, axes = plot.gen_axes(
                 ('dw', gs[0]),
                 ('w', gs[1]),
@@ -140,12 +149,13 @@ def _graph_n_syn_coupled_astro_lif(
                     fig=fig, axes=axes
                 )
 
-    if not (w_dw_only):
+    if not (w_dw_only or w_only):
         _graph_n_syn_coupled_astro(db_rec, n_synapse, fig=fig, axes=axes)
 
-    plot.plot_dw(
-        axes, ('dw',),
-        db_rec['tl']['dw'])
+    if not w_only:
+        plot.plot_dw(
+            axes, ('dw',),
+            db_rec['tl']['dw'])
 
     plot.plot_w(
         axes, ('w',),
@@ -368,6 +378,7 @@ def _exp_n_syn_coupled_astro_lif(
     for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
         assert (n is None) or (n == cfg['linear_params']['synapse'])
 
+
         # if n is None:
         #     n = cfg['linear_params']['synapse']
         #     sim_name = sim_name.format(n)
@@ -488,7 +499,7 @@ def _exp_n_syn_poisson(
     db = ExpStorage()
 
     n = None
-    for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
+    for cfg, spikes in tqdm(rt_gen, total=num_cfgs, position=0):
         assert (n is None) or (n == cfg['linear_params']['synapse'])
         n = cfg['linear_params']['synapse']
 
@@ -540,6 +551,8 @@ def _main(args):
     # w_sweep = (4.0, 10.0, 20)
     ca_th = 0.8
     xlim = (75, 100)
+
+    plot.rc_config({'font.size': 14})
 
     if args.astro_nsyn_poisson:
         cfgs, num_cfgs = _cfg_gen(
@@ -640,10 +653,28 @@ def _main(args):
             fig.tight_layout()
             fig.savefig(fig_path)
 
+            # Bar graph            
             stats = _n_syn_coupled_astro_stats(db_syn, n)
             stats_path = "{}_stats.yaml".format(db_syn.meta['descr'].format(n))
             print('Saving: ', stats_path)
             with open(stats_path, 'w') as fp: yaml.dump(stats, fp)
+
+            gs = plot.gs(1, 1)
+            fig, axes = plot.gen_axes(
+                ('stats', gs[0]),
+                figsize=(10,6),
+            )
+
+            total_invalid = stats['total'] - stats['valid']
+            bar_spec = {k: v/total_invalid for k,v in stats['invalid'].items()}
+
+            plot.plot_mismatch_bar(
+                axes, ('stats',),
+                bar_spec)
+
+            fig_path = "{}_stats.svg".format(db_syn.meta['descr'].format(n))
+            print('Saving: ', fig_path)
+            fig.savefig(fig_path)
 
     # Look at a number of continuous 10ms bouts of inputs, simulate an Astro-LIF Configuration
     if args.astro_and_lif or args.all:
@@ -662,24 +693,40 @@ def _main(args):
 
         # Graph for each distinct value of n
         for n, db_syn in db.group_by('n').items():
-            fig, axes = _graph_n_syn_coupled_astro_lif(db_syn.cat(), n, xlim=None, w_dw_only=True)
 
+            # Get plot descr
             descr = db.meta['descr'].format(n)
-        
+
+            # Graph error
+            errs = [d['err'] for d in db_syn]
+            gs = plot.gs(1, 1)
+            fig, axes = plot.gen_axes(
+                ('err', gs[0]),
+                figsize=(8,6),
+            )
+            plot.plot_err(axes, ('err',), errs)
+            fig_path = "{}_err.svg".format(descr)
+            print("Saving: ", fig_path)
+            fig.tight_layout()
+            fig.savefig(fig_path)
+
+            # Cat all entries in db together
+            db_cat = db_syn.cat()
+
+            # Graph weight timeline
+            fig, axes = _graph_n_syn_coupled_astro_lif(db_cat, n, xlim=None, w_only=True)
             fig_path = "{}.svg".format(descr)
             print('Saving: ', fig_path)
             fig.tight_layout()
             fig.savefig(fig_path)
 
             # Limit X range
-            fig, axes = _graph_n_syn_coupled_astro_lif(db_syn.cat(), n, xlim=(0,200))
-
-            descr = "{}_xlim".format(db.meta['descr'].format(n))
-        
-            fig_path = "{}.svg".format(descr)
+            fig, axes = _graph_n_syn_coupled_astro_lif(db_cat, n, xlim=(0,200))
+            fig_path = "{}_xlim.svg".format(descr)
             print('Saving: ', fig_path)
             fig.tight_layout()
             fig.savefig(fig_path)
+
 
 
     if args.astro_and_lif_w or args.all:

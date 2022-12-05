@@ -38,11 +38,11 @@ def _print_sim(name):
 #     return [db_stdp, db_astro]
 
 
-def _config_astro(cfg):
+def _config_astro(cfg, ca_th=2.5):
     cfg['astro_params']['local']['stdp'] = [0]
     cfg['astro_params']['local']['ca_thr'] = [0]
 
-    cfg['astro_params']['ca_th'] = 2.5
+    cfg['astro_params']['ca_th'] = ca_th
 
     
 def _config_stdp(cfg):
@@ -325,7 +325,8 @@ def _sim_stdp_and_astro(
     spikes,
     descr,
     astro_only=False, stdp_only=False,
-    graph_only_weight=False
+    graph_only_weight=False,
+    ca_th=2.5,
 ):
     dbs = []
 
@@ -346,7 +347,7 @@ def _sim_stdp_and_astro(
         db = ExpStorage()
         db.meta['descr'] = "{}_astro".format(descr)
         cfg['astro_params'] = cfg['astro_plasticity']
-        _config_astro(cfg)
+        _config_astro(cfg, ca_th=ca_th)
         sim_lif_astro_net(
             cfg,
             spikes,
@@ -355,6 +356,7 @@ def _sim_stdp_and_astro(
 
         dbs.append(db)
 
+    db.meta['graphs'] = ['spikes', 'astro', 'weight']
     if graph_only_weight:
         for db in dbs:
             db.meta['graphs'] = ['weight']
@@ -431,15 +433,22 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
         dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse')
         dbs = dbs + dbs_sim
 
-        # Repeat with noisy input
-        spikes = gen_ramp_impulse_spikes(noise=0.02)
-        dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_noise')
-        dbs = dbs + dbs_sim
-
         # Repeat, but with a fixed length for each impulse
         spikes = gen_impulse_spikes(10, num_impulses=15)
-        dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const')
+        db_stdp, db_astro = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const')
+        db_astro.meta['xlim'] = (0, 300)
+        dbs = dbs + [db_astro, db_stdp]
+
+        # Repeat with noisy input
+        spikes = gen_impulse_spikes(10, num_impulses=20, noise=0.02)
+        dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const_noise', ca_th=3.75)
         dbs = dbs + dbs_sim
+
+        # Repeat, but with a fixed length for each impulse, and poisson pattern
+        spikes = gen_impulse_spikes(20, num_impulses=15, poisson=True, rate=0.8)
+        db_stdp, db_astro = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_poisson_const')
+        db_astro.meta['xlim'] = (0, 800)
+        dbs = dbs + [db_astro, db_stdp]
 
         # Sim just STDP, with longer spikes to show divergence
         spikes = gen_impulse_spikes(10, sim_len=20000)
@@ -600,9 +609,16 @@ def _graph_average_pulse_pair(dbs):
             graphs = db.meta['graphs']
 
         fig, axes = gen_sgnn_axes(1, graphs=graphs)
-
+                
         db_rec = db[0]
         graph_sgnn(db_rec, fig, axes, 0)
+
+        if 'xlim' in db.meta:
+            print("xlim: ", db.meta)
+            for k, v in axes.items():
+                for ax in v:
+                    ax.set_xlim(db.meta['xlim'])
+
 
         fig_path = "{}_0.svg".format(db.meta['descr'])
         print("Saving: ", fig_path)
@@ -663,8 +679,8 @@ def _main(args):
     cfg_path = '../../config/1n1s1a_obj2.yaml'
 
     if args.astro_impulse or args.all:
-        dbs = _exp_rate_plasticity(cfg_path, sim=args.sim)
-        _graph_average_pulse_pair(dbs)
+        # dbs = _exp_rate_plasticity(cfg_path, sim=args.sim)
+        # _graph_average_pulse_pair(dbs)
 
         dbs = _exp_average_pulse_pair_baseline(cfg_path, sim=args.sim)
         _graph_average_pulse_pair(dbs)

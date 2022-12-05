@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.gridspec import GridSpec
 
@@ -31,6 +32,9 @@ region_colors = {
 }
 
 plt_round_box = dict(facecolor='none', edgecolor='tab:blue', boxstyle='round')
+
+def rc_config(*args, **kwargs):
+    matplotlib.rcParams.update(*args, **kwargs)
 
 def _locate_ax(axes, loc, as_list=False):
     axs = axes
@@ -109,6 +113,10 @@ def plot_dw(axes, loc, dw):
         colors_i = i % len(dw_colors)
         ax.plot(dw[:, i].tolist(), color=dw_colors[colors_i])
 
+    ax.set_title("$\Delta$W over Time")
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("$\Delta$W")
+
     ax.set_xlim(-10, dw.shape[0] + 10)
 
 
@@ -120,6 +128,10 @@ def plot_w(axes, loc, w):
     for i in range(nsyns):
         colors_i = i % len(dw_colors)
         ax.plot(w[:, i].tolist(), color=dw_colors[colors_i])
+
+    ax.set_title("Synaptic Weight over Time")
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Synaptic Weight")
 
     ax.set_xlim(-10, w.shape[0] + 10)
     
@@ -199,6 +211,28 @@ def plot_coupling_region(axes, loc, regions):
     ax.set_xlim(-10, x_prev + 10)
 
     ax.set_yticks(list(reg_to_offset.values()), list(reg_to_offset.keys()))
+
+
+def plot_mismatch_bar(axes, loc, bar):
+    ax = _locate_ax(axes, loc)
+
+    ax.set_title("Fractions of Mismatches Belonging to Each Category")
+    ax.set_ylabel("Fraction of total Mismatches")
+
+    ax.bar(
+        list(bar.keys()),
+        list(bar.values())
+    )
+
+
+def plot_err(axes, loc, err):
+    ax = _locate_ax(axes, loc)
+
+    ax.set_title("Error Rate During Learning")
+    ax.set_ylabel("Error rate")
+    ax.set_xlabel("Learning Iterations")
+
+    ax.plot(err)
 
 
 class Axis:
@@ -287,6 +321,10 @@ class Axis:
 
         ytick_loc, ytick_labels = zip(*self.yticks)
         self.ax.set_yticks(ytick_loc, labels=ytick_labels)
+
+
+    def bar(self, *args, **kwargs):
+        return self.ax.bar(*args, **kwargs)
 
 
     def plot(self, *args, **kwargs):

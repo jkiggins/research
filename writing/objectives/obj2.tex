@@ -72,7 +72,7 @@ system.
 \end{align}
 
 Equation \ref{eq:dw-thr} describes the baseline concept for weight
-change. $\alpha_{ltp/ltd}$ parameters server as learning rates, and can be tuned
+change. $\alpha_{ltp/ltd}$ parameters serve as learning rates, and can be tuned
 based on the type of inputs or Astrocyte performance.
 
 
@@ -197,7 +197,7 @@ will converge, and compare that to classic STDP. Figures
 \ref{fig:ppi:impulse_fixed_istp} and \ref{fig:ppi:impulse_fixed_stp} depict
 responses to a similar series of spike impulses, but in this case each group of
 spikes is the same length. There is a significant difference between the
-behavior in this case, with the Astrocyte model quickly converging, while
+behaviors in this case, with the Astrocyte model quickly converging, while
 classic STDP appears to overshoot a stable configuration, oscillating back and
 forth. Figure \ref{fig:ppi:impulse_fixed_stp_diverge} shows the same simulation
 on a longer timescale, showing these oscillations continue and remain periodic.
@@ -332,7 +332,8 @@ Astrocyte models. Compared to classic STDP, the threshold approach exhibits
 convergence where classic STDP diverges, or exhibits oscillation. A threshold
 update rule is able to consistently drive synaptic weights into one of the
 Astrocyte model's stable configurations. In addition, and learning and
-convergence are stable in the presence of Gaussian noise.
+convergence are stable in the presence of random input spikes following a
+uniform distribution.
 
 The observed improvements over classic STDP were demonstrated across a variety
 of parameter values, including varying $tau_{ip3}$, $tau_{k+}$, \Gls{lif} $V_{th}$,

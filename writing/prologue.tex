@@ -40,24 +40,40 @@
 
 % Abstract
 \begin{abstract}
-	The mammalian brain is the most capable and complex computing entity known
-	today. For many years there has been research focusing on reproducing the
-	brain's processing capabilities. The first iteration of this process was
-	Artificial Neural Networks. The use of sigmoid neurons and convolution
-	operations have lead to significant success with many difficult
-	problems. Object detection, style transfer, and segmentation of complex
-	objects in noisy environments are examples. These systems can match and
-	outperform humans in specific situations. Though in general, they require
-	much more training, have higher power consumption, are more susceptible to
-	noise, and can fail with adversarial inputs. In addition, state of the art
-	models have a difficult time handling time-series data, and don't have any
-	inherent memory, at least not with the same flexibility as humans
-	display. Spiking neural networks are a logical next step to getting some of 
-	the biological advantages on to computing platforms. This work explores a
-	bio-plausible configuration of Spiking Neural Networks with Astrocytes,
-	which displays desirable properties beyond what Spiking Networks are able
-	to achieve alone, and bring the field a bit closer to leveraging some of the
-	distinct advantages of biological neural networks.
+The mammalian brain is the most capable and complex computing entity known
+today. For many years there has been research focused on reproducing the brain's
+processing capabilities. An early example of this endeavor was the perceptron
+which has become the core building block of neural network models in the deep
+learning era. Deep learning has had tremendous success in well-defined tasks
+like object detection, games like go and chess, and automatic speech
+recognition. In fact, some deep learning models can match and even outperform
+humans in specific situations. However, in general, they require much more
+training, have higher power consumption, are more susceptible to noise and
+adversarial perturbations, and have very different behavior than their
+biological counterparts. In contrast, spiking neural network models take a step
+closer to biology, and in some cases behave identically to measurements of real
+neurons. Though there has been advancement, spiking neural networks are far from
+reaching their full potential, in part because the full picture of their
+biological underpinnings is unclear. This work attempts to reduce that gap
+further by exploring a bio-inspired configuration of spiking neurons coupled
+with a computational astrocyte model. Astrocytes, initially thought to be
+passive support cells in the brain are now known to actively participate in
+neural processing. They are believed to be critical for some processes, such as
+neural synchronization, self-repair, and learning. The developed astrocyte model
+is geared towards synaptic plasticity and is shown to improve upon existing
+local learning rules, as well as create a generalized approach to local
+spike-timing-dependent plasticity. Beyond generalizing existing learning
+approaches, the astrocyte is able to leverage temporal and spatial integration
+to improve convergence, and tolerance to noise. The astrocyte model is expanded
+to influence multiple synapses and configured for a specific learning task. A
+single astrocyte paired with a single leaky integrate and fire neuron is shown
+to converge on a solution in 2, 3, and 4 synapse configurations. Beyond the more
+concrete improvements in plasticity, this work provides a foundation for
+exploring supervisory astrocyte-like elements in spiking neural networks, and a
+framework to implement and extend many three-factor learning rules. Overall,
+this work brings the field a bit closer to leveraging some of the distinct
+advantages of biological neural networks.
+
 \end{abstract}
 %\end{abstract}
 

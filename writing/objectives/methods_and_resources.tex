@@ -14,7 +14,7 @@
     First implementing, then extending the widely used STDP rule. Benefits of
     Astrocyte-like control of synaptic plasticity will be demonstrated in the
     single synapse, single neuron configuration (1S1N) as well as select
-    multi-synapse configurations (i.e. 2S1N, 3S2N, etc...). Inputs will mostly
+    multi-synapse configurations (i.e. 2S1N, 3S1N, etc...). Inputs will mostly
     consist of procedurally generated spiking inputs. This would include poisson
     rate-coded spike trains, spiking inputs representing Boolean variables, and
     temporal inputs that follow specific patterns. In general, for each
@@ -28,10 +28,10 @@
 
     %%%%%%%%%%%%% Datasets %%%%%%%%%%%%%
     \section{Datasets} \label{section:datasets}
-    No formal dataset will be used in this research. Instead, inputs to spiking
-    neurons and spiking neural networks will be simulated rate-based and
-    time-based spike-trains. These spike trains will have specific patterns will
-    be chosen based on the experiment at hand. Some example pattern include.
+    No formal dataset is used in this research. Instead, inputs to spiking
+    neurons and spiking neural networks are simulated using rate-based and
+    time-based spike-trains. These spike trains have specific patterns and are
+    chosen based on the experiment at hand. Some example pattern include.
     \begin{enumerate}
     \item Random Poisson spike train with a single rate parameter
     \item Random Poisson spike train with a variable rate parameters
@@ -60,13 +60,13 @@
     poly-synchronous groups, as outlined in \cite{sgnn_transistor}.
     
     %%%%%%%%%%%%% SW Components %%%%%%%%%%%%%
-    \section{SW Components}
+    \section{Software Components}
     Spiking Neural Networks are very much in their infancy as far as software
     and community support. This isn't due to lack of options, many frameworks
     are capable of simulating SNNs. However, these frameworks aren't as
-    sophisticated, complete, error-free, or supported when compared to
-    traditional DL libraries. In addition, many of the more bio-realistic
-    frameworks can't simulate networks at scale (such as NEST). Recently, a few
+    sophisticated, complete, error-free, or supported when compared to deep
+    learning frameworks. In addition, many of the more bio-realistic 
+    frameworks can't simulate networks at scale (such as \cite{nest}). Recently, a few
     python libraries have emerged that are usable and very close to complete
     solutions. The first is BindsNet, which has been referenced in a variety of
     papers. The original implementation included an architecture that achieved

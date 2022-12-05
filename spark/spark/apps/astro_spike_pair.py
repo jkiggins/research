@@ -67,7 +67,7 @@ def graph_dw_dt(db, title="", graph_text=""):
 
     points = np.array(points)
     spike_deltas = points[:, 0].tolist()
-    
+
     fig = plt.Figure(figsize=(16, 8))
     ax = fig.add_subplot(111)
     ax.set_title("{}: Weight Change vs. Pulse Pair Spike Delta".format(title))
@@ -97,7 +97,7 @@ def graph_dw_dt(db, title="", graph_text=""):
 
     fig.tight_layout()
 
-    return fig
+    return fig, axes
 
 
 def graph_astro_tls(records, key, prefix=""):

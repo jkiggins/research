@@ -200,7 +200,7 @@ class ExpStorage:
 
 
     def __getitem__(self, idx):
-        return self.db[idx]        
+        return self.db[idx]      
 
 
     def save(self, path):
@@ -254,9 +254,9 @@ class ExpStorage:
         elif type(val) == np.ndarray:
             val = tuple(map(tuple, val.squeeze().tolist()))
             
-        return val
-
-
+        return val                
+        
+        
     def filter(self, **kwargs):
         def _has_keys(d):
             return all([k in d for k in kwargs])

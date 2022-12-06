@@ -326,6 +326,7 @@ def _sim_stdp_and_astro(
     descr,
     astro_only=False, stdp_only=False,
     graph_only_weight=False,
+    astro_only_ca=True,
     ca_th=2.5,
 ):
     dbs = []
@@ -356,9 +357,16 @@ def _sim_stdp_and_astro(
 
         dbs.append(db)
 
-    db.meta['graphs'] = ['spikes', 'astro', 'weight']
-    if graph_only_weight:
-        for db in dbs:
+
+    for db in dbs:
+        db.meta['graphs'] = ['spikes', 'weight']
+        
+        if astro_only_ca:
+            db.meta['graphs'].append('astro-ca')
+        else:
+            db.meta['graphs'].append('astro')
+
+        if graph_only_weight:
             db.meta['graphs'] = ['weight']
 
     return dbs
@@ -436,19 +444,29 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
         # Repeat, but with a fixed length for each impulse
         spikes = gen_impulse_spikes(10, num_impulses=15)
         db_stdp, db_astro = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const')
-        db_astro.meta['xlim'] = (0, 300)
+        db_astro.meta['xlim'] = (100, 150)
+        db_stdp.meta['xlim'] = (100, 150)
         dbs = dbs + [db_astro, db_stdp]
 
         # Repeat with noisy input
-        spikes = gen_impulse_spikes(10, num_impulses=20, noise=0.02)
-        dbs_sim = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const_noise', ca_th=3.75)
+        seed_many(123123098)
+        spikes = gen_impulse_spikes(10, num_impulses=20, noise=0.02)        
+        db_stdp, db_astro = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const_noise', ca_th=3.75)
+        db_astro.meta['xlim'] = (0, 500)
+        db_stdp.meta['xlim'] = (750, 1250)
+        dbs = dbs + [db_astro, db_stdp]
+        
         dbs = dbs + dbs_sim
 
         # Repeat, but with a fixed length for each impulse, and poisson pattern
-        spikes = gen_impulse_spikes(20, num_impulses=15, poisson=True, rate=0.8)
+        seed_many(123123098)
+        spikes = gen_impulse_spikes(20, num_impulses=15, poisson=True, rate=0.75)
+        cfg['linear_params']['mu'] = 1.0
         db_stdp, db_astro = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_poisson_const')
-        db_astro.meta['xlim'] = (0, 800)
+        db_astro.meta['xlim'] = (100, 150)
         dbs = dbs + [db_astro, db_stdp]
+
+        cfg['linear_params']['mu'] = 0.7
 
         # Sim just STDP, with longer spikes to show divergence
         spikes = gen_impulse_spikes(10, sim_len=20000)
@@ -608,13 +626,13 @@ def _graph_average_pulse_pair(dbs):
         if 'graphs' in db.meta:
             graphs = db.meta['graphs']
 
-        fig, axes = gen_sgnn_axes(1, graphs=graphs)
-                
+        fig, axes = gen_sgnn_axes(1, graphs=graphs, figsize=(8,10))
+
         db_rec = db[0]
-        graph_sgnn(db_rec, fig, axes, 0)
+        graph_sgnn(db_rec, fig, axes, 0, plot=graphs)
 
         if 'xlim' in db.meta:
-            print("xlim: ", db.meta)
+            print("xlim: ", db.meta['xlim'])
             for k, v in axes.items():
                 for ax in v:
                     ax.set_xlim(db.meta['xlim'])
@@ -677,6 +695,8 @@ def _main(args):
     os.chdir('./obj2')
 
     cfg_path = '../../config/1n1s1a_obj2.yaml'
+
+    plot.rc_config({'font.size': 14})
 
     if args.astro_impulse or args.all:
         # dbs = _exp_rate_plasticity(cfg_path, sim=args.sim)

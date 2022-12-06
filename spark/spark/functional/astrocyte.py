@@ -170,11 +170,11 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
     kp = state['kp'][syns]
     ip3 = state['ip3'][syns]
 
-    # bool_ltd = torch.logical_and(
-    #     z_pre > 0.0,
-    #     torch.isclose(z_post, torch.tensor(0.0))
-    # )
-    bool_ltd = z_pre > 0.0
+    bool_ltd = torch.logical_and(
+        z_pre > 0.0,
+        torch.isclose(z_post, torch.tensor(0.0))
+    )
+    # bool_ltd = z_pre > 0.0
     wh_ltd = torch.where(bool_ltd)
     
     bool_ltp = torch.logical_and(
@@ -235,11 +235,12 @@ def astro_step_signal(state, eff, params):
     serca = state['serca'][syns]
     dser = state['dser'][syns]
 
+    bool_ltd = torch.logical_and(dser == -1.0, ca.abs() > params['ca_th'])
+    bool_ltp = torch.logical_and(dser == 1.0, ca.abs() > params['ca_th'])
+
     wh_reset = torch.where(serca == 1.0)
-    wh_ltd = torch.where(
-        torch.logical_and(dser == -1.0, ca.abs() > params['ca_th']))
-    wh_ltp = torch.where(
-        torch.logical_and(dser == 1.0, ca.abs() > params['ca_th']))
+    wh_ltd = torch.where(bool_ltd)
+    wh_ltp = torch.where(bool_ltp)
 
     if dw_mult:
         dw_params = params[params['dw']]

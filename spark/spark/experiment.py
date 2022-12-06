@@ -50,8 +50,7 @@ def try_load_dbs_pairs(base_name, all_prefix, pairs):
     return dbs
 
 
-def seed_many():
-    seed = 7
+def seed_many(seed=7):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
@@ -95,6 +94,25 @@ def cfg_text(cfg, astro=True, linear=False):
             text += "Pre/Post Alpha: {:4.2f}\n".format(astro_params['alpha_pre'])
 
     return text
+
+
+def hashable(val):
+
+    if type(val) == torch.Tensor:
+        val = val.numpy()
+        if len(val.shape) == 0:
+            val = float(val)
+        elif len(val.shape) == 1:
+            val = val.tolist()
+
+    if type(val) == list:
+        val = tuple(val)
+    elif type(val) == dict:
+        val = tuple(zip(val.keys(), val.values()))
+    elif type(val) == np.ndarray:
+        val = tuple(map(tuple, val.squeeze().tolist()))
+
+    return val
 
 
 class VSweep:
@@ -370,7 +388,7 @@ class ExpStorage:
             if not (key in d):
                 continue
             val = d[key]
-            g_key = self._hashable(val)
+            g_key = hashable(val)
 
             if not (g_key in group_keys):
                 group_keys.append(g_key)
@@ -379,7 +397,7 @@ class ExpStorage:
         # Use the gather function to grab records for each unique group key
         for g_key in group_keys:
             records[g_key] = self.gather(
-                lambda x: hash(self._hashable(x[key])) == hash(g_key),
+                lambda x: hash(hashable(x[key])) == hash(g_key),
                 filter = lambda x: key in x
             )
 

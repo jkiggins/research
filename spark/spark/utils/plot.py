@@ -31,7 +31,11 @@ region_colors = {
     'n/a': 'tab:green',
 }
 
-plt_round_box = dict(facecolor='none', edgecolor='tab:blue', boxstyle='round')
+plt_round_box = dict(
+    facecolor='tab:orange',
+    alpha=0.5,
+    edgecolor='tab:blue',
+    boxstyle='round')
 
 def rc_config(*args, **kwargs):
     matplotlib.rcParams.update(*args, **kwargs)

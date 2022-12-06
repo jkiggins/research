@@ -42,23 +42,26 @@ class LifNet:
         self.neuron = LIFNeuron.from_cfg(cfg['lif_params'], self.dt)
 
         self.linear = nn.Linear(self.num_synapse, 1, bias=False)
-
-        for i in range(self.num_synapse):
-            if self.cfg['linear_params']['init'] == 'normal':
-                mu_i = i % len(mu)
-                nn.init.normal_(
-                    self.linear.weight[0][i],
-                    mean=mu[mu_i],
-                    std=std[mu_i])
-
-            elif self.cfg['linear_params']['init'] == 'fixed':
-                self.linear.weight[0][i] = mu[i]
-
-            else:
-                raise ValueError("Unknown LIF Init method: {}".format(self.cfg['linear_params']['init']))
+        for param in self.linear.parameters():
+            param.requires_grad = False
 
         if not (w is None):
             self.linear.weight[0] = w
+        else:
+            for i in range(self.num_synapse):
+                if self.cfg['linear_params']['init'] == 'normal':
+                    mu_i = i % len(mu)
+                    nn.init.normal_(
+                        self.linear.weight[0][i],
+                        mean=mu[mu_i],
+                        std=std[mu_i])
+
+                elif self.cfg['linear_params']['init'] == 'fixed':
+                    self.linear.weight[0][i] = mu[i]
+
+                else:
+                    raise ValueError("Unknown LIF Init method: {}".format(self.cfg['linear_params']['init']))
+
 
         self.neuron_state = None
 
@@ -515,7 +518,7 @@ def gen_sgnn_axes(
     num_synapse,
     graphs=None,
     offset=True,
-    figsize=(12, 10)
+    figsize=(8, 6)
 ):
     if graphs is None:
         graphs=[
@@ -673,7 +676,6 @@ def plot_1nNs1a(
                 ax.set_ylabel("Astrocyte [$Ca^{2+}$]")
                 # Only label the fist synapses' graph, and reuse the color for all other synapses
 
-                print(f"offset: {idx}, synapse: {i}")
                 if i == 0:
                     graph_color = lines[0].get_color()
                     lines[0].set_label(prefix)
@@ -697,22 +699,33 @@ def plot_1nNs1a(
             ax.legend()
 
 
-def sim_lif_astro_net(cfg, spike_trains, db, dw=True, keep_state=False):
+def sim_lif_astro_net(cfg, spike_trains, db, dw=True, keep_state=False, err=False):
     # Sim
     snn = None
+    db_err_recs = []
     for i, spikes in enumerate(tqdm(spike_trains, position=1, leave=False)):
         if snn is None:
             snn = LifAstroNet(cfg)
 
         tl = _sim_snn(snn, spikes, dw=dw)
-        # Get error over random 10% of samples
-        random_idx = torch.randperm(spike_trains.shape[0])[0:spike_trains.shape[0] // 10]
-        err = get_lif_astro_net_err(cfg, spike_trains[random_idx], w=snn.linear.weight[0])
+        db.store({'spikes': spikes, 'tl': tl, 'w': snn.linear.weight[0].detach().clone(), 'n': cfg['linear_params']['synapse'], 'err': 0.0})
 
-        db.store({'spikes': spikes, 'tl': tl, 'w': snn.linear.weight[0], 'n': cfg['linear_params']['synapse'], 'err': err})
+        if err:
+            db_err_recs.append((db.last(), cfg))
 
         if not keep_state:
             snn = None
+
+    if err:
+        for db_rec, cfg in tqdm(db_err_recs, desc="error", position=1, leave=False):
+            err_val = 0.0
+            
+            # Get error over random 10% of samples
+            random_idx = torch.randperm(spike_trains.shape[0])[0:spike_trains.shape[0] // 10]
+            err_val = get_lif_astro_net_err(cfg, spike_trains[random_idx], w=db_rec['w'])
+
+            db_rec['err'] = err_val
+
 
     return db
 
@@ -846,25 +859,30 @@ def graph_sgnn(
     return fig
 
 
-def gen_dw_dt_axes(n_plots):
+def gen_dw_dt_axes(n_plots, figsize=(10,6)):
     gs = GridSpec(n_plots, 1)
 
-    fig = plt.Figure(figsize=(16, 8))
+    fig = plt.Figure(figsize=figsize)
     axes = []
 
     for i in range(n_plots):
         ax = fig.add_subplot(gs[i])
-        ax.spines['left'].set_position('zero')
-        ax.spines['right'].set_color('none')
-        ax.spines['bottom'].set_position('zero')
-        ax.spines['top'].set_color('none')
+        # ax.spines['left'].set_position('zero')
+        # ax.spines['right'].set_color('none')
+        # ax.spines['bottom'].set_position('zero')
+        # ax.spines['top'].set_color('none')
 
-        ax.set_xlabel("Pulse Pair Delta t")
-        ax.xaxis.set_label_coords(0.7, 0.4)
+        ax.set_xlabel("$\Delta t$", fontsize=20)
+        # ax.xaxis.set_label_coords(0.7, 0.4)
 
-        ax.set_ylabel("Weight Change")
-        ax.yaxis.set_label_coords(0.47, 0.67)
+        ax.set_ylabel("$\Delta w$", fontsize=20)
+        # ax.yaxis.set_label_coords(0.47, 0.67)
         ax.grid(True)
+        ax.set_xlim(-0.06, 0.06)
+        ax.set_ylim(-1.0, 1.0)
+        
+        ax.axvline(x=0, color='k', lw=1)
+        
 
         axes.append(ax)
 
@@ -875,24 +893,24 @@ def _graph_dw_dt(points, ax, text):
     spike_deltas = points[:, 0].tolist()
     
     ax.plot(points[:, 0], points[:, 1])
-    ax.set_xticks(
-        spike_deltas[::2],
-        labels=["{:2.4f}".format(d) for d in spike_deltas[::2]],
-        rotation=45)
+    # ax.set_xticks(
+    #     spike_deltas[::2],
+    #     labels=["{:2.4f}".format(d) for d in spike_deltas[::2]],
+    #     rotation=45)
 
     ax.text(
-        -0.05, 0.8,
-        text)
-        # bbox=uplot.plt_round_bbox)
+        -0.05, 0.2,
+        text,
+        bbox=uplot.plt_round_box)
 
 
-def graph_dw_dt(db, title="", graph_text="", fig=None, axes=None):
+def graph_dw_dt(db, title="", graph_text="", fig=None, axes=None, figsize=(10,6)):
     # Graph
     points = []
     
     # Only one plot for now
     if fig is None and axes is None:
-        fig, axes = gen_dw_dt_axes(1)
+        fig, axes = gen_dw_dt_axes(1, figsize=figsize)
 
     # Gather dw, dt pairs from sim results
     for i, (delta_t, by_spike_delta) in enumerate(db.group_by('delta_t').items()):
@@ -905,7 +923,7 @@ def graph_dw_dt(db, title="", graph_text="", fig=None, axes=None):
     points = np.array(points)
     _graph_dw_dt(points, axes[0], graph_text)
 
-    axes[0].set_title("{}: Weight Change vs. Pulse Pair Spike Delta".format(title))
+    axes[0].set_title("{}: $\\Delta$ w vs. $\\Delta$ t".format(title), fontsize=20)
     
     return fig, axes
 
@@ -918,8 +936,8 @@ def gen_dw_w_axes(n_plots, titles=None, spikes=False, size=(16, 8)):
 
     for i in range(n_plots):
         ax = fig.add_subplot(gs[i])
-        ax.set_ylabel("Number of times $Ca^{2+} > thr_{ca}$")
-        ax.set_xlabel("Synaptic Weight")
+        ax.set_ylabel("# $\Delta$ w ")
+        ax.set_xlabel("w")
         ax.grid(True)
 
         if titles:
@@ -1038,18 +1056,18 @@ def astro_and_region(tl):
 def astro_dwdt_text(cfg, ordered_prod=False, stdp=False):
     astro_cfg = cfg['astro_params']
     text = ""
-    text += f"IP3 Alpha: {astro_cfg['alpha_ip3']}\n"
-    text += f"K+ Alpha: {astro_cfg['alpha_kp']}\n"
-    text += f"IP3 Tau: {astro_cfg['tau_ip3']}\n"
-    text += f"K+ Tau: {astro_cfg['tau_kp']}\n"
+    text += f"$\\alpha_{{ip3}}$: {astro_cfg['alpha_ip3']}\n"
+    text += f"$\\alpha_{{k+}}$: {astro_cfg['alpha_kp']}\n"
+    text += f"$\\tau_{{ip3}}$: {astro_cfg['tau_ip3']}\n"
+    text += f"$\\tau_{{k+}}$: {astro_cfg['tau_kp']}\n"
 
     if ordered_prod:
-        text += f"LTD thr: {astro_cfg['ordered_prod']['ltd']}\n"
-        text += f"LTP thr: {astro_cfg['ordered_prod']['ltp']}\n"
+        text += f"$thr_{{ltd}}$: {astro_cfg['ordered_prod']['ltd']}\n"
+        text += f"$thr_{{ltp}}$: {astro_cfg['ordered_prod']['ltp']}\n"
 
     if stdp:
-        text += f"LTD thr: {astro_cfg['stdp']['ltd']}\n"
-        text += f"LTP thr: {astro_cfg['stdp']['ltp']}\n"
+        text += f"$thr_{{ltd}}$: {astro_cfg['stdp']['ltd']}\n"
+        text += f"$thr_{{ltp}}$: {astro_cfg['stdp']['ltp']}\n"
 
 
     return text

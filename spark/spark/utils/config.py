@@ -1,4 +1,5 @@
 import oyaml as yaml
+import hashlib
 
 class Config:
     def __init__(self, path):
@@ -13,6 +14,9 @@ class Config:
 
         self.cfg = cfg
 
+
+    def md5(self):
+        return hashlib.md5(bytes(str(self.cfg), 'utf-8')).hexdigest()
 
     def bredth(self):
         _next = [(None, self.cfg)]

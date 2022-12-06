@@ -501,12 +501,12 @@ def _graph_exp_tp_w_sweep(db):
     if len(records_by_ca_thr) == 0:
         raise ValueError("No records found when grouping by ca_th")
 
-    fig, axes = gen_dw_w_axes(len(records_by_ca_thr), size=(10, 10))
+    fig, axes = gen_dw_w_axes(len(records_by_ca_thr), size=(8, 6))
 
     for i, (ca_thr, by_ca_thr) in enumerate(records_by_ca_thr.items()):
         fig, axes = graph_dw_w(
             by_ca_thr, fig, axes,
-            title='Astrocyte $Ca^{{2+}}$ Response with $thr_{{ca}}$ = {:4.2f}'.format(ca_thr),
+            title='Total number of $\Delta$ w > 0 with $thr_{{ca}}$ = {:4.2f}'.format(ca_thr),
             sp=i
         )
    
@@ -554,7 +554,7 @@ def _graph_exp_w_tl(dbs, xlim=None, ip3_kp=False):
         
     graphs.append('spikes')
 
-    fig, axes = gen_sgnn_axes(1, graphs, offset=True)
+    fig, axes = gen_sgnn_axes(1, graphs, offset=True, figsize=(9, 6))
 
     axes['spikes'][0].set_title("Pre and Post-Synaptic Spikes")
 
@@ -609,6 +609,7 @@ def _graph_exp_w_tl(dbs, xlim=None, ip3_kp=False):
         fig_path = "{}_tl.svg".format(db.meta['descr'] + '_xlim')
         
     print("Saving: ", fig_path)
+    fig.tight_layout()
     fig.savefig(fig_path)
 
 
@@ -661,7 +662,7 @@ def _exp_rate_w_impulse(cfg_path, sim=False):
 
         db = ExpStorage()
         db.meta['descr'] = "astro_rp_many-w"
-        db.meta['title'] = "Astrocyte Response given $w$ with $thr_{{ltp/ltd}}=0$"
+        db.meta['title'] = "Astrocyte Response with $thr_{{ltp/ltd}}=0$"
 
         _sim_rate_w_impulse(cfg, spikes, db, tl_graph_idx, all_w, 'Astro Sweep W (no tol)')
         print("db tl_graph len: ", len(db.filter(tl_graph=True)))
@@ -917,6 +918,8 @@ def _main(args):
 
     cfg_path = '../../config/1n1s1a_obj1.yaml'
 
+    plot.rc_config({'font.size': 14})
+
     if args.lif or args.all:
         seed_many()
         dbs = _exp_lif_sample(cfg_path, sim=args.sim)
@@ -962,6 +965,7 @@ def _main(args):
                 db,
                 title=db.meta['name'],
                 graph_text=db.meta['graph_text'],
+                figsize=(8,6)
             )
 
             fig_path = "{}.svg".format(db.meta['descr'])
@@ -998,7 +1002,7 @@ def _main(args):
 
         db = _exp_pulse_pair_w_impulse(
             cfg_path,
-            tl_w = [1.0, 1.2, 1.8],
+            tl_w = [1.2],
             tl_ca_thr = 2.5,
             sim=args.sim)
         _graph_exp_w_tl([db])
@@ -1043,7 +1047,7 @@ def _main(args):
 
         assert len(db) == 1
 
-        fig, axes = gen_sgnn_axes(1, graphs=['spikes','astro'])
+        fig, axes = gen_sgnn_axes(1, graphs=['spikes','astro'], figsize=(8,7))
         graph_sgnn(db[0], fig, axes, 0, plot=['spikes','astro'])
         fig_path = "{}.svg".format(db.meta['descr'])
         print("Saving: ", fig_path)

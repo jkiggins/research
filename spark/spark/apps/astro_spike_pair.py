@@ -54,7 +54,7 @@ def sim_astro_probe(cfg, spikes, db, weight=1.0):
     return db
 
 
-def graph_dw_dt(db, title="", graph_text=""):
+def graph_dw_dt(db, title="", graph_text="", figsize=(10,6)):
     # Graph
     points = []
     
@@ -68,7 +68,7 @@ def graph_dw_dt(db, title="", graph_text=""):
     points = np.array(points)
     spike_deltas = points[:, 0].tolist()
 
-    fig = plt.Figure(figsize=(16, 8))
+    fig = plt.Figure(figsize=figsize)
     ax = fig.add_subplot(111)
     ax.set_title("{}: Weight Change vs. Pulse Pair Spike Delta".format(title))
     ax.plot(points[:, 0], points[:, 1])

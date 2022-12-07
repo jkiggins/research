@@ -181,6 +181,7 @@ def astro_step_stdp_ca(state, params, z_pre=None, z_post=None, reward=None):
         z_post > 0.0,
         torch.isclose(z_pre, torch.tensor(0.0))
     )
+    # bool_ltp = z_post > 0.0
     wh_ltp = torch.where(bool_ltp)
 
     # Peform LTP/LTD across astrocyte processes
@@ -235,8 +236,13 @@ def astro_step_signal(state, eff, params):
     serca = state['serca'][syns]
     dser = state['dser'][syns]
 
-    bool_ltd = torch.logical_and(dser == -1.0, ca.abs() > params['ca_th'])
-    bool_ltp = torch.logical_and(dser == 1.0, ca.abs() > params['ca_th'])
+    # with open('ca-stats.csv', 'a') as fp:
+    #     fp.write(",".join([str(float(n)) for n in ca.abs()]))
+    #     fp.write("\n")
+    # bool_ltd = torch.logical_and(dser == -1.0, ca.abs() > params['ca_th'])
+    # bool_ltp = torch.logical_and(dser == 1.0, ca.abs() > params['ca_th'])
+    bool_ltp = dser == 1.0
+    bool_ltd = dser == -1.0
 
     wh_reset = torch.where(serca == 1.0)
     wh_ltd = torch.where(bool_ltd)

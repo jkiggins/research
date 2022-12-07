@@ -699,8 +699,8 @@ def _main(args):
     plot.rc_config({'font.size': 14})
 
     if args.astro_impulse or args.all:
-        # dbs = _exp_rate_plasticity(cfg_path, sim=args.sim)
-        # _graph_average_pulse_pair(dbs)
+        dbs = _exp_rate_plasticity(cfg_path, sim=args.sim)
+        _graph_average_pulse_pair(dbs)
 
         dbs = _exp_average_pulse_pair_baseline(cfg_path, sim=args.sim)
         _graph_average_pulse_pair(dbs)

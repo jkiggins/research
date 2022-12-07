@@ -51,7 +51,7 @@ identified and the effect of parameters on these features explored.
 % how other models follow that basic approach, but that this work need not make
 % a distinction between them.
 
-\section{\ca Threshold Triggered Weight Update}
+\section{Calcium Threshold Triggered Weight Update}
 One key Astrocyte property highlighted in Chapter \ref{chapter:background} is
 the concept of \Gls{cicr}. Essentially, Astrocytes integrate synaptic activity into a
 \ca response, once that \ca concentration exceeds a threshold, there is a
@@ -230,12 +230,12 @@ progression of weight modulation. In the case of classic STDP, weight values
 fluctuate even further, adding to the already unstable behavior.
 
 % STDP response to impulse + uniform noise
-\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_noise_classic_0.svg}{Classic
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_noise_classic_0.svg}{Classic
   STD response to impulse inputs with uniformly random
   noise}{fig:ppi:impulse_noise_stp}{0.4}
 
 % Astro response to impulse + uniform noise
-\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_noise_astro_0.svg}{Astrocyte
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_noise_astro_0.svg}{Astrocyte
   response to impulse inputs with uniformly random
   noise}{fig:ppi:impulse_noise_istp}{0.4}
 
@@ -318,7 +318,7 @@ exhibited similar instability to what has been observed thus far.
 
 \section{Summary}
 
-This Chapter builds upon the Astrocyte-\Gls{lif} models from the previous chapter,
+This Chapter builds upon the Astrocyte \Gls{lif} models from the previous chapter,
 adding a plasticity step, which translates \ca levels to a change
 in synaptic weight. In order to implement STDP, \ca concentration can be directly
 translated into a weight change. This is the baseline used for comparison with

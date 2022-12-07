@@ -722,9 +722,10 @@ def sim_lif_astro_net(cfg, spike_trains, db, dw=True, keep_state=False, err=Fals
             
             # Get error over random 10% of samples
             random_idx = torch.randperm(spike_trains.shape[0])[0:spike_trains.shape[0] // 10]
-            err_val = get_lif_astro_net_err(cfg, spike_trains[random_idx], w=db_rec['w'])
+            err_val, regions = get_lif_astro_net_err(cfg, spike_trains[random_idx], w=db_rec['w'])
 
             db_rec['err'] = err_val
+            db_rec['regions'] = regions
 
 
     return db
@@ -736,6 +737,13 @@ def get_lif_astro_net_err(cfg, spike_trains, w=None):
     total = 0
     snn = None
 
+    regions = {
+        'and': 0,
+        'ltp': 0,
+        'early-spike': 0,
+        'other-influence': 0
+    }
+
     for i, spikes in enumerate(spike_trains):
         if snn is None:
             snn = LifAstroNet(cfg, w=w)
@@ -743,13 +751,12 @@ def get_lif_astro_net_err(cfg, spike_trains, w=None):
         tl = _sim_snn(snn, spikes, dw=False)
 
         region = astro_and_region(tl)[0]
-        invalid = not astro_check_respose(tl, region)
-
-        if invalid:
+        regions[region] += 1
+        if not (region == 'and'):
             err += 1
         total += 1
 
-    return err/total
+    return err/total, regions
 
 
 def sim_lif(cfg, spikes, name='lif_sample'):
@@ -1016,41 +1023,87 @@ def astro_check_respose(tl, region):
 
     return valid_res
 
-
 def astro_and_region(tl):
     z_pre = tl['z_pre']
     z_post = tl['z_post']
+    
+    z_pre_tl = z_pre
+    z_post_tl = z_post
 
     n_syns = z_pre.shape[-1]
-
-    z_pre_t = torch.where(z_pre == 1)[0]
-    z_post_t = torch.where(z_post == 1)[0]
-
-    all_z_pre = len(z_pre_t) == n_syns
-    any_z_pre = len(z_pre_t) > 0
-    all_z_post = len(z_post_t) == 1
-
     duration = z_pre.shape[0]
 
-    # print("astro_and_region: all_z_pre: {}, any_z_pre: {}, z_post: {}".format(all_z_pre, any_z_pre, all_z_post))
+    z_pre_b = torch.zeros(n_syns, dtype=torch.bool)
 
-    if all_z_post and all_z_pre:
-        # print("all pre and all post")
-        if torch.all(z_pre_t < z_post_t):
+    for z_pre, z_post in zip(z_pre_tl, z_post_tl):
+        if z_post and torch.all(z_pre_b):
             return ('and', duration)
-        
-    if all_z_post and any_z_pre:
-        # print("any pre and all post")
-        if torch.any(z_pre_t < z_post_t):
-            return ('early-spike', duration)
-        elif torch.all(z_pre_t >= z_post_t):
+        elif z_post and not (torch.any(z_pre_b)):
             return ('other-influence', duration)
+        elif z_post and not (torch.all(z_pre_b)):
+            return ('early-spike', duration)
 
-    if (not all_z_post) and all_z_pre:
-        # print("all pre and all post")
+        z_pre_b = torch.logical_or(z_pre_b, z_pre > 0.0)
+
+    if torch.all(z_pre_b):
         return ('ltp', duration)
+    else:
+        return ('and', duration)
+            
+    
+# def astro_and_region(tl):
+#     z_pre = tl['z_pre']
+#     z_post = tl['z_post']
 
-    return ('n/a', duration)
+#     n_syns = z_pre.shape[-1]
+
+#     z_pre_t = torch.where(z_pre == 1)[0]
+#     z_post_t = torch.where(z_post == 1)[0]
+
+#     all_z_pre = len(z_pre_t) == n_syns
+#     any_z_pre = len(z_pre_t) > 0
+#     some_z_pre = len(z_pre_t) > 0 and len(z_pre_t) < n_syns
+#     no_z_pre = len(z_pre_t) == 0
+#     any_z_post = len(z_post_t) > 0
+#     num_z_po
+#     no_z_post = len(z_post_t) == 0
+
+#     duration = z_pre.shape[0]
+
+#     # print("astro_and_region: all_z_pre: {}, any_z_pre: {}, z_post: {}".format(all_z_pre, any_z_pre, all_z_post))
+
+#     if all_z_post and all_z_pre:
+#         # print("all pre and all post")
+#         if torch.all(z_pre_t < z_post_t):
+#             return ('and', duration)
+#         elif torch.all(z_post_t <= z_pre_t):
+#             return ('other-influence', duration)
+#         else:
+#             return ('early-spike', duration)
+
+#     elif no_z_post and all_z_pre:
+#         # print("all pre and all post")
+#         return ('ltp', duration)
+
+#     elif some_z_pre and no_z_post:
+#         return ('and', duration)
+#     elif no_z_pre and no_z_post:
+#         return ('and', duration)
+#     elif no_z_pre and all_z_post:
+#         return ('other-influence', duration)
+#     elif all_z_post and any_z_pre:
+#         # print("any pre and all post")
+#         if torch.any(z_pre_t < z_post_t):
+#             return ('early-spike', duration)
+#         elif torch.all(z_pre_t >= z_post_t):
+#             return ('other-influence', duration)
+
+
+#     import code
+#     code.interact(local=dict(globals(), **locals()))
+#     exit(1)
+
+#     raise ValueError("All spiking and cases not covered")
 
 
 def astro_dwdt_text(cfg, ordered_prod=False, stdp=False):

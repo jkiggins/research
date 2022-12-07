@@ -229,14 +229,20 @@ def plot_mismatch_bar(axes, loc, bar):
     )
 
 
-def plot_err(axes, loc, err):
+def plot_err(axes, loc, err, regions, legend=True):
     ax = _locate_ax(axes, loc)
 
-    ax.set_title("Error Rate During Learning")
-    ax.set_ylabel("Error rate")
+    ax.set_title("Error Rates During Learning")
+    ax.set_ylabel("Error rates")
     ax.set_xlabel("Learning Iterations")
 
-    ax.plot(err)
+    total = sum([v[0] for k,v in regions.items()])
+    regions['ltp'] = [d / total for d in regions['ltp']]
+    regions['early-spike'] = [d / total for d in regions['early-spike']]
+
+    ax.plot(regions['ltp'], label='+$\Delta$w')
+    ax.plot(regions['early-spike'], label='-$\Delta$w')
+    if legend: ax.legend()
 
 
 class Axis:

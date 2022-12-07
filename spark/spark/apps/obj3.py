@@ -110,7 +110,8 @@ def _graph_n_syn_coupled_astro_lif(
     w_dw_only=False,
     w_err_only=False,
     fig=None,
-    axes=None
+    axes=None,
+    err_no_legend=True
 ):
 
     if (fig is None) or (axes is None):
@@ -162,9 +163,10 @@ def _graph_n_syn_coupled_astro_lif(
     if w_err_only:
         plot.plot_err(
             axes, ('err',),
-            db_rec['err'])
-
-        
+            db_rec['err'],
+            db_rec['regions'],
+            legend=not err_no_legend
+        )
 
     if not (xlim is None):
         plot.xlim(axes, xlim)
@@ -263,6 +265,7 @@ def _cfg_gen(
     cfg_path,
     astro_p=True,
     w_sweep=None,
+    w=0.7,
     n=2,
     all_stdp=True,
     all_ip3_ca=True,
@@ -340,7 +343,8 @@ def _cfg_gen(
 
         for cfg in cfgs:
             for n_i in n:
-                cfg = cfg_apply_settings(cfg, n=n_i)
+                w_i = [w]*n_i
+                cfg = cfg_apply_settings(cfg, n=n_i, w=w_i)
                 yield cfg
 
     # Fix input types
@@ -376,19 +380,22 @@ def _exp_n_syn_coupled_astro_lif(
 ):
     seed_many()
 
-    # db_path = Path("{}.db".format(sim_name))
-
-    # if not sim:
-    #     print("Checking if db is in: ", db_path, end='')
-    #     if db_path.exists():
-    #         print('... yes, returning')
-    #         db = ExpStorage(path=db_path)
-    #         return db
-    #     else:
-    #         print('... no, re-running')
-
     dbs = []
     for cfg, spikes in tqdm(rt_gen, total=num_cfgs):
+
+        db_path = Path("{}-{}.db".format(sim_name, cfg.md5()))
+
+        if not sim:
+            print("Checking if db is in: ", db_path, end='')
+            if db_path.exists():
+                print('... yes, returning')
+                db = ExpStorage(path=db_path)
+                dbs.append(db)
+                continue
+            else:
+                print('... no, re-running')
+
+        
         db = ExpStorage()
         db.meta['descr'] = descr
         db.meta['n'] = cfg['linear_params']['synapse']
@@ -397,9 +404,9 @@ def _exp_n_syn_coupled_astro_lif(
         # print("n={}, spikes.sum(): {}, cfg-hash: {}".format(db.meta['n'], spikes.sum(), cfg.md5()))
         sim_lif_astro_net(cfg, spikes, db, dw=dw, keep_state=keep_state, err=True)
 
+        db.save(db_path)
         dbs.append(db)
 
-    # db.save(db_path)
     return dbs
 
 
@@ -603,6 +610,10 @@ def _main(args):
         db = _exp_n_syn_coupled_astro(cfg_and_spikes, num_cfgs, sim=args.sim)
 
         for n, db_syn in db.group_by('n').items():
+            db_invalid = db_syn.filter(invalid=True)
+
+            print("{}/{} invalid".format(len(db_invalid), len(db_syn)))
+            
             if len(db_invalid) > 10:
                 db_cat = db_invalid.slice(0, 10).cat()
             elif len(db_invalid) == 0:
@@ -685,9 +696,8 @@ def _main(args):
 
     # Look at a number of continuous 10ms bouts of inputs, simulate an Astro-LIF Configuration
     if args.astro_and_lif or args.all:
-        ca_th = 0.85
+        ca_th = 0.8
         n_synapse = [2,3,4]
-        # n_synapse = [4]
 
         cfgs, num_cfgs = _cfg_gen(
             cfg_path,
@@ -695,6 +705,7 @@ def _main(args):
             ca_th=ca_th,
             dw=False,
             all_and=True,
+            w = 0.7,
         )
         cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=500, gen_post=False)
 
@@ -717,7 +728,7 @@ def _main(args):
                 ('err', gs[0]),
                 figsize=(8,6),
             )
-            plot.plot_err(axes, ('err',), db_cat['err'])
+            plot.plot_err(axes, ('err',), db_cat['err'], db_cat['regions'])
             fig_path = "{}_err.svg".format(descr)
             print("Saving: ", fig_path)
             fig.tight_layout()
@@ -752,7 +763,7 @@ def _main(args):
         )
         cfg_and_spikes = _spikes_gen(cfgs, window=10, num_impulses=500, gen_post=False)
 
-        dbs = _exp_n_syn_coupled_astro_lif(cfg_and_spikes, num_cfgs, sim=args.sim, dw=True, keep_state=True, descr='snn_{}s1a_and_w')
+        dbs = _exp_n_syn_coupled_astro_lif(cfg_and_spikes, num_cfgs, sim=args.sim, dw=True, keep_state=True, descr='snn_{}s1a_and_w', sim_name='_exp_n_syn_astro_w')
 
         # Graph timline for each value of w
         fig, axes = None, None
@@ -760,9 +771,9 @@ def _main(args):
             w = db_syn.meta['w']
 
             if fig is None:
-                fig, axes = _graph_n_syn_coupled_astro_lif(db_syn.cat(), n_synapse, xlim=None, w_err_only=True)
+                fig, axes = _graph_n_syn_coupled_astro_lif(db_syn.cat(), n_synapse, xlim=None, w_err_only=True, err_no_legend=True)
             else:
-                fig, axes = _graph_n_syn_coupled_astro_lif(db_syn.cat(), n_synapse, xlim=None, w_err_only=True, fig=fig, axes=axes)
+                fig, axes = _graph_n_syn_coupled_astro_lif(db_syn.cat(), n_synapse, xlim=None, w_err_only=True, fig=fig, axes=axes, err_no_legend=True)
 
         descr = dbs[0].meta['descr'].format(n_synapse)
         fig_path = "{}.svg".format(descr)

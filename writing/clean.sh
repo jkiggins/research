@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-git clean -fdx -e svg-inkscape/ -e *.pdf
+git clean -fdx -e svg-inkscape/

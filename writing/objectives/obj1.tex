@@ -125,7 +125,7 @@ integrating Equations \ref{eq:song_impl_pre}, \ref{eq:song_impl_post}, and
 parameters used during simulation.
 
 \begin{table}[!htp]\centering
-  \label{table:classic_stdp_params}
+  Parameters for Classic STDP \label{table:classic_stdp_params}
   \scriptsize
   \begin{tabular}{lrr}\toprule
     A &Tau \\\midrule
@@ -156,8 +156,8 @@ the implementation matches the theoretical equations.
 
 
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_astro_plasticity.svg}{Simulation
-  of Classic STDP Implementation, Equations \ref{song_impl_pre} -
-  \ref{song_impl_dw}}{fig:stdp_dw_dt_impl}{0.4}
+  of Classic STDP Implementation, Equations \ref{eq:song_impl_pre} -
+  \ref{eq:song_impl_dw}}{fig:stdp_dw_dt_impl}{0.4}
 
 
 %%%% Model Development Section %%%%
@@ -363,7 +363,7 @@ shift activity from the \Gls{ltp} to \Gls{ltd} region, or vise versa. Figure
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_ltd_dt_shift.svg}{Astrocyte-Neuron
 Model Response to Pulse Pairs: \Gls{ltd} Shift}{fig:astro:stdp_ltd_shift}{0.4}
 
-Additional figures can be found in Appendix \ref{appendix:appendix-a}.
+Additional figures can be found in Appendix \ref{section:appendix-a}.
 
 One of the main features of this model is it's ability to generalize STDP,
 and capture a variety of variants that have been proposed an explored in the
@@ -505,7 +505,7 @@ mitigate this then. Defining a threshold, $thr_{ca}$ which gates any external
 response by the Astrocyte (namely a weight update) leads to a more patient
 learning process.
 
-Figure \ref{fig:astro:tp_ramp_impulse} shows
+Figure \ref{fig:astro:ramp_impulse} shows
 the behavior of temporal integration model when a series of spike impulses are
 presented to the network. Each successive pulse has an additional spike from the
 last and the resulting \ca activity is depicted for a given synaptic
@@ -574,7 +574,7 @@ state.
 
 This chapter introduces a computationally simple and efficient Astrocyte
 model. This model was developed with inspiration from the many works outlined in
-Chapter \ref{chapter:backround}, and focuses on an Astrocyte's role in synaptic
+Chapter \ref{chapter:background}, and focuses on an Astrocyte's role in synaptic
 plasticity. These include Neuroscience works, which outline observed and
 theorized bio-chemical pathways. As well as works which present highly realistic
 mathematical models of Astrocyte behavior. For the Astrocyte model developed in

@@ -546,11 +546,11 @@ def gen_sgnn_axes(
 
     graph_to_labels = {
         'spikes': ("Pre and Postsynaptic Spikes", None),
-        'pre-spikes': ("Pre-synaptic Spikes", None),
+        'pre-spikes': ("Presynaptic Spikes", None),
         'neuron': ("Neuron Membrane Voltage", "Voltage"),
         'astro': ("Astrocyte Traces, Synapse", "Concentration"),
         'astro-ca': ("Astrocyte Calcium Response", "Concentration"),
-        'weight': ("Synapse Weight", "Magnitude"),
+        'weight': ("Synapse Weight", "W"),
         'regions': ("Activity Regions", None)
     }
 
@@ -559,10 +559,10 @@ def gen_sgnn_axes(
     for gs_idx, g in enumerate(graphs):
         ax = fig.add_subplot(gs[gs_idx, 0])
         title, ylabel = graph_to_labels[g]
-        ax.set_title(title)
-        ax.set_xlabel("Time (ms)")
+        ax.set_title(title, fontsize=25)
+        ax.set_xlabel("Time (ms)", fontsize=20)
         if ylabel:
-            ax.set_ylabel(ylabel)
+            ax.set_ylabel(ylabel, fontsize=25)
         ax = LifAxis(ax, offset=offset)
 
         axes[g].append(ax)
@@ -673,7 +673,7 @@ def plot_1nNs1a(
                 mark_on = torch.where(tl['eff'] > 1.0)[0].tolist()
                 lines = ax.plot(tl['ca'][:, i].tolist(), '-o', color=graph_color, markevery=mark_on)
                 
-                ax.set_ylabel("Astrocyte [$Ca^{2+}$]")
+                ax.set_ylabel("[$Ca^{2+}$]", fontsize=25)
                 # Only label the fist synapses' graph, and reuse the color for all other synapses
 
                 if i == 0:
@@ -819,7 +819,7 @@ def graph_lif_astro_compare(tl, idx, graphs=None, fig=None, axes=None, prefix=''
             title, ylabel = graph_to_labels[g]
             ax.set_title(title.format(0))
             if ylabel:
-                ax.set_ylabel(ylabel)
+                ax.set_ylabel(ylabel, fontsize=25)
             axes[g].append(ax)
     
     # Graph
@@ -879,10 +879,10 @@ def gen_dw_dt_axes(n_plots, figsize=(10,6)):
         # ax.spines['bottom'].set_position('zero')
         # ax.spines['top'].set_color('none')
 
-        ax.set_xlabel("$\Delta t$", fontsize=20)
+        ax.set_xlabel("$\Delta t$", fontsize=30)
         # ax.xaxis.set_label_coords(0.7, 0.4)
 
-        ax.set_ylabel("$\Delta w$", fontsize=20)
+        ax.set_ylabel("$\Delta w$", fontsize=30)
         # ax.yaxis.set_label_coords(0.47, 0.67)
         ax.grid(True)
         ax.set_xlim(-0.06, 0.06)
@@ -930,7 +930,7 @@ def graph_dw_dt(db, title="", graph_text="", fig=None, axes=None, figsize=(10,6)
     points = np.array(points)
     _graph_dw_dt(points, axes[0], graph_text)
 
-    axes[0].set_title("{}: $\\Delta$ w vs. $\\Delta$ t".format(title), fontsize=20)
+    axes[0].set_title("{}: $\\Delta$ w vs. $\\Delta$ t".format(title), fontsize=25)
     
     return fig, axes
 
@@ -943,8 +943,8 @@ def gen_dw_w_axes(n_plots, titles=None, spikes=False, size=(16, 8)):
 
     for i in range(n_plots):
         ax = fig.add_subplot(gs[i])
-        ax.set_ylabel("# $\Delta$ w ")
-        ax.set_xlabel("w")
+        ax.set_ylabel("# $\Delta$ w ", fontsize=30)
+        ax.set_xlabel("w", fontsize=30)
         ax.grid(True)
 
         if titles:

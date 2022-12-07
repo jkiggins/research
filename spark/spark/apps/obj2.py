@@ -525,8 +525,8 @@ def _graph_sweep_param(v, suffix, prefix_key):
 
     fig, axes = gen_sgnn_axes(1, graphs=graphs, offset=False)
     
-    axes['weight'][0].set_title("Astrocyte Plasticity Response to Various {}".format(suffix))
-    axes['weight'][1].set_title("Classic STDP Response to Spike Impulses for Various {}".format(suffix))
+    axes['weight'][0].set_title("Astrocyte Plasticity Response to Various {}".format(suffix), fontsize=25)
+    axes['weight'][1].set_title("Classic STDP Response to Spike Impulses for Various {}".format(suffix), fontsize=25)
 
     for i, d in enumerate(db_astro):
         prefix = d[prefix_key]

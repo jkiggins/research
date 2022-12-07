@@ -9,7 +9,8 @@ makeglossary() {
 }
 
 makebib() {
-    bibtex main
+    # bibtex main
+    biber main
 }
 
 makepdf

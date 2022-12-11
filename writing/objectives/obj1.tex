@@ -95,7 +95,7 @@ counter-intuitive, since a higher value would result in increased decay,
 however this $\tau_{mem}$ also scales the effect of the input current on
 membrane voltage by the input current (see Equation \ref{eq:lif:v}). In
 addition, a larger decay factor results in decreased recovery time for the
-neuron from reset. In contrast a lower value for $\tau_{syn?}$ causes the
+neuron from reset. In contrast a lower value for $\tau_{syn}$ causes the
 neuron to fire more often with the same input, due to the input current
 decaying more slowly.
 
@@ -258,7 +258,7 @@ The group of similar plots in Figures \ref{fig:astro:sweep_alpha_ip3_tau_1} and
 \ref{fig:astro:sweep_alpha_ip3_tau_2} depict Astrocyte responses to a common
 spike pattern, with different values for $\alpha_{ip3}=\alpha_{k+}$. The
 curves in these plots are scale multiples of each-other, showing that
-$\alpha_{ip3/k+}$ does not effect timing, but only scale of the Astrocyte
+$\alpha_{ip3/k+}$ does not effect timing, but only the scale of the Astrocyte
 response. The figures also indicate that small values of
 $\tau_{ip3}=\tau_{k+}$ can lead to a response that doesn't reach a
 steady-state within a reasonable window, such as with $\tau_{ip3/k+} = 10$.
@@ -274,7 +274,7 @@ function that considers the magnitude
 of input pathway state variables \ipt and \kp as well as which variable is
 larger (the order). This gives a magnitude and sign to each update to the
 Astrocyte state variable \ca. The value of \ca will eventually leading to \Gls{ltp} or
-\Gls{ltd} when explored in \ref{chapter:obj2}. This approach is outlined by Equations
+\Gls{ltd} when explored in Chapter \ref{chapter:obj2}. This approach is outlined by Equations
 \ref{eq:astro:rate-u} and \ref{eq:astro:u-reset}, which define the change in
 \ca.
 
@@ -293,7 +293,7 @@ describes the change in \ca at a given time from external influence, while
 $dca_{decay}$ accounts for the leaking of \ca. Note that the threshold values
 determine the sign of $dca_{delta}$, and provide the ability to shift the \ca
 response, as shown in Figure \ref{fig:astro:stdp_ltd_shift}. Increasing the distance
-between the $ltp$ and $ltd$ thresholds also allow for varying degrees of
+between the \gls{ltp} and \gls{ltd} thresholds also allow for varying degrees of
 tolerance to transient activity that would otherwise lead to a response by the
 Astrocyte. Simulations use the baseline parameter values outlined in Table
 \ref{table:ordered_prop_params}, with any variations or parameter sweeps
@@ -366,7 +366,7 @@ Model Response to Pulse Pairs: \Gls{ltd} Shift}{fig:astro:stdp_ltd_shift}{0.4}
 Additional figures can be found in Appendix \ref{section:appendix-a}.
 
 One of the main features of this model is it's ability to generalize STDP,
-and capture a variety of variants that have been proposed an explored in the
+and capture a variety of variants that have been proposed and explored in the
 literature. Table \ref{table:astro_varient_params} maps specific values of
 model parameters to the corresponding STDP behavior. If that
 variant of STDP has a name from other research it is included.
@@ -375,14 +375,14 @@ variant of STDP has a name from other research it is included.
 \caption{Model Parameters Associated with STDP Variants} \label{table:astro_varient_params}
 \scriptsize
 \begin{tabular}{lrrrrrrrrrrr}\toprule
-STDP Variant &Name from Literature &$alpha_{ip3}$ &$tau_{ip3}$ &$alpha_{k+}$ &$tau_{k+}$ &$tau_u$ &$ltp_{thr}$ &$ltd_{thr}$ &$reset_{ip3}$ &$reset_{k+}$ \\\midrule
+STDP Variant &Name &$alpha_{ip3}$ &$tau_{ip3}$ &$alpha_{k+}$ &$tau_{k+}$ &$tau_u$ &$ltp_{thr}$ &$ltd_{thr}$ &$reset_{ip3}$ &$reset_{k+}$ \\\midrule
 Triplet STDP &Triplet STDP &1 &100 &1 &100 &10000 &0 &0 &Yes &Yes \\
 Classic & &1 &100 &1 &100 &10000 &0 &0 &No &No \\
 \Gls{ltd} Bias & &1 &100 &1 &30 &10000 &0 &0 &No &No \\
 \Gls{ltp} Bias & &1 &30 &1 &100 &10000 &0 &0 &No &No \\
 \Gls{ltd} Shift &Mirror STDP &1 &100 &1 &100 &10000 &0.5 &0.5 &No &No \\
 \Gls{ltp} Shift & &1 &100 &1 &100 &10000 &-0.5 &-0.5 &No &No \\
-Anti-STDP &Anti-STDP, Rev-STDP &-1 &100 &-1 &100 &10000 &0 &0 &No &No \\
+Anti-STDP &Anti-STDP &-1 &100 &-1 &100 &10000 &0 &0 &No &No \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -391,15 +391,15 @@ Anti-STDP &Anti-STDP, Rev-STDP &-1 &100 &-1 &100 &10000 &0 &0 &No &No \\
 
 When input spiking activity is sparse in time, the model behaves as outlined
 in Section \ref{sec:ordered_prop:stdp} above. However, when more dense
-inputs are provided, the relationship between $ip3$ and $k+$ shifts from
-temporal, to activity-based. In the sparse case, $ip3 > k+$ implies that an
+inputs are provided, the relationship between \ipt and \kp shifts from
+temporal, to activity-based. In the sparse case, \ipt $>$ \kp implies that an
 incoming spike happened more recently then a post-synaptic spike. When
-incoming spikes are dense in time, $ip3 > k+$ would imply more activity on
+incoming spikes are dense in time, \ipt $>$ \kp would imply more activity on
 the input side (on average) than the output. What follows, is a Rate-based
 internal response, where \ca responds to a difference in average activity,
 subject to time constants. Equation \ref{eq:astro:rate-u} above describes \ca
 behavior. Equation \label{eq:astro:u-reset} outlines the reset of behavior \ca,
-the value reset to $0$ when $|ca| > thr_{ca}$.
+the value reset to $0$ when $|Ca^{2+}| > thr_{ca}$.
 
 In Figure \ref{fig:astro:rp_many-w_tl}, the middle plot shows the internal
 response of an Astrocyte to a random Poisson across different weight values. In
@@ -443,7 +443,7 @@ This \emph{Ca(\ipt, \kp)} function is define by Equation
 \ref{eq:astro:temp-u}. $reset_{ip3}$ and $reset_{k+}$ parameters, determine if
 additional spikes are added into the \ipt and \kp traces, or override
 them. These parameters, along with the weight update behavior determine which
-groupings of spike result in changes to \ca. Figure
+groupings of spikes result in changes to \ca. Figure
 \ref{fig:astro:spike_associate} outlines different possible spike association
 behaviors.
 
@@ -482,7 +482,7 @@ for simulation are outlined in Table \ref{table:istp_params}.
   \caption{Integrated Spike Timing Astrocyte Parameters} \label{table:istp_params}
   \scriptsize
   \begin{tabular}{lrrrrr}\toprule
-    dt &$\alpha$-s &$\tau$ \ipt &Tau \kp &\ca Threshold \\\midrule
+    dt &$\alpha$-s &$\tau$ \ipt & $\tau_{k+}$ & $thr_{ca}$ \\\midrule
     0.001 s &1 &100 1/s &100 1/s &2.5 \\
     \bottomrule
   \end{tabular}
@@ -541,7 +541,7 @@ $thr_{ca}=2.5$.
 
 To better explore the activity surrounding a stable configuration, Figure
 \ref{fig:astro:tp_many_w_tl_xlim} depicts a blown-up region of Astrocyte activity
-with three synaptic weights $w=1.2,$.
+with three synaptic weights $w=1.2,1.0,0.81$.
 
 In this case, stable configurations are linked to synchronous activity, where the
 downstream neuron fires in time with the upstream. This is a result of a
@@ -580,7 +580,7 @@ theorized bio-chemical pathways. As well as works which present highly realistic
 mathematical models of Astrocyte behavior. For the Astrocyte model developed in
 this work, an emphasis was placed on computational efficiency, while maintaining
 the common pathways pulled from the body of background research. Compared to
-some of the more bio-realistic Astrocyte models, A relatively small number of
+some of the more bio-realistic Astrocyte models, a relatively small number of
 parameters are used to define this model's behavior.
 
 The literature shows considerable diversity on the main functional role(s) of an

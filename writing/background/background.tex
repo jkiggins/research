@@ -20,12 +20,12 @@
     where the behavior diverges. \Gls{sn} add to a leaky membrane voltage with
     each input. If this membrane voltage satisfies an activation function
     (generally a voltage threshold) then the \gls{sn} fires, or generates an
-    output spike on its post-synaptic terminal. For perceptron \glspl{an}, there
-    is still an activation function, and that function may produce a spike-like
-    output (1 or 0), but can output any real value. Similarly on the input side,
-    \glspl{sn} receive spikes on their synapses, where \glspl{an} can receive
-    any real value. Another primary difference is related to time: A \gls{sn}'s
-    membrane voltage persists over time, unlike \gls{an}'s, where there isn't a
+    output spike. For perceptron \glspl{an}, there is still an activation
+    function, and that function may produce a spike-like output (1 or 0), but
+    can output any real value. Similarly on the input side, \glspl{sn} receive
+    spikes on their synapses, where \glspl{an} can receive any real
+    value. Another primary difference is related to time: A \gls{sn}'s membrane
+    voltage persists over time, unlike \gls{an}'s, where there isn't a
     per-neuron state maintained across inputs.
     
     \Glspl{snn}, formed by connections between spiking neurons, are a
@@ -848,7 +848,7 @@
     differing from each-other and across derivative works. These models consist
     of three terms which define \ca dynamics, $J_{pump}$ to denote the flux of
     \ca to maintain a gradient between Astrocyte cytoplasm, and
-    \Gls{er}. $J_leak$ denotes a constant leak factor from \Gls{er} to
+    \Gls{er}. $J_{leak}$ denotes a constant leak factor from \Gls{er} to
     cytoplasm. Treating these as simultaneous differential equations, overall
     \ca response $\frac{dc}{dt}$ can be computed, see Equation
     \ref{eq:lr_dk_astro}.

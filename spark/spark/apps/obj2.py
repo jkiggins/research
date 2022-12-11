@@ -448,6 +448,20 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
         db_stdp.meta['xlim'] = (100, 150)
         dbs = dbs + [db_astro, db_stdp]
 
+        # Repeat, but with ltd shift
+        spikes = gen_impulse_spikes(10, num_impulses=15)
+        
+        cfg['astro_plasticity']['stdp']['ltp'] = 0.5
+        cfg['astro_plasticity']['stdp']['ltd'] = 1000.0
+
+        db_stdp, db_astro = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const_ltd-shift')
+        db_astro.meta['xlim'] = (600, 800)
+        db_stdp.meta['xlim'] = (600, 800)
+        dbs = dbs + [db_astro, db_stdp]
+
+        cfg['astro_plasticity']['stdp']['ltp'] = 1000.0
+        cfg['astro_plasticity']['stdp']['ltd'] = 1000.0
+
         # Repeat with noisy input
         seed_many(123123098)
         spikes = gen_impulse_spikes(10, num_impulses=20, noise=0.02)        

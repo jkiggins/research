@@ -73,8 +73,8 @@
 % Adding TODO Notes
 \usepackage{todonotes}
 
-%% \usepackage[backend=biber, bibencoding=utf8, style=alphabetic, citestyle=ieee]{biblatex}
-\usepackage[backend=biber, bibencoding=utf8]{biblatex}
+\usepackage[backend=biber,bibencoding=utf8,style=authoryear-comp]{biblatex}
+%% \usepackage[backend=biber, bibencoding=utf8]{biblatex}
 \addbibresource{mybibliography.bib}
 
 % Typset indexes - Needed for sorting the glossary
@@ -228,11 +228,11 @@
 
 % Add DRAFT to the document
 % Comment the next 5 lines to remove "DRAFT" watermark
-\usepackage{draftwatermark}
-\SetWatermarkText{DRAFT}
-\SetWatermarkScale{9}
-\SetWatermarkColor[gray]{0.90}
-\SetWatermarkAngle{45}
+%% \usepackage{draftwatermark}
+%% \SetWatermarkText{DRAFT}
+%% \SetWatermarkScale{9}
+%% \SetWatermarkColor[gray]{0.90}
+%% \SetWatermarkAngle{45}
 
 % Set the path for the figures
 \graphicspath{{figures/}{01_introduction/figures/}{02_background/figures/}}
@@ -288,7 +288,7 @@
     \include{appendix/appendix}
 	
     % Bibliography file
-    \printbibliography
+    \printbibliography[heading=bibintoc]
 
     % Glossary
     \printglossary[type=main]

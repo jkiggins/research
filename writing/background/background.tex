@@ -91,7 +91,7 @@
 
     \subsection{FitzHugh - Nagumo Model}
     The FitzHugh–Nagumo is a common \Gls{sn} model that is coupled with
-    Astrocytes in a few works that will be explored later (\parencite{postnov_2009},
+    Astrocytes in a few works that are explored later (\parencite{postnov_2009},
     \parencite{postnov_2007}). It is based on the highly (computationally) complex
     Hodgkin-Huxley model, with a variety of parameters fixed and others tuned to
     get different firing patterns. \parencite{postnov_2009} outlines the membrane
@@ -334,7 +334,7 @@
     pre-synaptic spike follows post-synaptic spike.
 
     \asvgf{figures/heb_diagrams.svg}{Diagram showing \gls{stdp} and rate-based
-      hebbian learning $\Delta_w$ response}{fig:heb_rate_stdp}{0.4}
+      hebbian learning $\Delta_w$ response}{fig:heb_rate_stdp}{0.6}
 
     Equation (\ref{eq:classic_stdp}) describes classic \Gls{stdp}
     \parencite{tavanaei_2019}. $\tau$ in this case is a decay constant, which
@@ -434,7 +434,7 @@
     recognize discriminating features, instead of repeating ones.
 
     \subsection{ReSuMe}
-    The ReSuMe learning rule is another variant of \gsl{stdp}, which is similar
+    The ReSuMe learning rule is another variant of \gls{stdp}, which is similar
     to the \gls{rstdp} update rule defined by \parencite{mozafari_2018}, though with some
     important differences. With ReSuMe, a single neuron and set of synapses are
     initialized with random weight values. There is a 2nd similar neuron
@@ -473,7 +473,7 @@
     \gls{stdp} rule.
 
     \asvgf{figures/coordinated_stdp.svg}{\gls{lif} neuron with \gls{stdp}
-      learning and generic coordination signal}{fig:coordinated_stdp}{0.4}
+      learning and generic coordination signal}{fig:coordinated_stdp}{0.6}
     
     A number of papers have shown promising results on benchmark
     recognition tasks, including \Gls{mnist} written digit classification
@@ -691,7 +691,7 @@
     release from a pre-synaptic neuron can be taken up by \Gls{gaba}
     transporters on an Astrocyte's surface. This leads to an increase in \na /
     \ca within the Astrocyte, and the eventual release of \Gls{atp}. \Gls{atp}
-    acts as an ihibitor, down-regulating excitatory transmission
+    acts as an inhibitor, down-regulating excitatory transmission
     \parencite{mederos_2018}.
         
     \afig{figures/astrocyte_ltd_ltp.png}{Astrocyte-MediatedPlasticity}{fig:astro_plastic}
@@ -716,7 +716,7 @@
     pathways.
 
     \asvgf{figures/astro_neuron_pathways.svg}{Common astrocyte-neuron pathways,
-      and common pathways for internal \gls{ca} signaling}{fig:astro_pathways}{0.4}
+      and common pathways for internal \gls{ca} signaling}{fig:astro_pathways}{0.6}
 
     Figure \ref{fig:astro_pathways} shows the possible signaling pathways at the
     tripartite synapse. Each pathway has some underlying research into the
@@ -759,7 +759,8 @@
     The above outlines the common theme for presynaptic Astrocyte
     modulation. The general form of the pathway outlined above is shared by
     \parencite{postnov_2009}, and \parencite{wade_2011}. Though there are
-    variations among modeling approach which will be covered in further detail.
+    variations among modeling approach covered in further detail later in this
+    work.
 
     \subsection{Neuron-Astrocyte Pathways - Postsynaptic to Astrocyte}
     Another common pathway that is explored both in neuroscience and

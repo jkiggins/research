@@ -65,7 +65,8 @@ equations above. Figures \ref{fig:lif:sample_1}, \ref{fig:lif:sample_2}, and
 \ref{fig:lif:sample_3} shows a sample of the \Gls{lif} responses to a random
 Poisson input with various parameter values. Table \ref{table:lif_params} shows
 the baseline parameter values, with any differences being outlined in the
-figures.
+figures. In each figure, blue traces represent the post-synaptic potential
+voltage wave, while purple represents the membrane voltage.
 
 \begin{table}[!htp]\centering
   \caption{\Gls{lif} Neuron Baseline Parameters} \label{table:lif_params}
@@ -124,8 +125,8 @@ integrating Equations \ref{eq:song_impl_pre}, \ref{eq:song_impl_post}, and
 \ref{eq:song_impl_dw} over time. Table \ref{table:classic_stdp_params} shows the
 parameters used during simulation.
 
-\begin{table}[!htp]\centering
-  Parameters for Classic STDP \label{table:classic_stdp_params}
+\begin{table}[!htp] \centering
+  \caption{Parameters for Classic STDP} \label{table:classic_stdp_params}
   \scriptsize
   \begin{tabular}{lrr}\toprule
     A &Tau \\\midrule
@@ -157,7 +158,7 @@ the implementation matches the theoretical equations.
 
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_astro_plasticity.svg}{Simulation
   of Classic STDP Implementation, Equations \ref{eq:song_impl_pre} -
-  \ref{eq:song_impl_dw}}{fig:stdp_dw_dt_impl}{0.4}
+  \ref{eq:song_impl_dw}}{fig:stdp_dw_dt_impl}{0.5}
 
 
 %%%% Model Development Section %%%%
@@ -178,11 +179,11 @@ input and output pathways within the tripartite synapse.
 \end{enumerate}
 
 \asvgf{figures/1n1s1a_diagram.svg}{Astrocyte and Neuron Model Diagram For An \Gls{lif}
-  Neuron with One Input}{fig:1n1s1a_fn_diagram}{0.4}
+  Neuron with One Input}{fig:1n1s1a_fn_diagram}{0.5}
 
 Figure \ref{fig:1n1s1a_fn_diagram} outlines the developed tripartite synapse
 model, as well as the internal dynamics of the \Gls{lif} neuron. Some aspects of this
-model are left undefined at first, and different configurations will be explored
+model are left undefined at first, and different configurations were explored
 experimentally. These gaps are the function blocks in darker blue. The
 portions of the model which are consistent throughout this work are described
 first, followed by a deeper dive into the remaining functionality. The two input
@@ -207,11 +208,11 @@ simulations (unless otherwise specified) $d_t = 0.001$ or $1ms$.
 The \emph{Ca(\ipt, \kp)} and \emph{Dw(\ca)} blocks define the behavior
 of the Astrocyte at a synapse local level, given input from the internal state values,
 which are representative of external activity. In this chapter only the internal
-state of the Astrocyte will be considered so \emph{Dw(\ca)} is a
+state of the Astrocyte was considered so \emph{Dw(\ca)} is a
 No-Op. For many of the Astrocyte model variations explored in this chapter, a
-key property will be stability of the response given a set of weight
+key property is stability of the response given a set of weight
 values. Stability, in this case, refers to either a lack of \ca response, or
-sub-threshold \ca response. This will be an important property when considering
+sub-threshold \ca response. This was an important property when considering
 a learning bout, as stable points represent places that learning will converge,
 with weight values remaining the same.
 
@@ -248,11 +249,11 @@ with any deviations mentioned in the graph.
 
 \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.225.svg}{Model
 Response to Sweeping Input pathway $\alpha$, and
-$\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_1}{0.6}
+$\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_1}{0.5}
 
 \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.055.svg}{Model Response to
 Sweeping Input pathway $\alpha$, and
-$\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_2}{0.6}
+$\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_2}{0.5}
 
 The group of similar plots in Figures \ref{fig:astro:sweep_alpha_ip3_tau_1} and
 \ref{fig:astro:sweep_alpha_ip3_tau_2} depict Astrocyte responses to a common
@@ -346,7 +347,7 @@ curve.
 
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_astro_plasticity.svg}{Astrocyte
   and Neuron Model Response to Pulse Pairs:
-  Baseline}{fig:astro:classic_stdp}{0.4}
+  Baseline}{fig:astro:classic_stdp}{0.5}
 
 The model has additional parameters beyond what a traditional STDP rule
 would have, and this offers flexibility. By providing asymmetric
@@ -354,14 +355,14 @@ $\tau_{ip3}$ and $\tau_{k+}$ the model can be bias toward \Gls{ltd}/\Gls{ltp}. F
 \ref{fig:astro:stdp_ltd_bias} shows this effect for \Gls{ltd}.
 
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_ltd_bias.svg}{Astrocyte-Neuron
-Model Response to Pulse Pairs: \Gls{ltd} Bias}{fig:astro:stdp_ltd_bias}{0.4}
+Model Response to Pulse Pairs: \Gls{ltd} Bias}{fig:astro:stdp_ltd_bias}{0.5}
 
 In addition, threshold parameters $thr_{ltp}$ and $thr_{ltd}$ can be used to
 shift activity from the \Gls{ltp} to \Gls{ltd} region, or vise versa. Figure
 \ref{fig:astro:stdp_ltd_shift} shows this shifting behavior.
 
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_ltd_dt_shift.svg}{Astrocyte-Neuron
-Model Response to Pulse Pairs: \Gls{ltd} Shift}{fig:astro:stdp_ltd_shift}{0.4}
+Model Response to Pulse Pairs: \Gls{ltd} Shift}{fig:astro:stdp_ltd_shift}{0.5}
 
 Additional figures can be found in Appendix \ref{section:appendix-a}.
 
@@ -411,7 +412,7 @@ smallest. For the upper graph $w=10.0$ is close to that point, with only two
 regions in the timeline with any activity.
 
 \asvgf{figures/artifacts/obj1/astro_rp_many-w_tl.svg}{Astrocyte Response to Random
-  Poission Spike Train for Various Synaptic Weights}{fig:astro:rp_many-w_tl}{0.4}
+  Poission Spike Train for Various Synaptic Weights}{fig:astro:rp_many-w_tl}{0.5}
 
 Looking at the upper plot in Figure \ref{fig:astro:rp_many-w_tl}, the effect of
 $thr_{ltp}=1.75$ and $thr_{ltd}=-1.75$ can be seen. Those parameter values form
@@ -444,8 +445,10 @@ This \emph{Ca(\ipt, \kp)} function is define by Equation
 additional spikes are added into the \ipt and \kp traces, or override
 them. These parameters, along with the weight update behavior determine which
 groupings of spikes result in changes to \ca. Figure
-\ref{fig:astro:spike_associate} outlines different possible spike association
-behaviors.
+\ref{fig:astro:spike_associate} outlines possible spike association
+behaviors, with the boxes representing which spikes are grouped into a \ca
+response. Green boxes represent an increase in \ca (which may eventually lead to
+\gls{ltp}) and red a decrease (which may lead to \gls{ltd}).
 
 %% TODO: Define reset behavior
 
@@ -495,7 +498,7 @@ simulations for both Astrocyte configurations in this chapter.
 
 A common theme when discussing Astrocytes and their functional roles is one of
 time-scale. Spike can occur at any time-step, and last only a single
-time-step. When pairing with classic STDP, learning can occur just a quickly,
+time-step. When pairing with classic STDP, learning can occur just as quickly,
 with influence from only a single pair of spikes. This property of STDP, in some cases,
 leads to instability. As a spike pattern is presented to a neuron, and that
 neuron fires, it is possible, and very likely with some inputs, that STDP will
@@ -525,38 +528,31 @@ simulation.
 Figure \ref{fig:astro:tp_many_w_sweep} graphs the number of times $thr_{ca}$ is
 exceeded during a fixed length simulation, for a few different values of
 $thr_{ca}$. For $Ca^{2+}=2.5$, regions of the graph around $0.8$ and $1.2$ show
-weight values that result in a stable configuration, where $thr_{ca}$ is not
-exceeded for the length of simulation. Figure \ref{fig:astro:tp_many_w_tl} shows
+weight values that result in a stable configuration, where all \ca activity is
+sub-threshold. Figure \ref{fig:astro:tp_many_w_tl} shows
 a timeline of Astrocyte activity for three different weight values, and
 $thr_{ca}=2.5$.
 
 \asvgf{figures/artifacts/obj1/astro_tp_many-w_sweep.svg}{Aggregate Astrocyte
   Response to Input from a single synapse, with various synaptic weight and
-  $thr_{ca}$}{fig:astro:tp_many_w_sweep}{0.5}
+  $thr_{ca}$}{fig:astro:tp_many_w_sweep}{0.6}
 
-\asvgf{figures/artifacts/obj1/astro_tp_many-w_tl.svg}{Timeline of Astrocyte
+\asvgf{figures/artifacts/obj1/astro_tp_many-w_xlim_tl.svg}{Timeline of Astrocyte
   Activity With Input from a single synapse, given
-  $thr_{ca}=2.5$}{fig:astro:tp_many_w_tl}{0.5}
+  $thr_{ca}=2.5$}{fig:astro:tp_many_w_tl}{0.6}
 
-
-To better explore the activity surrounding a stable configuration, Figure
-\ref{fig:astro:tp_many_w_tl_xlim} depicts a blown-up region of Astrocyte activity
-with three synaptic weights $w=1.2,1.0,0.81$.
-
-In this case, stable configurations are linked to synchronous activity, where the
-downstream neuron fires in time with the upstream. This is a result of a
-convention used in this work that synchronous spikes don't result in any change
-in \ca. This property is very interesting, and shows how the Astrocyte can
-direct weight values to find a low - \ca state. Weight values are directed such
-that the \Gls{lif} neuron to fires with a specific interval (matching the input), at a
-specific point within the input, and a specific number of times within the
-input. Additional spikes, or change in that firing interval results in more
-Astrocyte excitability, which lead to weight changes seeking that low \ca
-state.
-
-\asvgf{figures/artifacts/obj1/astro_tp_many-w_xlim_tl.svg}{Restricted Timeline of Astrocyte
-  Activity with input from a single synapse, given
-  $thr_{ca}=2.5$}{fig:astro:tp_many_w_tl_xlim}{0.5}
+This concept of sub-threshold oscillations is important, as it provides a
+mechanism for astrocyte-mediated plasticity to reach a convergence point given a
+set of inputs. This convergence point is dependent on the input pattern in
+question, and the $\Delta Ca^{2+}$ vs $\Delta t$ curve characterizing the \ca
+response. Considering Figure \ref{fig:astro:tp_many_w_tl} and recalling the
+shape of Figure \ref{fig:astro:classic_stdp}: The three output spikes align with
+input spikes, which maximizes $\Delta t$ between the output spikes, and
+neighboring presynaptic spikes in any direction. This maximal spacing leads to a
+minimum \ca response. Note that spikes with $\Delta t=0$ do not elicit a \ca
+response. Independent of the weight value \ca remains sensitive to activity at a
+synapse. Changes in the input firing pattern may result in \ca oscillations
+exceeding the threshold once more, and trigger another round of weight updates.
 
 %% Using values $thr_{ltd}=thr_{ltp}=1.0$ (see Equation \ref{eq:astro:temp-sign-1})
 %% results in a slight change in the model behavior, which adds the condition in

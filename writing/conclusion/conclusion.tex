@@ -7,7 +7,7 @@
 This work covers a broad range of topics, and explores work in fields that are
 still largely in their infancy. Plasticity, while well-defined in some areas of
 machine learning, isn't as clear-cut in spiking neural networks. Further,
-Astrocyte-Neuron interactions, aren't well understood in the Neuroscience
+astrocyte-neuron interactions, aren't well understood in the neuroscience
 community, and the mathematical model representing them vary widely as a
 result. The goal of this work was to extract some useful features, given what is
 known about Astrocyte-Neuron interactions, using a simple model. This was
@@ -27,11 +27,10 @@ here, to determine what temporal features an Astrocyte can learn.
 \section{Multi Synapse Plasticity}
 This work just scratches the surface of what should be explored in a
 multi-synapse configuration. One of the best next steps however, is to explore
-input and learning objective pairings that allow for local and global dynamics
-to work together with plasticity. A harmonious relationship between global and
-local dynamics would allow a global rule to operate on a longer time-scale, and
-implement a higher-level function.
-
+\ca build-up at the regional level, on a time-scale slower than that of local
+dynamics. This regional \ca would then determine when plasticity occurs, with
+the hypothesis being that improvements in convergence would result, given the
+additional temporal integration. 
 %% \section{Multi Neuron and Synapse Coordination}
 
 \section{Supervised Learning}
@@ -48,7 +47,7 @@ non-specific learning signal.
 
 The main goal of this work was to identify key properties of Astrocyte-neuron
 interactions in biology, that could be leveraged in a simplified computational
-model, when paired with \Gls{lif} neurons. This initial question lead to the
+model, when paired with \Gls{lif} neurons. This initial question led to the
 identification of a variety of function roles, both concrete and theorized
 surrounding Astrocytes in the Neuroscience literature. These include: working
 memory, modulation of synaptic plasticity, synchronization of neural firing, and
@@ -63,7 +62,7 @@ on a single synapse, using simplified versions of common Astrocyte chemical
 pathways. Varying the parameters, it was shown that this Astrocyte model could
 implement common variations on STDP, as well as shift and bias the standard
 \Gls{stdp} weight update curve. Mimicing the \Gls{cicr} behavior observed in
-Astrocytes, a threshold was defined and used to gate plasticity. This lead to
+Astrocytes, a threshold was defined and used to gate plasticity. This led to
 temporal integration of synaptic plasticity. Using this model, weight updates
 were more stable when compared to \Gls{stdp} for the test input, and showed
 convergence in a variety of configurations, where \Gls{stdp} either oscillated

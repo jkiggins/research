@@ -200,7 +200,7 @@ def _graph_sweep_tau_ca(db):
             ('spikes', gs[1]),
             figsize=(15,10),
         )
-        fig.suptitle("Astrocyte Response to Different Values of $\tau_{{ca}}$")
+        fig.suptitle("Astrocyte Response to Different Values of $\\tau_{ca}$")
 
         suffix = by_spike[0]['suffix']
 
@@ -312,7 +312,7 @@ def _graph_sweep_pre_alpha_tau(db):
             for d in by_alpha:
                 tl = d['timeline']
                 spikes = d['spikes']
-                ax.plot(tl['ip3'].tolist(), label='tau_ip3={}'.format(d['tau_ip3']))
+                ax.plot(tl['ip3'].tolist(), label='$\\tau_{{ip3}}={}$'.format(d['tau_ip3']))
                 ax.set_xlim((0, len(tl['z_pre'])))
             ax.legend()
 
@@ -377,12 +377,12 @@ def _graph_heatmap_tau_ca_thr_events(db):
 
     fig = plt.Figure(figsize=(20,20))
     ax = fig.add_subplot(111)
-    ax.set_title("Mean time for $Ca^{2+} > thr_{{ca}}$ Given Poisson Spike Rate vs. $\tau_{ca}$")
+    ax.set_title("Mean time for $Ca^{2+} > thr_{{ca}}$ Given Poisson Spike Rate vs. $\\tau_{ca}$")
     ax.set_yticks(
         list(range(len(tau_range))),
         labels=["{:2.4f}".format(float(a)) for a in tau_range],
         rotation=45)
-    ax.set_ylabel('$\tau_{ca}$')
+    ax.set_ylabel('$\\tau_{ca}$')
 
     ax.set_xticks(
         list(range(len(spike_rate_range))),
@@ -501,7 +501,7 @@ def _graph_exp_tp_w_sweep(db):
     if len(records_by_ca_thr) == 0:
         raise ValueError("No records found when grouping by ca_th")
 
-    fig, axes = gen_dw_w_axes(len(records_by_ca_thr), size=(8, 6))
+    fig, axes = gen_dw_w_axes(len(records_by_ca_thr), size=(8, 8))
 
     for i, (ca_thr, by_ca_thr) in enumerate(records_by_ca_thr.items()):
         fig, axes = graph_dw_w(
@@ -1006,7 +1006,7 @@ def _main(args):
             tl_ca_thr = 2.5,
             sim=args.sim)
         _graph_exp_w_tl([db])
-        _graph_exp_w_tl([db], xlim=(580, 640))
+        _graph_exp_w_tl([db], xlim=(580, 750))
         _graph_exp_tp_w_sweep(db)
 
         # db = _exp_pulse_pair_w_impulse(
@@ -1031,8 +1031,14 @@ def _main(args):
 
         assert len(db) == 1
 
-        fig, axes = gen_sgnn_axes(1)
+        fig, axes = gen_sgnn_axes(1, figsize=(10,15))
         graph_sgnn(db[0], fig, axes, 0)
+
+        # Set xlim to 300,500
+        for _, a in axes.items():
+            for ax in a:
+                ax.set_xlim(300, 500)
+        
         fig_path = "{}.svg".format(db.meta['descr'])
         print("Saving: ", fig_path)
         fig.tight_layout()

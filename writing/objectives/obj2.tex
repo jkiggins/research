@@ -16,9 +16,9 @@ into a cell-level response, and can travel to distant synapses.
 The goal in Chapter \ref{chapter:obj2} is to explore Astrocyte mediated synaptic
 plasticity in a single synapse configuration. This will close the loop with the
 experiments in Chapter \ref{chapter:obj1}, by incorporating parameterized
-synaptic weight changes, directed by the Astrocyte. Focus will be shifted from the
+synaptic weight changes, directed by the Astrocyte. Focus was shifted from the
 Astrocyte's internal response, to the learning process, progression of weight
-changes. Novel features of the full astrocyte plasticity model, will be
+changes. Novel features of the full astrocyte plasticity model were
 identified and the effect of parameters on these features explored.
 
 %% with a single \Gls{lif} neuron. Existing
@@ -57,7 +57,7 @@ the concept of \Gls{cicr}. Essentially, Astrocytes integrate synaptic activity i
 \ca response, once that \ca concentration exceeds a threshold, there is a
 cascade of events resulting in both \ca propagation to the cell body, and the
 release of glio-transmitters into the synaptic cleft. This concept of \Gls{cicr}, fits
-well into the current model, and will be explored in this chapter as the
+well into the current model, and was explored in this chapter as the
 mechanism that drives weight change.
 
 In the context of this work's Astrocyte model, as \ca values increase and exceed
@@ -159,11 +159,11 @@ biological systems.
   ca = ca * (1 - H(ca - ca_{thr}) +  H(-ca - ca_{thr})) \label{eq:obj2:ca_reset}
 \end{align}
 
-As discussed before A slight variation allows the Astrocyte model to implement
+As discussed before a slight variation allows the Astrocyte model to implement
 classic STDP, outlined in Equations \ref{eq:dw-classic}. In this case \ca
 effects weight values and is reset every time-step. Since the \ca response was
-already shown to mimic Classic STDP in \ref{chapter:obj1} Equation
-\ref{eq:dw-classic} will as well.
+already shown to mimic Classic STDP in Chapter \ref{chapter:obj1}, Equation
+(\ref{eq:dw-classic}) will as well.
 
 \subsection{Impulse Response}
 Figure \ref{fig:ppi:impulse_istp} depicts the Astrocyte plasticity model with
@@ -187,10 +187,10 @@ smoothed out.
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_astro_0.svg}{
   Astrocyte response to successive spikes, displaying temporal pulse-pair
-  integration}{fig:ppi:impulse_istp}{0.5}
+  integration}{fig:ppi:impulse_istp}{0.6}
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_classic_0.svg}{
-  Classic STDP response to successive spikes}{fig:ppi:impulse_stp}{0.4}
+  Classic STDP response to successive spikes}{fig:ppi:impulse_stp}{0.6}
 
 It is important to understand the situations under which the Astrocyte model
 will converge, and compare that to classic STDP. Figures
@@ -205,17 +205,17 @@ on a longer timescale, showing these oscillations continue and remain periodic.
 % Astrocyte response to fixed length impulse inputs
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_astro_0.svg}{Astrocyte
   response to a series of fixed length spike impulse inputs showing
-  convergence}{fig:ppi:impulse_fixed_istp}{0.4}
+  convergence}{fig:ppi:impulse_fixed_istp}{0.6}
 
 % Classic STDP with fixed length impulse inputs
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_astro_0.svg}{Classic
   STDP response to a series of fixed length spike impulse
-  inputs}{fig:ppi:impulse_fixed_stp}{0.4}
+  inputs}{fig:ppi:impulse_fixed_stp}{0.6}
 
 % Classic STDP again, but with a longer simulation and only showing weights
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_diverge_classic_0.svg}{Classic
   STDP response to fixed length spikes showing divergent
-  behavior}{fig:ppi:impulse_fixed_stp_diverge}{0.4}
+  behavior}{fig:ppi:impulse_fixed_stp_diverge}{0.6}
 
 % Comparison with noisy inputs
 The smoothing effect observed with the Astrocyte plasticity model should work
@@ -223,7 +223,7 @@ just as well at smoothing out noise, as it does transient causal or anti-causal
 spike pairings. Testing this, Figures \ref{fig:ppi:impulse_noise_stp} and
 \ref{fig:ppi:impulse_noise_istp} show the results of similar simulations, with
 the addition of uniformly random noise in both cases. The probability specified,
-is the probability that a noisy spike is received on at the pre-synaptic
+is the probability that a noisy spike is received at the pre-synaptic
 terminal during any single time-step. Observing the weight updates associated
 with the Astrocyte model, there isn't a significant impact from the noise on the
 progression of weight modulation. In the case of classic STDP, weight values
@@ -231,13 +231,13 @@ fluctuate even further, adding to the already unstable behavior.
 
 % STDP response to impulse + uniform noise
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_noise_classic_0.svg}{Classic
-  STD response to impulse inputs with uniformly random
-  noise}{fig:ppi:impulse_noise_stp}{0.4}
+  \gls{stdp} response to impulse inputs with uniformly random
+  noise}{fig:ppi:impulse_noise_stp}{0.6}
 
 % Astro response to impulse + uniform noise
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_const_noise_astro_0.svg}{Astrocyte
   response to impulse inputs with uniformly random
-  noise}{fig:ppi:impulse_noise_istp}{0.4}
+  noise}{fig:ppi:impulse_noise_istp}{0.6}
 
 % Exploration of Weight update behavior with different parameters
 The established baseline thus far, is that given this repeating (possibly
@@ -308,13 +308,12 @@ configurations lead to divergence to the maximum weight value ($20$), or
 exhibited similar instability to what has been observed thus far.
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_tau_astro_0.svg}{Astrocyte
-  Response to Different Values for \kp and \ipt Pathway $\tau$}{fig:sweep:astro_tau}{0.4}
+  Response to Different Values for $\tau_{ip3}$ and
+  $\tau_{k+}$}{fig:sweep:astro_tau}{0.4}
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_sweep_tau_classic_0.svg}{Classic
-  STDP Response to Different Values for Pre and Post-synaptic Trace
-  $\tau$}{fig:sweep:stdp_tau}{0.4}
-
-% TODO: graph of noise response vs. noise percent and possibly type
+  STDP Response to Different Values for $\tau_{ip3}$ and
+  $\tau_{k+}$}{fig:sweep:stdp_tau}{0.4}
 
 \section{Summary}
 
@@ -336,7 +335,7 @@ convergence are stable in the presence of random input spikes following a
 uniform distribution.
 
 The observed improvements over classic STDP were demonstrated across a variety
-of parameter values, including varying $tau_{ip3}$, $tau_{k+}$, \Gls{lif} $V_{th}$,
+of parameter values, including varying $\tau_{ip3}$, $\tau_{k+}$, \Gls{lif} $V_{th}$,
 and the weight update multiplier. In each case where learning did occur, the
 improvements over classic STDP were observed.
 

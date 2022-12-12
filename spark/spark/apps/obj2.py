@@ -181,20 +181,20 @@ def _exp_average_pulse_pair_sweep(cfg_path, sim=False):
             db_astro.prefix({'tau': tau, 'sweep': 'both'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-            # Sim with ip3 time constant = tau
-            cfg['astro_plasticity']['tau_ip3'] = tau
-            cfg['astro_plasticity']['tau_kp'] = def_tau
+            # # Sim with ip3 time constant = tau
+            # cfg['astro_plasticity']['tau_ip3'] = tau
+            # cfg['astro_plasticity']['tau_kp'] = def_tau
 
-            db_stdp.prefix({'tau': tau, 'sweep': 'ip3'})
-            db_astro.prefix({'tau': tau, 'sweep': 'ip3'})
-            _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
+            # db_stdp.prefix({'tau': tau, 'sweep': 'ip3'})
+            # db_astro.prefix({'tau': tau, 'sweep': 'ip3'})
+            # _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-            # Sim with k+ time constant = tau
-            cfg['astro_plasticity']['tau_ip3'] = def_tau
-            cfg['astro_plasticity']['tau_kp'] = tau
-            db_stdp.prefix({'tau': tau, 'sweep': 'k+'})
-            db_astro.prefix({'tau': tau, 'sweep': 'k+'})
-            _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
+            # # Sim with k+ time constant = tau
+            # cfg['astro_plasticity']['tau_ip3'] = def_tau
+            # cfg['astro_plasticity']['tau_kp'] = tau
+            # db_stdp.prefix({'tau': tau, 'sweep': 'k+'})
+            # db_astro.prefix({'tau': tau, 'sweep': 'k+'})
+            # _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
         dbs.append(('tau', db_astro, db_stdp))
 
@@ -222,19 +222,19 @@ def _exp_average_pulse_pair_sweep(cfg_path, sim=False):
             db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
             _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-            # Sim with ltd = dw
-            cfg['astro_params']['dw_mult']['dw_ltd'] = 1.0 - dw
-            cfg['astro_params']['dw_mult']['dw_ltp'] = def_dw_ltp
-            db_stdp.prefix({'dw': dw, 'sweep': 'ltd'})
-            db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
-            _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
+            # # Sim with ltd = dw
+            # cfg['astro_params']['dw_mult']['dw_ltd'] = 1.0 - dw
+            # cfg['astro_params']['dw_mult']['dw_ltp'] = def_dw_ltp
+            # db_stdp.prefix({'dw': dw, 'sweep': 'ltd'})
+            # db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
+            # _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
-            # Sim with ltp = dw
-            cfg['astro_params']['dw_mult']['dw_ltd'] = def_dw_ltd
-            cfg['astro_params']['dw_mult']['dw_ltp'] = 1.0 + dw
-            db_stdp.prefix({'dw': dw, 'sweep': 'ltp'})
-            db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
-            _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
+            # # Sim with ltp = dw
+            # cfg['astro_params']['dw_mult']['dw_ltd'] = def_dw_ltd
+            # cfg['astro_params']['dw_mult']['dw_ltp'] = 1.0 + dw
+            # db_stdp.prefix({'dw': dw, 'sweep': 'ltp'})
+            # db_astro.prefix({'dw': dw, 'sweep': 'ltp/ltd'})
+            # _sim_stdp_and_astro_v2(cfg, spikes, db_stdp, db_astro)
 
         dbs.append(('dw_factor', db_astro, db_stdp))
 
@@ -535,12 +535,11 @@ def _graph_sweep_param(v, suffix, prefix_key):
     descr = db_astro.meta['descr']
 
     graphs=['weight']*2
-    graphs.append('pre-spikes')
 
-    fig, axes = gen_sgnn_axes(1, graphs=graphs, offset=False)
+    fig, axes = gen_sgnn_axes(1, graphs=graphs, offset=False, figsize=(10,14))
     
-    axes['weight'][0].set_title("Astrocyte Plasticity Response to Various {}".format(suffix), fontsize=25)
-    axes['weight'][1].set_title("Classic STDP Response to Spike Impulses for Various {}".format(suffix), fontsize=25)
+    axes['weight'][0].set_title("Astrocyte  Response Varying {}".format(suffix), fontsize=25)
+    axes['weight'][1].set_title("Classic STDP Response Varying {}".format(suffix), fontsize=25)
 
     for i, d in enumerate(db_astro):
         prefix = d[prefix_key]
@@ -550,6 +549,8 @@ def _graph_sweep_param(v, suffix, prefix_key):
         prefix = d[prefix_key]
         graph_sgnn(d, fig, axes, 1, prefix=prefix, plot=graphs)
 
+    fig.tight_layout()
+    
     return ("{}_0.svg".format(descr), fig, axes)
 
 
@@ -559,7 +560,6 @@ def _graph_sweep_param_sp(db, db_by_key, prefix_key, title):
     """
     num_subplots = len(db_by_key)
     graphs = ['weight']*num_subplots
-    graphs.append('pre-spikes')
     
     fig, axes = gen_sgnn_axes(1, graphs=graphs, offset=False)
     descr = db.meta['descr']
@@ -572,6 +572,8 @@ def _graph_sweep_param_sp(db, db_by_key, prefix_key, title):
             
         # for each plot, set the title
         axes['weight'][i].set_title(title)
+
+    fig.tight_layout()
 
     return ("{}_0.svg".format(descr), fig, axes)
 
@@ -674,6 +676,13 @@ def _graph_average_pulse_pair_sweep(sim_results):
 
             if k == 'assoc':
                 suffix = "Spike Association"
+
+            if k == 'mu':
+                suffix = "Initial Weight"
+
+            if k == 'v_th':
+                suffix = "$thr_{vmem}$"
+            
 
             figures.append(_graph_sweep_param(v, suffix, prefix_key))
 

@@ -30,17 +30,17 @@ approach is employed in a learning task where a multi-synapse view is critical.
 \section{Synaptic Coupling}
 This chapter introduces the concept of synaptic coupling. This is an
 intermediate between the strictly local response that has been explored thus
-far, and the slower cell-level responses directly observed in biology. With
-synaptic coupling, there is a regional response to a hand-full of synapses.
-This response is fast (unlike the cell-level \ca responses), operating at the
-speed of pre and post-synaptic spikes. Some in the Computational and
-Neuroscience communities believe similar intermediate astrocyte responses occur
-in nature, but that researchers don't have the capabilities to observe them
-yet. In any case, synaptic coupling fits the common theme of multi-level
-integration, and is shown to be critical in an example learning task. Figure
-\ref{fig:astro:syn_coupling} shows the progression of the Astrocyte model from
-exhibiting a strictly local responses, to support coupling. There are three
-major changes to the model from previous iterations.
+far, and the slower (seconds timescale) cell-level responses directly observed
+in biology. With synaptic coupling, there is a regional response to a hand-full
+of synapses.  This response is fast (unlike the cell-level \ca responses),
+operating at the speed of pre and post-synaptic spikes. Some in the
+Computational and Neuroscience communities believe similar intermediate
+astrocyte responses occur in nature, but that researchers don't have the
+capabilities to observe them yet. In any case, synaptic coupling fits the common
+theme of multi-level integration, and is shown to be critical in an example
+learning task. Figure \ref{fig:astro:syn_coupling} shows the progression of the
+Astrocyte model from exhibiting a strictly local responses, to support
+coupling. There are three major changes to the model from previous iterations.
 
 \begin{enumerate}
 \item The \ca response generated local to a synapse propagates up to the
@@ -55,7 +55,7 @@ major changes to the model from previous iterations.
   degredataion/re-uptake of \ipt, \kp, and \ca.
 \end{enumerate}
 
-\asvgf{figures/1nNs1a_diagram_obj3.svg}{Astrocyte Functional Diagram for
+\asvgf{figures/local-multi-compare.svg}{Astrocyte Functional Diagram for
   Multi-Synapse Synaptic Coupling}{fig:astro:syn_coupling}{0.5}
 
 \section{Synaptic AND Coupling}
@@ -115,7 +115,11 @@ AND) fall into one of the following categories.
 \end{itemize}
 
 Equations \ref{eq:ca_and_ltp} through \ref{eq:serca_cases} formalized the behavior outlined
-in Figure \ref{fig:local-ca-global-response} and the list above.
+in Figure \ref{fig:local-ca-global-response} and the list above. In the context
+of this chapter, resetting of a synapse (in response to a \serca signal) means
+to reset all of the variables (\ca, \ipt, \kp) to zero, which is analogous to
+the breakdown and re-uptake that occurs in biological astrocytes in response to
+\gls{cicr}.
 
 \begin{align}
   ca^i_{ltp} = ca_i > thr_{and} \label{eq:ca_and_ltp} \\
@@ -144,7 +148,7 @@ level. \dser and \serca are the signals from regional to local level, gating
 plasticity and controlling chemical re-uptake.
 
 Which of these categories in Figure \ref{fig:logical-and-coupling} a given set
-of inputs and response belongs to, depends on some model parameters.. Namely,
+of inputs and response belongs to, depends on some model parameters. Namely,
 the timing constants and thresholds $thr_{and}$ and $thr_{ltp}$. Given a
 set of parameters, there is a deterministic window of time spikes must fall into
 in order to be considered for a particular response. Outside this window, from
@@ -152,7 +156,7 @@ the perspective of the Astrocyte, those spikes never happened. This window is
 dependent on many parameters however, and possibly changes given previous
 activity. Instead of solving for the exact point in time a spikes falls out of
 the time window, a lower bound is defined, $\delta_{ptp}=10ms$. The Astrocyte
-will be tuned to guarantee proper behavior if spikes fall within this
+was tuned to guarantee proper behavior if spikes fall within this
 window. This implies that the time between the first pre-synaptic spike, to the
 first (possibly only) post-synaptic spike must be no more than this value. With
 this timing constraint a variety of pre-pre-post spiking events can be generated
@@ -161,7 +165,7 @@ synaptic weights and \Gls{lif} neuron dynamics, focusing solely on Astrocyte
 response \ca.
 
 Figure \ref{fig:2n1a_and_response} Shows the response of a single Astrocyte to
-two pre-synaptic spiking inputs, and single post-synaptic spiking outputs. Spike
+two pre-synaptic spiking inputs, and single post-synaptic spiking outputs. Spikes
 can arrive in any order, or not at all. If spikes do occur, they abide by the
 $\delta_{ptp}=10ms$ constraint. Though the figure shows the spiking bouts
 continuous in time, the Astrocyte's internal state is reset between each.
@@ -182,6 +186,15 @@ of 10,000 10ms bouts, showed zero mis-matches from the expected result, Equation
 cover the entire input space for two synapses. Figures
 \ref{fig:3n1a_and_response} and \ref{fig:4n1a_and_response} show the same success
 for three and four synapses, which is supported by the 10k simulation test.
+
+\begin{align}
+  \textrm{possible AND spikes} &= \binom{11}{1}^3 = 1331 \label{eq:astro_2syn_exaust}
+\end{align}
+
+Equation \ref{eq:astro_2syn_exaust} solves the counting problem ``How many
+possible spiking configurations are'' for three synapses and a 10ms (10 discrete
+1ms time steps) window. The $11^{th}$ possibility in this case, represents that a
+spike does not occur on a synapse.
 
 \asvgf{figures/artifacts/obj3/astro_3s1a_and.svg}{Astrocyte with AND coupling
   response to three pre-synaptic spiking inputs, and a single post-synaptic spike
@@ -239,17 +252,18 @@ any post-synaptic activity is driven by an \Gls{lif} neuron with synaptic weight
 The default synaptic weight is $\approx 0.7$.
 
 \begin{align}
-  dw_{syn} = ca_{syn} * lr_{ltp} \text{if $ca_{syn}$ > 0} \\
-  dw_{syn} = ca_{syn} * lr_{ltd} \text{if $ca_{syn}$ < 0} \\
+  dw_{syn} = ca_{syn} * lr_{ltp} \textrm{ if } ca_{syn} >
+  0 \label{eq:astro_and_dw} \\
+  dw_{syn} = ca_{syn} * lr_{ltd} \textrm{ if } ca_{syn} < 0 \\
 \end{align}
 
-\asvgf{figures/artifacts/obj3/snn_2s1a_and_xlim.svg}{Simulation of Astrocyte/\Gls{lif}
-  network in the 2s1n1a configuration, with the Astrocyte directing synaptic
+\asvgf{figures/artifacts/obj3/snn_1n2s1a_and_xlim.svg}{Simulation of Astrocyte/\Gls{lif}
+  network in the 1n2s1a configuration, with the Astrocyte directing synaptic
   plasticity}{fig:snn_2s1a_and}{0.4}
 
-\asvgf{figures/artifacts/obj3/snn_2s1a_and.svg}{Weight change in the 2s1n1a
+\asvgf{figures/artifacts/obj3/snn_1n2s1a_and.svg}{Weight change in the 2s1n1a
   configuration, with the Astrocyte directing synaptic
-  plasticity}{fig:snn_2s1a_and_w_dw}{0.4}
+  plasticity}{fig:snn_2s1a_and_w_dw}{0.6}
 
 Looking at Figure \ref{fig:snn_2s1a_and}: Initially, synaptic weight values are
 too high, and the neuron fires in response to a single pre-synaptic spike. As
@@ -260,7 +274,11 @@ concentration. As the simulation progresses, weight values decrease, and the \Gl
 neuron begins to fire in response to two pre-synaptic spikes. There was a slight
 over-correction, and some \Gls{ltp} events occur, bringing the weights back
 up. Eventually, the synaptic weights converge and offer a good approximation of
-an AND function over the inputs.
+an AND function over the inputs. Looking at the bottom plot, there are two error
+rate traces, labeled $+\Delta_w$ and $+\Delta_w$. These indicate example inputs
+where the neuron responded incorrectly, and one or more synaptic weights neeeded
+to be increased, or decreased respectively. Summing these two error rates give
+an overall error rate.
 
 Under the limited test conditions, Figure \ref{fig:snn_2s1a_and} demonstrates
 success for coordinated Astrocyte plasticity. This convergence to an AND
@@ -268,13 +286,13 @@ function needs further exploration. Since the coordinated plasticity was
 developed to work with N synapses, it is important to evaluate other
 configurations besides $n=2$.
 
-\asvgf{figures/artifacts/obj3/snn_3s1a_and.svg}{Weight change in the 3s1n1a
+\asvgf{figures/artifacts/obj3/snn_1n3s1a_and.svg}{Weight change in the 3s1n1a
   configuration, with the Astrocyte directing synaptic
-  plasticity}{fig:snn_3s1a_and_w_dw}{0.4}
+  plasticity}{fig:snn_3s1a_and_w_dw}{0.6}
 
-\asvgf{figures/artifacts/obj3/snn_4s1a_and.svg}{Weight change in the 4s1n1a
+\asvgf{figures/artifacts/obj3/snn_1n4s1a_and.svg}{Weight change in the 4s1n1a
   configuration, with the Astrocyte directing synaptic
-  plasticity}{fig:snn_4s1a_and_w_dw}{0.4}
+  plasticity}{fig:snn_4s1a_and_w_dw}{0.6}
 
 Figures \ref{fig:snn_3s1a_and_w_dw} and \ref{fig:snn_4s1a_and_w_dw} show the
 progression of learning in 3 and 4 synapse configurations respectively. In each
@@ -285,9 +303,20 @@ $2.0$. Figure \ref{fig:snn_4s1a_and_w_dw_w} shows the results, which indicate
 the initial weight value does have some effect on convergence, but that overall,
 a stable solution is reached given a range of initial values.
 
-\asvgf{figures/artifacts/obj3/snn_4s1a_and_w.svg}{Weight change in the 4s1n1a
+\asvgf{figures/artifacts/obj3/snn_4s1a_and_w.svg}{Weight change in the 1n4s1a
   configuration, with the Astrocyte directing synaptic
-  plasticity}{fig:snn_4s1a_and_w_dw_w}{0.4}
+  plasticity}{fig:snn_4s1a_and_w_dw_w}{0.6}
+
+Though the learning rule converges to a degree, there is still a fair amount of
+noise in the weight values as $n$ increases, and the mean error rate is upwards
+of $20\%$. In order to better explain what is going on, observe the two error
+rates, in the lower plots of Figures \ref{fig:snn_3s1a_and_w_dw} and
+\ref{fig:snn_4s1a_and_w_dw}. There is an oscillation, between the majority of
+errors involving $+\Delta W$ and $-\Delta W$. This indicates that optimal weight
+values on all of the synapses, are being under and overshot repeatedly. This is
+a common problem in learning rules, and is not a fundamental
+drawback. Additional discussion and next steps were outlined in chapter
+\ref{chapter:conclusion}.
 
 \section{Summary}
 %% Though there is a lack of general consensus, much of the Neuroscience literature

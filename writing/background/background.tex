@@ -90,30 +90,37 @@
     %% \todo{Add 2 tau model from Norse}
 
     \subsection{FitzHugh - Nagumo Model}
-    The FitzHugh–Nagumo is a common \gls{sn} model that is coupled with
-    astrocytes in a few works that are explored later \parencite{postnov_2009,
-      postnov_2007}. It is based on the highly (computationally) complex
-    Hodgkin-Huxley model, with a variety of parameters fixed and others tuned to
-    get different firing patterns. The membrane voltage dynamics, with a $\tanh$
-    activation function forming the synaptic coupling between neurons (or neuron
-    and astrocyte) are outlined in \parencite{postnov_2009}.
+    The FitzHugh–Nagumo is a common \gls{sn} model that was coupled with
+    astrocytes in a number of works \parencite{postnov_2009, postnov_2007}. It
+    is based on the highly (computationally) complex Hodgkin-Huxley model, with
+    a variety of parameters fixed and others tuned to get different firing
+    patterns. The model consists of two main components, the synapse represented
+    by $w_i$, and the post-synaptic neuron, with membrane voltage $v_i$. If this
+    membrane voltage exceeds a threshold $h_s$, then the neuron fires. 
 
     \begin{align}
-      \epsilon_1 \frac{dv_1}{dt} = v1 - \frac{v_1^3}{3} -
-      w_1 \label{eq:fn_neuron}  \\
-      \frac{dw_1}{dt} = v_1 + I_i - I_{app} \\
-      \tau_s \frac{d_z}{dt} = (1 + tanh(S_s(v_1 - h_s)))(1 - z) - \frac{z}{d_s} \label{eq:fitz_nn}
+      \epsilon_1 \frac{dv_i}{dt} = v_i - \frac{v_i^3}{3} -
+      w_i \label{eq:fn_neuron}  \\
+      \frac{dw_i}{dt} = v_i + I_i - I_{app} \\
+      \tau_s \frac{d_z}{dt} = (1 + tanh(S_s(v_i - h_s)))(1 - z) - \frac{z}{d_s} \label{eq:fitz_nn}
       \\
       I_{syn} = (K_s - \delta G_m)(z - z_0)
     \end{align}
 
-    The constant $\epsilon_1 = 0.04$ is the time-separation parameter and
-    $I_1 = 1.02$ defines the operating regime as excitatory. $H_s$ and $D_s$
-    control activation and relaxation of the neuron. $I_{app}$ represents the
-    input to the synapse at all sources. To control the post-synaptic behavior,
-    dynamics of $z$ are defined, which represents a spike from the neuron
-    $z \approx 0$ or $z \approx 1$. The spike $z$ induces a current at the
-    post-synaptic terminal, given by $I_{syn}$.
+    The specifics of this model aren't relevant here only the separation of
+    synapse and neuron quantities $w_i$ and $v_i$, and the associated
+    implications. This neuron model, and those that model current flow within a
+    synapse were common candidates for astrorcyte integration among the
+    literature, and have strong ties to biology. \parencite{wade_2011,
+      pitta_2016, postnov_2009}.
+    
+    %% The constant $\epsilon_1 = 0.04$ is the time-separation parameter and $I_i =
+    %% 1.02$ defines the operating regime as excitatory for neuron $i$. $H_s$ and
+    %% $D_s$ control activation and relaxation of the neuron. $I_{app}$ represents
+    %% the input to the synapse at all sources. To control the post-synaptic
+    %% behavior, dynamics of $z$ are defined, which represents a spike from the
+    %% neuron $z \approx 0$ or $z \approx 1$. The spike $z$ induces a current at
+    %% the post-synaptic terminal, given by $I_{syn}$.
 
     %% \todo{Add Image of simulation postnov 2009 pg 492}
     %% \todo{Add sections for SRM and Izh}
@@ -139,7 +146,7 @@
     %%%%%%%%%%%% Coding Schemes %%%%%%%%%%%%
     \section{Coding Schemes}
     Spiking neural networks, receive and transmit voltage spikes, rather than
-    real values as with other \glspl{ann}. This leads to two important
+    real values as with other \glspl{ann}. This led to important
     questions, how to encode real values as inputs to \glspl{snn}, and how is
     information passed within an \gls{snn} encoded. Generally, coding schemes
     used are based on observations in biology \parencite{ponulak_2011}.
@@ -375,7 +382,7 @@
 
     %% \todo{cite https://arxiv.org/pdf/1611.03000.pdf}.
 
-    \Gls{mlp} networks satisfy the Universal approximation theorem, meaning they
+    \Gls{mlp} networks satisfy the universal approximation theorem, meaning they
     can approximate any function between their inputs and outputs, arbitrarily
     well given the right topology. \Glspl{snn} share this property, through
     their ability to approximate perceptron neurons using rate-based coding. It
@@ -398,45 +405,45 @@
     With \gls{stdp}, weight initialization is an important step, which can
     impact \gls{snn} performance, and ability to learn. It is common practice to
     use a normal distribution to initialize weights. There are some pitfalls to
-    this approach. If the mean ($\mu$) is too small, some weights may result in
+    this approach. If the mean is too small, some weights may result in
     ``dead'' synapses, which will never result in a neuron firing. Conversely
-    choosing a variance ($\sigma^2$) that is too large, will result in some
-    synapses (at random) overpowering others, and lead to poor convergence
-    \parencite{vigneron_2020}. Generally, the best approach is to have a value for
-    $\mu$ which allows neurons to fire, with $\sigma^2$ being small, compared to
-    $\mu$.
+    choosing a variance that is too large, will result in some
+    synapses (at random) overpowering others, and overall poor convergence
+    \parencite{vigneron_2020}. Generally, the best approach is to have a mean
+    weight value which allows neurons to fire, with the variance being small,
+    compared to the mean.
 
     \subsection{Reward-Modulated STDP}
     
     Recently, there has been some success with a supervised variant on
-    \gls{stdp}, known as \gls{rstdp}. Explored in \parencite{mozafari_2018}, a
-    deep convolutiona \gls{snn} was applied to the \gls{mnist} digit recognition
-    task. Early layers of the network were trained in an unsupervised manor,
-    with normal STDP. Later layers were updated using reward-modulated
-    \gls{stdp}. That is, if the output was correct, \gls{stdp} was applied. If
-    not, \gls{astdp} was applied. This learning approach has basis in biology,
-    with the reward modulation mimicking the activity Dopamine and Acetylcholine
-    (ACh). As a proof of concept, researchers applied their learning method to a
-    shallow network, with a single trainable layer. They used rank order coding,
-    and at most one spike per neuron. The output class is determined by which
-    neuron in the output layer fires first, after presenting the input. This
-    architecture gave passable results, but wasn't well suited to multi-layer
-    training.
+    \gls{stdp}, known as \gls{rstdp}. Using a deep convolutional approach, a
+    \glspl{snn} was employed to solve the \gls{mnist} digit recognition task
+    \parencite{mozafari_2018}. Early layers of the network were trained in an
+    unsupervised manor, with classic \gls{stdp}. Later layers were updated using
+    \gls{rstdp}. That is, if the output was correct, \gls{stdp}
+    was applied. If not, \gls{astdp} was applied. This learning approach has
+    basis in biology, with the reward modulation mimicking the activity Dopamine
+    and Acetylcholine (ACh). As a proof of concept, researchers applied their
+    learning method to a shallow network, with a single trainable layer. They
+    used rank order coding, and at most one spike per neuron. The output class
+    is determined by which neuron in the output layer fires first, after
+    presenting the input. This architecture gave passable results, but wasn't
+    well suited to multi-layer training.
     
     For their deep architecture, shown in Figure \ref{fig:rstdp_dcnn} better
     results, an accuracy of 97.2\% which is on par with the state-of-the-art was
     achieved \parencite{mozafari_2018}.
     
     \afig{figures/rstdp_dcnn_arch.png}{Deep convolutional \gls{snn}
-      architecture}{fig:rstdp_dcnn}{0.6}
+      architecture}{fig:rstdp_dcnn}
 
     \Gls{rstdp} improves classification on similar samples, and trains the network to
     recognize discriminating features, instead of repeating ones.
 
     \subsection{ReSuMe}
     The ReSuMe learning rule is another variant of \gls{stdp}, which is similar
-    to the \gls{rstdp} update rule defined by \parencite{mozafari_2018}, though with some
-    important differences. With ReSuMe, a single neuron and set of synapses are
+    to the \gls{rstdp} update rule, with some key differences
+    \parencite{mozafari_2018}. With ReSuMe, a single neuron and set of synapses are
     initialized with random weight values. There is a 2nd similar neuron
     which implements the desired behavior. Inputs are provided to both neurons,
     and at each time step weights are updated according to the difference
@@ -474,18 +481,18 @@
     \asvgf{figures/coordinated_stdp.svg}{\gls{lif} neuron with \gls{stdp}
       learning and generic coordination signal}{fig:coordinated_stdp}{0.6}
     
-    A number of papers have shown promising results on benchmark
-    recognition tasks, including \gls{mnist} written digit classification
+    A number of papers have shown promising results on benchmark recognition
+    tasks, including the \gls{mnist} written digit classification
     \parencite{mozafari_2018} and facial recognition
     \parencite{delorme_2001}. These papers, among others use hand-crafted
-    \gls{dog} filters in early convolution layers. End-to-end
-    trainable \gls{snn} architectures, for image processing tasks appear to be
-    lacking in literature.
+    \gls{dog} filters in early convolution layers. End-to-end trainable
+    \gls{snn} architectures, for image processing tasks appear to be lacking in
+    literature.
     
     A mixture of \gls{dog} filters, \gls{stdp}, and \gls{rstdp} can achieve
-    \acrshort{sota} results on \gls{mnist}. The network wasn't end-to-end
+    \acrshort{sota} results on \gls{mnist}. Though the network wasn't e end-to-end
     trainable, but did have a neuron-based readout, requiring no external
-    classifier, such as Support Vector Machines (SVM) \parencite{mozafari_2018}.
+    classifier \parencite{mozafari_2018}.
     
     An unsupervised, coordinated approach involving \gls{roc} showed that
     \gls{stdp} can be used to learn distinct features from \gls{roc} encoded
@@ -554,8 +561,8 @@
     \gls{gaba}. Depolarization via \kp at the post-synaptic terminal can be
     sensed as well, through the voltage change, and uptake of \kp by an
     astrocyte. The astrocyte will then respond with one or more
-    Gliotransmitters. These include \gls{glu}, D-serine, \gls{atp} or
-    \gls{tnfa}. These gliotransmitters have different effects depending on where
+    \gls{gt}. These include \gls{glu}, D-serine, \gls{atp} or
+    \gls{tnfa}. These \gls{gt} have different effects depending on where
     and when they are released.
 
     \begin{itemize}
@@ -573,7 +580,7 @@
         \parencite{chung_2015}.
     \end{itemize}
 
-    Gliotransmitter release from an astrocyte is dependent on the integration of
+    \Gls{gt} release from an astrocyte is dependent on the integration of
     synaptic activity over 100s of milliseconds (for a local response)
     \parencite{pitta_2016} to 10s of seconds for a whole cell response
     \parencite{mederos_2018}. This integration is mediated by a variety of input
@@ -606,7 +613,7 @@
     %% Astrocytes are Master Integrators
     Astrocytes have been shown to act as integrators of synaptic activity. Early
     studies discovered that astrocytes become active in response to intense
-    neuronal firing. Subsequent reasearch shows that this response, represented
+    neuronal firing. Subsequent reasearch has shown that this response, represented
     by \ca concentration, was highly complex in time
     \parencite{araque_2014}. This complex global response which happens on a
     seconds timescale is preceded by \ca activity in astrocyte processes local
@@ -621,7 +628,7 @@
     associated with synaptic terminals, and may integrate their activity at
     different spatial and temporal time-scales as their neighbors
     \parencite{pitta_2012}. Furthermore, experiments with computational models
-    show that varying astrocyte modalities (as is the case in the brain) leads
+    have shown that varying astrocyte modalities (as is the case in the brain) led
     to different patterns of signal transmission. This could indicate that
     astrocytes in different areas of the brain perform different functions
     \parencite{pitta_2012}.
@@ -633,7 +640,7 @@
     connect at the periphery of an astrocyte's domain
     \parencite{pitta_2012}. This spacing is not always uniform, some
     micro-domains are formed favoring a neuron signal pathway, with adjacent
-    astrocyte connections observed to be absent. One example is in the Ferret
+    astrocyte connections observed to be absent. One example is in the ferret
     visual cortex, where astrocytes (like neurons) form receptive fields on the
     visual input \parencite{pitta_2012}. This finding lines up well with results
     in other works, where astrocytes were used as working-memory units, forming
@@ -650,9 +657,9 @@
     
     %% Astrocytes Modulate STP/STD
     The pre-synaptic \gls{glu} mediated astrocyte stimulation and response loop,
-    as a mechanism for modulation of short term plasticity, was explored in
-    \parencite{pitta_2012}. This loop is characterized by a positive feedback
-    loop, where \gls{glu} release from the pre-synaptic neuron stimulates the
+    is hypothesized as a mechanism for modulation of short term plasticity
+    \parencite{pitta_2012}. This loop is characterized by positive feedback,
+    where \gls{glu} release from the pre-synaptic neuron stimulates the
     astrocyte, and leads to additional \gls{glu} release. If the \acrshort{pr}
     at that synapse is low, then there should be sufficient neural resources to
     support transmission, and the astrocyte is able to gain-up the response. If
@@ -661,8 +668,8 @@
 
     %% Astrocyte Modulation of \gls{ltd}/\gls{ltp}
     Astrocytes have been shown to play a key role in the bio-chemical pathways
-    that lead to \gls{stdp} at neuronal synapses, and can gate \gls{ltd} and \gls{ltp} via D-Serine
-    release \parencite{manninen_2019}.
+    that lead to \gls{stdp} at neuronal synapses, and can gate \gls{ltd} and
+    \gls{ltp} via D-Serine release \parencite{manninen_2019}.
 
     Both \gls{ltd} and \gls{ltp} are controlled by the \gls{ndma}
     receptor. Through gating factors this receptor is able to respond to the
@@ -675,7 +682,7 @@
     in pre-synaptic neurotransmitter release probability. Beyond passively
     participating in the normal \gls{stdp} process, astrocytes may gate it's
     activity, or reverse the polarity, implementing \gls{astdp}
-    \parencite{min_2012}. This is achieved through gliotransmitter release, such as
+    \parencite{min_2012}. This is achieved through \gls{gt} release, such as
     D-serine, which provides a necessary gating factor for \gls{ndma} receptors
     to open. \Gls{glu} released by astrocytes in response to pre and
     post-synaptic activity may stretch or shift the nominal \gls{stdp} curve
@@ -732,16 +739,16 @@
     pathway. Excitatory cortical neurons release \gls{glu} in response to input
     stimulus. \Gls{glu} binds to the G-coupled \glspl{mglur} on the surface
     of an astrocyte. This sets in motion a cascade involving the \ipt second
-    messenger, which ultimately leads to \ca release in the astrocyte soma
+    messenger, which ultimately leads to \ca release in the astrocyte cytosol
     \parencite{pitta_2012}. \ipt induced \ca release from the \gls{er} leads to a rapid
     breakdown of \ipt, creating a kind of local \ca spike. This \ca
-    concentration can integrate within the cell soma, but does degrade due to
+    concentration can integrate within the cell cytolsol, but does degrade due to
     the activity of pumps at \gls{er} surface \parencite{pitta_2012}.
 
-    To model this works such as \parencite{pitta_2009} use a three variable
-    approach, which extends the Li–Rinzel model with bio-realistic \ipt
-    dynamics. In general \ca concentration (when considering the \ipt mediated
-    pre-synaptic pathway only) is dependant on two internal activites, and one
+    To model this computationally, a three variable approach, which extended the
+    Li–Rinzel model \parencite{li_1994} has been used \parencite{pitta_2009}. In
+    general \ca concentration (when considering the \ipt mediated pre-synaptic
+    pathway only) is dependant on two internal activities, and one
     external. Internally, there is a $J_{leak}$ factor, describing a
     differential based leak from the \gls{er} into the astrocyte cytosol. To
     override this leak, and maintain the differential, \gls{serca} pumps move
@@ -749,40 +756,41 @@
     the flux of \ca from the \gls{er} into the cytoplasm due to \ipt levels, or
     \gls{cicr}, depending on the \ca concentration \parencite{pitta_2009}. In
     this case \ipt levels are a function of \gls{glu} release from the
-    pre-synaptic neuron. \parencite{pitta_2016} extends this model, including
-    the Glio-transmitter release from the astrocyte in response to \ca
-    transients. In their work a spike of GT is released (similar to a neuron)
-    when \ca concentration reaches some threshold. It should be noted, that the
-    \ipt/\ca spiking response (\ipt -> \ca release -> \ipt cleanup + \ca
-    cleanup) is independent of the glio-transmitter release, meaning there can
-    be sub-threshold \ca spikes).
+    pre-synaptic neuron. This model was extended to include the \gls{gt} release
+    from the astrocyte in response to \ca transients. In their work a spike of
+    \gls{gt} is released (similar to a neuron) when \ca concentration reaches
+    some threshold. It should be noted, that the \ipt/\ca spiking response (\ipt
+    $\rightarrow$ \ca release $\rightarrow$ \ipt cleanup and \ca cleanup) is
+    independent of the \gls{gt} release, meaning there can be sub-threshold \ca
+    spikes) \parencite{pitta_2016}.
 
     The above outlines the common theme for presynaptic astrocyte
-    modulation. The general form of the pathway outlined above is shared by
-    \parencite{postnov_2009}, and \parencite{wade_2011}. Though there are
-    variations among modeling approach covered in further detail later in this
-    work.
+    modulation. The general form of the pathways outlined above was shared by many
+    notable works, such as those by Postnov and Wade \parencite{postnov_2009,
+      wade_2011}.
 
     \subsection{Neuron-Astrocyte Pathways - Postsynaptic to Astrocyte}
     Another common pathway that is explored both in neuroscience and
-    computationally is the ``fast'' post-synaptic pathway \parencite{bassam_2015}. In
-    this pathway, the post-synaptic neuron fires, and subsequently releases \kp
-    as part of the depolarization process. This \kp spillover is quickly shuttled
-    into the astrocyte, and causes depolarization across the astrocyte's
-    membrane. Voltage-gated channels on the \gls{er} then lead to \ca release into
-    the cytoplasm. It is considered fast pathway, because the effect of \kp is
-    direct, vs. the pre-synaptic pathway involving a second messenger
+    computationally is the ``fast'' post-synaptic pathway
+    \parencite{bassam_2015}. In this pathway, the post-synaptic neuron fires,
+    and subsequently releases \kp as part of the depolarization process, at the
+    postsynaptic terminal. This \kp spillover is quickly shuttled into the
+    astrocyte, and causes depolarization across the astrocyte's
+    membrane. Voltage-gated channels on the \gls{er} then lead to \ca release
+    into the cytoplasm. It is considered fast pathway, because the effect of \kp
+    is direct, vs. the pre-synaptic pathway involving a second messenger
     \parencite{bassam_2015}.
 
     The post-synaptic pathway is modeled differently across reviewed
-    literature. In one work \parencite{bassam_2015} the Gerstner spiking
-    response model is employed, and \ca response to a post-synaptic neuron
-    firing is modeled using \eq{eq:kp_path_srm}. This characterizes
-    the response to a single post-synaptic spike as a portion of an exponential
-    function, similar to the \gls{psp} generated by a pre-synaptic spike. Other
-    works, such as \parencite{postnov_2007} incorporate the \ca response into a
-    FitzHugh–Nagumo neuron model, using \eq{eq:kp_path_fn}, and
-    referencing \eq{eq:fitz_nn}.
+    literature. One configuration used the Gerstner spiking
+    response model \parencite{gerstner_2001}, and explored the \ca response to a
+    post-synaptic neuron using \eq{eq:kp_path_srm}. This
+    characterized the response to a single post-synaptic spike as a portion of
+    an exponential function, similar to the \gls{psp} generated by a
+    pre-synaptic spike \parencite{bassam_2015}. Other works incorporated the \ca
+    response into a FitzHugh–Nagumo neuron model, using \eq{eq:kp_path_fn},
+    where current was injected into the synapse, subject to \eq{eq:fitz_nn}
+    \parencite{postnov_2007}.
 
     \begin{align}
         PS_{mod} =
@@ -802,11 +810,12 @@
 
     Where $\tau_c$ is a time-constant, $r$ controls the initial state, and
     $\alpha W2$ represents the effect of post-synaptic depolarization on
-    \ca. $W2$ is analogous to $W1$ from \eq{eq:fn_neuron}, which
+    \ca. $W2$ is analogous to $W1$ from \eq{eq:fn_{neuron}}, which
     defines the FitzHugh - Nagumo model.
 
-    Though the exact dynamics of the response are neuron dependent in the
-    literature, the general form of the response is the same as outlined above.
+    Though the exact dynamics of the response are dependent on the specific
+    neuron model in use, the general form of the response is the same as
+    outlined above.
     
     \subsection{Calcium, and Other Messenger Dynamics}
     \ca, \ipt and \kp are the main substances involved in signaling pathways
@@ -818,30 +827,23 @@
     non-linear negative feedback, leading to fast cleanup, and spike-like
     behavior \parencite{postnov_2009}. The second messenger \ipt has a similar
     behavior, with a threshold and $tanh$ (with decay factor) resulting in
-    spike-like behavior \parencite{postnov_2009}.
-
-    similar behavior is cited in \parencite{wade_2011}, except the output
-    glio-transmitter release exhibits spiking behavior, where there isn't
-    spiking observed in the \ca. In this model, like with
-    \parencite{postnov_2009} there is a threshold gating glio-transmitter
-    release.
+    spike-like behavior \parencite{postnov_2009}. This response was not limited
+    to internal signals, with some models considering spikes of \gls{gt}
+    \parencite{wade_2011}.
 
     The amplitude modulated and frequency modulated variants on the $J_{pump} -
-    J_{chan} - J_{leak}$ model are introduced in \parencite{pitta_2009}, which
-    exhibits spiking and non-spiking \ca dynamics depending on some choice
-    parameters. This is the same model outlined in \parencite{wade_2011}.
-
-    It is also well established that the \ipt pathway operates on a slower
-    time-scale, then more direct pathways such as \gls{atp} or \kp
-    \parencite{postnov_2009, bassam_2015}.
+    J_{chan} - J_{leak}$ model exhibit spiking and non-spiking \ca dynamics depending on some choice
+    parameters \parencite{pitta_2009,wade_2011}. It is also well established
+    that the \ipt pathway operates on a slower time-scale, then more direct
+    pathways such as \gls{atp} or \kp \parencite{postnov_2009, bassam_2015}.
 
     \section{Evolution of Astrocyte Models}
-    A very insightful review of astrocyte models from 1995 until about 2017 is
-    presented in \parencite{manninen_2018}. In addition, an analysis on the origin
-    of models for many papers is performed, with four different core
-    neuron-astrocyte models emerging over the time-period considered. These
-    astrocyte models are modified throughout the works, to show different
-    effects.
+    A very insightful review of astrocyte models from 1995 until about 2017 was
+    used to guide the investigation into existing computational astrocyte models
+    \parencite{manninen_2018}. When the existing body of work was considered it
+    was possible to lean on functional similarities between Astrocyte models and
+    identify four distinct core neuron-astrocyte models, which emerged over the
+    time-period considered \parencite{manninen_2018}.
 
     \subsection{Foundational Astrocyte Models}
     Grouping models by their features, it was shown in \parencite{manninen_2018}
@@ -861,7 +863,7 @@
       J_{pump} \label{eq:lr_dk_astro} \\
     \end{align}
 
-    Hofer on the other hand, defines an astrocyte model in a more bio-realisitc
+    The Hofer model on the other hand, defines an astrocyte model in a more bio-realisitc
     way, modeling internal chemical signaling using second-order differential
     equations, and including messengers beyond just \ipt. There is also an
     emphasis placed on astrocyte to astrocyte communication through gap
@@ -869,13 +871,13 @@
     least prevalent in existing literature \parencite{manninen_2018}.
 
     
-    \section{Astrocyte Mediated Effects In the Literature}
+    \section{Astrocyte Mediated Effects in the Literature}
     \subsection{Glio-Transmitter Release From Astrocyte}
-    To signal back to neurons, astrocytes release various gliotransmitters,
+    To signal back to neurons, astrocytes release various \gls{gt},
     which were outlined above. In general, this release is dependent on the
     concentration of \ca local to the synapse. Input pathways converge with
     \ca concentration, and then divergent effects are observed via the release
-    of multiple gliotransmitters.
+    of multiple \gls{gt}.
 
     \Gls{atp} release from astrocytes can travel within interstitial spaces and
     effect synaptic transmission at physically local synapses. This phenomenon
@@ -934,8 +936,9 @@
     through wide reaching \ca wave propagation \parencite{postnov_2009}. There
     have been attempts at modeling astrocyte network, with variying degrees of
     complexity. A random procedural algorithm for generating a 2D bio-plausible
-    astrocyte network is explored in \parencite{postnov_2009}, and shows a high
-    level of bio-realism. The algorithm is as follows.
+    astrocyte network was able to show a high level of bio-realism, and mimic
+    the behavior of \ca waves \parencite{postnov_2009}. The algorithm is as
+    follows.
 
     \begin{enumerate}
         \item From the center of each astrocyte, produce a random number between
@@ -950,8 +953,8 @@
     \end{enumerate}
 
     Using the novel astrocyte connection algorithm developed, some important
-    observations of astrocyte signaling were reproduced in simulation
-    \parencite{postnov_2009}. First, a low-level of synaptic activity elicited a
+    observations of astrocyte signaling were made in simulation
+    \parencite{postnov_2009}. First, low-levels of synaptic activity elicited a
     strictly local response. Increasing the level of stimulation results in a
     \ca wave, which spans many astrocytes, and propagates out from its
     source. With sufficiently active neurons, the resulting \ca wave is shown to
@@ -960,10 +963,11 @@
     neuroscience research, and there was minimal discussion as to a functional
     role.
 
-    Other works, such as \parencite{gordleeva_2021} do demonstrate functional
-    benefits of inter astrocyte communication leverage this same property to
-    implement working memory, with astrocytes maintaining \ca activity, and
-    influencing neurons in response to a cue.
+    Using similar properties, astrocytes were shown to be capable of
+    implementing short-term memory, both by maintaining an internal state over
+    time, and through influence of neighboring astrocyte through gap
+    junctions. Once memory is stored, it was retrieved through presentation of
+    que \parencite{gordleeva_2021}.
 
     %% \section{Related Work - Organized By Paper and Author}
     

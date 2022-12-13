@@ -11,11 +11,11 @@
     The overarching goal of this thesis is to extend the bio-inspiration of
     spiking networks by introducing an Astrocyte-like element, and forming a
     tri-partied synapse. This Astrocyte element will drive synaptic plasticity;
-    First implementing, then extending the widely used STDP rule. Benefits of
+    First implementing, then extending the widely used \gls{stdp} rule. Benefits of
     Astrocyte-like control of synaptic plasticity will be demonstrated in the
     single synapse, single neuron configuration (1S1N) as well as select
     multi-synapse configurations (i.e. 2S1N, 3S1N, etc...). Inputs will mostly
-    consist of procedurally generated spiking inputs. This would include poisson
+    consist of procedurally generated spiking inputs. This would include Poisson
     rate-coded spike trains, spiking inputs representing Boolean variables, and
     temporal inputs that follow specific patterns. In general, for each
     experiment there will be some comparison necessary between the Astrocyte
@@ -70,15 +70,15 @@
     python libraries have emerged that are usable and very close to complete
     solutions. The first is BindsNet, which has been referenced in a variety of
     papers. The original implementation included an architecture that achieved
-    SOTA results on MNIST classification. The second is PySNN, it was written by
+    \acrshort{sota} results on \gls{mnist} classification. The second is PySNN, it was written by
     a PhD student, and builds on-top of PyTorch. Many common Spiking Neuron
-    Models are included out of the box, such as \Gls{lif}, and the more bio-inspired
+    Models are included out of the box, such as \gls{lif}, and the more bio-inspired
     Izhikevich model. Another framework, somewhat newer is Norse. Unlike others
     listed here, Norse is in active development. Similar to PySNN, Norse
     provides a very clean interface and is built ontop of PyTorch. Specifically
     Norse leverages PyTorch's torchscript interface, which allows Norse to claim
     (and in some cases defend) that they have the most efficient library for
-    simulation spiking neural networks.
+    simulation spiking neural networks \parencite{norse2021}.
 
     This research will leverage a modified version of Norse for all simulations.
     

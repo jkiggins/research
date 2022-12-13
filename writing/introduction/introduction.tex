@@ -31,8 +31,8 @@ of complex tasks, and has many advantages in the context of learning, and
 tolerance to adversarial inputs. Where a deep learning model requires many
 diverse examples to approach generalization, the human brain is able to
 surpass this with only a few examples \cite{tsimenidis_2020}. Even more
-impressive, the brain can accomplish these feats with $\approx$ 20 W of
-power. At a high level, this work explores \Glspl{snn} and Astrocytes in an
+impressive, the brain can accomplish these feats with $\approx$ 20 Watts of
+power. At a high level, this work explores \glspl{snn} and astrocytes in an
 effort to explain, and realized some of these features.
 
 Beyond the high-level advantages, both \gls{snn} literature and research
@@ -53,7 +53,7 @@ model, and more broadly an astrocyte-neuron interaction model. This model was
 designed to be computationally simple, scalable, and captures common themes
 within Neuroscience literature. To direct this research, the developed astrocyte
 element drove synaptic plasticity; First generalizing, then diverging from the
-widely used STDP rule. Benefits of Astrocyte-like control of synaptic plasticity
+widely used \gls{stdp} rule. Benefits of astrocyte-like control of synaptic plasticity
 was demonstrated in the single synapse, single neuron configuration (1S1N) as
 well as select multi-synapse configurations. Inputs consisted of procedurally
 generated spiking inputs, including Poisson rate-coded spike trains, spiking
@@ -67,16 +67,16 @@ used to gain insight.
 More specific objectives.
 \begin{enumerate}
   %% Specify -> developing a novel astrocyte model. Stress what is new and value-added
-\item Develop an Astrocyte \Gls{lif}-Neuron model based on key bio-chemical
-  pathways that are common in background literature. This Astrocyte should
+\item Develop an astrocyte \gls{lif}-neuron model based on key bio-chemical
+  pathways that are common in background literature. This astrocyte should
   respond internally to pre and post-synaptic spikes In a way that can mimic
   STDP, but is more generalized and flexible.
 
   \item Show, in the case of a single spiking neuron with one input, how the
-    developed Astrocyte-\Gls{lif} model can drive synaptic plasticity in a way that
+    developed astrocyte-\gls{lif} model can drive synaptic plasticity in a way that
     generalizes, and extends STDP.
 
-  \item Extend the Developed Astrocyte-Synapse Model to include coordination of
+  \item Extend the developed astrocyte-synapse Model to include coordination of
     plasticity rules across multiple synapses, and show how this coordination is
     critical to a learning task.
 

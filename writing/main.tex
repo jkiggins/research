@@ -127,6 +127,7 @@
 
 % Aliases for common names
 \newcommand{\ca}{\gls{ca}\textrm{ }}
+\newcommand{\cam}{Ca^{2+}}
 \newcommand{\na}{$\textrm{Na}^+$\textrm{ }}
 \newcommand{\ipt}{\gls{ipt}\textrm{ }}
 \newcommand{\kp}{\gls{kp}\textrm{ }}
@@ -138,7 +139,7 @@
 	\begin{figure}[H]
     	\centering
 		\includegraphics[width=\linewidth]{#1}
-        \caption{#2}
+        \caption{#2.}
         \label{#3}
 	\end{figure}
 }
@@ -148,7 +149,7 @@
 	\begin{figure}[h]
     	\centering
 		\includegraphics[width=\linewidth]{#1}
-        \caption{#2}
+        \caption{#2.}
         \label{#3}
 	\end{figure}
 }
@@ -157,7 +158,7 @@
 	\begin{figure}[H]
     	\centering
 		\includesvg[scale=#4]{#1}
-        \caption{#2}
+        \caption{#2.}
         \label{#3}
 	\end{figure}
 }
@@ -167,7 +168,7 @@
 	\begin{figure}[H]
     	\centering
 		\includegraphics[width=\linewidth/#4]{#1}
-        \caption{#2}
+        \caption{#2.}
         \label{#3}
 	\end{figure}
 }
@@ -177,13 +178,13 @@
 	\begin{figure}[H]
     	\centering
 		\includegraphics[width=#4\columnwidth]{#1}
-        \caption{#2}
+        \caption{#2.}
         \label{#3}
 	\end{figure}
 }
 
 % Equation referencing
-\newcommand{\eq}[1]{(\ref{#1})}
+\newcommand{\eq}[1]{Equation (\ref{#1})}
 
 % Algorithm referencing
 \newcommand{\alg}[1]{Algorithm~\ref{#1}}
@@ -244,7 +245,7 @@
 
 % Advisor details
 \advisor{Department of Computer Engineering}{Cory}{Merkel}
-\committee{Research Professor at Binghamton University}{David}{Schaffer}{}
+\committee{Research Professor at Binghamton University}{J. David}{Schaffer}{}
 \committee{Department of Computer Engineering}{Alexander}{Loui}{}
 % \end{document configuration}\end{}
 
@@ -254,14 +255,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Load the glossary
-\loadglsentries{glossary}
+%% \loadglsentries{glossary}
 
 % Load the acronyms
 \loadglsentries[type=\acronymtype]{acronym}
 
 % Initialize the glossary
 \makeglossaries
-\setglossarystyle{altlist}
+\setglossarystyle{index}
 
 % Sort the glossary
 \makeindex
@@ -291,7 +292,7 @@
     \printbibliography[heading=bibintoc]
 
     % Glossary
-    \printglossary[type=main]
+    %% \printglossary[type=main]
 
 % End the document
 \end{document} 

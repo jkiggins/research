@@ -10,19 +10,19 @@ machine learning, isn't as clear-cut in spiking neural networks. Further,
 astrocyte-neuron interactions, aren't well understood in the neuroscience
 community, and the mathematical model representing them vary widely as a
 result. The goal of this work was to extract some useful features, given what is
-known about Astrocyte-Neuron interactions, using a simple model. This was
+known about astrocyte-Neuron interactions, using a simple model. This was
 achieved, but the path taken leaves many interesting questions unanswered, and
 opens the door to future work.
 
 \section{Astrocyte Local Learning}
 Local learning in this work was limited to two different types of inputs, and
-the Astrocyte wasn't evaluated against any particular learning objective with
+the astrocyte wasn't evaluated against any particular learning objective with
 those input. Some interesting properties were teased out, such as the tendency of
-the Astrocyte to change weights, seeking a state with low \ca response to
+the astrocyte to change weights, seeking a state with low \ca response to
 inputs. This is good, as that low \ca response configuration can be leveraged,
-to direct an Astrocyte to a particular goal. The threshold function
+to direct an astrocyte to a particular goal. The threshold function
 \emph{Dw(\ca)} is fairly simple, more complicated functions should be explored
-here, to determine what temporal features an Astrocyte can learn.
+here, to determine what temporal features an astrocyte can learn.
 
 \section{Multi Synapse Plasticity}
 This work just scratches the surface of what should be explored in a
@@ -45,11 +45,11 @@ non-specific learning signal.
 
 \chapter{Conclusion} \label{chapter:conclusion}
 
-The main goal of this work was to identify key properties of Astrocyte-neuron
+The main goal of this work was to identify key properties of astrocyte-neuron
 interactions in biology, that could be leveraged in a simplified computational
-model, when paired with \Gls{lif} neurons. This initial question led to the
+model, when paired with \gls{lif} neurons. This initial question led to the
 identification of a variety of function roles, both concrete and theorized
-surrounding Astrocytes in the Neuroscience literature. These include: working
+surrounding astrocytes in the Neuroscience literature. These include: working
 memory, modulation of synaptic plasticity, synchronization of neural firing, and
 long-range signaling across sub-networks of neurons. In paralell, common
 chemical signaling pathways were teased from the same body of
@@ -57,16 +57,16 @@ research. The intersection of signaling pathways and functional role that best
 fit this work was determined to be synapic plasticity, with a focus on
 multi-level integration, across time and across synapses.
 
-A computational Astrocyte model was developed to implement classic STDP
-on a single synapse, using simplified versions of common Astrocyte chemical
-pathways. Varying the parameters, it was shown that this Astrocyte model could
+A computational astrocyte model was developed to implement classic STDP
+on a single synapse, using simplified versions of common astrocyte chemical
+pathways. Varying the parameters, it was shown that this astrocyte model could
 implement common variations on STDP, as well as shift and bias the standard
-\Gls{stdp} weight update curve. Mimicing the \Gls{cicr} behavior observed in
-Astrocytes, a threshold was defined and used to gate plasticity. This led to
+\gls{stdp} weight update curve. Mimicing the \gls{cicr} behavior observed in
+astrocytes, a threshold was defined and used to gate plasticity. This led to
 temporal integration of synaptic plasticity. Using this model, weight updates
-were more stable when compared to \Gls{stdp} for the test input, and showed
-convergence in a variety of configurations, where \Gls{stdp} either oscillated
-or diverged. Exploring further, it was determined that the Astrocyte model was
+were more stable when compared to \gls{stdp} for the test input, and showed
+convergence in a variety of configurations, where \gls{stdp} either oscillated
+or diverged. Exploring further, it was determined that the astrocyte model was
 driving weights to values that resulted in a lower \ca response. This feedback
 mechanism allowed for flexibility in weight convergence, and opened the door for
 implementing additional learning rules based on temporal integration.
@@ -81,15 +81,15 @@ this regional level, chemical signals are sent back to the local synapse level
 depending on the function and synaptic activity. The function explored in this
 work specifically, was logical AND. While simple, this function requires a
 multi-synapse view to correctly implement, and can be scaled to an arbitrary
-number of synapses easily. Results showed that an Astrocyte can implement a
+number of synapses easily. Results showed that an astrocyte can implement a
 robust learning rule capable of converging to weight values that implement AND
-with 2 synapses. With 3 and 4 synapses, the Astrocyte still exhibits
+with 2 synapses. With 3 and 4 synapses, the astrocyte still exhibits
 convergence, but is only able to roughly arrive at a solution.
 
-This work lays the groundwork for an Astrocyte-like approach to synaptic
+This work lays the groundwork for an astrocyte-like approach to synaptic
 plasticity, providing a computationally simple, bio-inspired model. This model
-is shown to generalize classic \Gls{stdp}, and can improve upon it in a variety
-of situations. Breaking away from the strictly local paradigm, the Astrocyte
+is shown to generalize classic \gls{stdp}, and can improve upon it in a variety
+of situations. Breaking away from the strictly local paradigm, the astrocyte
 model demonstrates coordinated plasticity in a learning task that would be
 otherwise impossible with a strictly local view. Equally as important, this work
 offers an opportunity for organization and coordination, when melding local and

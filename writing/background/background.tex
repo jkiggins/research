@@ -29,7 +29,7 @@
     per-neuron state maintained across inputs.
     
     \glspl{snn}, formed by connections between spiking neurons, are a
-    bio-realistic type of \gls{ann}. Spiking neurons instead emit spikes,
+    bio-realistic type of \gls{ann}. \gls{sn} instead emit spikes,
     reminiscent of biological neuron's action potentials. These spikes travel
     across a synapse, from one neuron to another, and are usually multiplied by
     a weight along the way. In some cases, there are more complex dynamics
@@ -129,17 +129,17 @@
     \glspl{snn} can take on a variety of topologies, similar to
     \glspl{mlp}. These include feedforward, recurrent, or a hybrid of
     both. Within a standard feed-forward network, lateral inhibition is often
-    employed, resulting in a Winner Take All (WTA) configuration. In this case a
+    employed, resulting in a winner take all (WTA) configuration. In this case a
     layer of neurons has feed forward connections from the previous layer, in
     addition to inhibitory connections within the layer. The inhibitory
-    connections from the first neuron to emit a spike, to its neighbors, prevents
+    connections from the first neuron to emit a spike to its neighbors, prevents
     other neurons within that layer from firing in the near term
     \parencite{ponulak_2011}.
     
     One, more specific hybrid configuration is a Synfire chain, which is
     feedforward between sub-populations of recurrent networks. Synfire chains
     are of particular interest, as they show a coordination within the spiking
-    network. From input to output, in a feed-forward pattern, populations of
+    network. From input to output in a feed-forward pattern, populations of
     neurons coordinate, passing along a "packet" of neuronal activity. It was
     observed in monkeys, that the precise timing of spikes was correlated with
     behavior, and synfire activity was given as a possible explanation
@@ -147,9 +147,10 @@
     
     %%%%%%%%%%%% Coding Schemes %%%%%%%%%%%%
     \section{Coding Schemes}
-    Spiking neural networks, receive and transmit voltage spikes, rather than
-    real values as with other \glspl{ann}. This led to important
-    questions, how to encode real values as inputs to \glspl{snn}, and how is
+    Spiking neural networks, receive and transmit spikes, rather than continuous
+    values as with other \glspl{ann}. These spikes are of a uniform shape and
+    size, and are indistinguishable from one another. This led to important
+    questions: how to encode real values as inputs to \glspl{snn}, and how is
     information passed within an \gls{snn} encoded. Generally, coding schemes
     used are based on observations in biology \parencite{ponulak_2011}.
     
@@ -170,20 +171,20 @@
     any neurological system where processing speed is especially important, will
     tend to rely on a spike timing based encoding for information.
 
-    a variety of temporal coding schemes have been proposed, and
+    A variety of temporal coding schemes have been proposed, and
     investigated. Time to first spike, as the name suggests, encodes information
     in the latency between stimulus and the first spike. This is accomplished by
     using a neuron model that has an inhibitory feedback connection, suppressing
-    additional spikes. Rank order coding (ROC) represents information in the
-    order of spikes within a population of neurons, that each emit a single
-    spike. This allows fast information processing, since the time between
-    spikes isn't important, and can be very small. This scheme was proposed as
-    an explanation for ultra-fast processing in the primate visual
-    cortex. Similar to ROC, with latency coding, information is represented in
-    the time between spikes of a population of spiking neurons. As with ROC,
-    each neuron emits a single spike. This encoding scheme is supported by
-    evidence in biological networks, where it has been observed that moving the
-    timing of a  single spike by ~10ms can change downstream activity
+    additional spikes. \gls{roc} represents information in the order of spikes
+    within a population of neurons, that each emit a single spike. This allows
+    fast information processing, since the time between spikes isn't important,
+    and can be very small. This scheme was proposed as an explanation for
+    ultra-fast processing in the primate visual cortex. With latency coding,
+    information is represented in the order of spikes, and the precise timing
+    between spikes in a population of neurons. As with \gls{roc}, each neuron
+    emits a single spike. This encoding scheme is supported by evidence in
+    biological networks, where it has been observed that moving the timing of a
+    single spike by ~10ms can change downstream activity
     \parencite{ponulak_2011}.
         
     %%%%%%%%%%%% Encoding Real Values %%%%%%%%%%%%
@@ -229,7 +230,8 @@
     \end{align}
 
     $interval$ is computed repeatedly until the desired length spike train has
-    been constructed, with $x$ being a uniformly distributed random variable.
+    been constructed, with $x$ being a uniformly distributed random
+    variable. The second approach outlined here is used in this work.
     
     %This technique generates a spikes train as shown in the following graph.
     
@@ -261,15 +263,18 @@
     make up a single input (such as an image) are transformed into a
     latency. This latency defines the time until a spike is presented to a
     single synapse. Generally larger values are assigned a smaller latency, and
-    smaller values a larger one \parencite{delorme_2001}.
+    smaller values a larger one \parencite{delorme_2001}. This procedure so far
+    makes no distinction between \gls{roc} and latency coding. If the time
+    between spikes were set to some fixed value, but spike order maintained then
+    \gls{roc} would be satisfied but not latency coding.
     
-    Some changes to the network itself have shown success when paired with rank
-    order coding. These include a progressive desensitization, similar to the
-    biological concept of shunting inhibition. \eq{eq:roc_activation}
-    shows the activation of a neuron, given a modulation factor
-    $\alpha \in (0,1)$ and a set of incoming connections $a_i$. Subsequent spikes along a
-    given input connection have less and less of an effect on the overall
-    activation of the neuron \parencite{delorme_2001}.
+    Some changes to the network itself have shown success when paired with
+    \gls{roc}. These include a progressive desensitization, similar to the
+    biological concept of shunting inhibition. \eq{eq:roc_activation} shows the
+    activation of a neuron, given a modulation factor $\alpha \in (0,1)$ and a
+    set of incoming connections $a_i$. Subsequent spikes along a given input
+    connection have less and less of an effect on the overall activation of the
+    neuron \parencite{delorme_2001}.
     
     \begin{align}
         Activation(i) = \Sigma_{j \in [1,m]}\alpha^{order(a_i)}W_{j,i} \label{eq:roc_activation}
@@ -390,17 +395,16 @@
     their ability to approximate perceptron neurons using rate-based coding. It
     isn't clear yet whether \glspl{snn} have this property outside of this
     approximation, or using coding schemes other then rate-based coding
-    \parencite{legenstein_2005}. When considering STDP, this raises a similar
+    \parencite{legenstein_2005}. When considering \gls{stdp}, this raises a similar
     question: what subset of all the possible weight values can be learned using
-    STDP, or STDP-like rules? This question is explored in
-    \parencite{legenstein_2005}. For a mapping to be learned, it must be
+    \gls{stdp}, or \gls{stdp}-like rules? For a mapping to be learned, it must be
     stable. For \gls{stdp}, weights generally only become stable when their
     values reach an absolute maximum, or absolute minimum. The question then
     becomes, can \gls{stdp} learn all of the possible permutations of max or
     min, across the weight values. Researches found that on average, a
     supervised variant of \gls{stdp} (with teaching signal to force output
     firing) can converge to a desired weight distribution, if this distribution
-    is bi-model.
+    is bi-model \parencite{legenstein_2005}.
 
     \subsection{Weight Initialization}
     
@@ -493,7 +497,7 @@
     
     A mixture of \gls{dog} filters, \gls{stdp}, and \gls{rstdp} can achieve
     \acrshort{sota} results on \gls{mnist}. Though the network wasn't e end-to-end
-    trainable, but did have a neuron-based readout, requiring no external
+    trainable, it did have a neuron-based readout, requiring no external
     classifier \parencite{mozafari_2018}.
     
     An unsupervised, coordinated approach involving \gls{roc} showed that

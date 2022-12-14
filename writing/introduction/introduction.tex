@@ -35,26 +35,27 @@ impressive, the brain can accomplish these feats with $\approx$ 20 Watts of
 power. At a high level, this work explores \glspl{snn} and astrocytes in an
 effort to explain, and realized some of these features.
 
-Beyond the high-level advantages, both \gls{snn} literature and research
+Beyond the high-level motivations, both \gls{snn} literature and research
 surrounding computational astrocyte models have gaps. \glspl{snn} are difficult
 to train, especially at a network level. Overall, training is holding back
-the success of \gls{snn} despite their rich dynamics and advantages with
-time-series data \parencite{tavanaei_2019}. Considering astrocytes, there is a clear
-role for them in computation, learning, and overall cognition
-\parencite{mederos_2018}. Many existing computational astrocyte models fail to clearly
-define a functional role and works that do, don't focus on aspects that solve key
-problems in \glspl{snn} \parencite{manninen_2019}. This leaves a clear need for an
-computational astrocyte model that focuses on extracting key features from
-biology, and advances the functionality of \glspl{snn}.
+\gls{snn} despite their rich dynamics and advantages with time-series data
+\parencite{tavanaei_2019}. Moving over to astrocytes, there is a clear role for
+them in computation, learning, and overall cognition
+\parencite{mederos_2018}. There are a handful of computational astrocyte models,
+but in general they fail to clearly define a functional role. Works that do,
+don't focus on aspects that solve key problems in \glspl{snn}
+\parencite{manninen_2019}. This leaves a clear need for an computational
+astrocyte model that focuses on extracting key features from biology, and
+advances the functionality of \glspl{snn}.
 
 \section{Thesis Objectives}
 The overarching goal of this thesis was to develop a bio-inspired astrocyte
 model, and more broadly an astrocyte-neuron interaction model. This model was
 designed to be computationally simple, scalable, and captures common themes
-within Neuroscience literature. To direct this research, the developed astrocyte
-element drove synaptic plasticity; First generalizing, then diverging from the
+within neuroscience literature. To direct this research, the developed astrocyte
+model drove synaptic plasticity; First generalizing, then diverging from the
 widely used \gls{stdp} rule. Benefits of astrocyte-like control of synaptic plasticity
-was demonstrated in the single synapse, single neuron configuration (1S1N) as
+were demonstrated in the single synapse, single neuron configuration (1S1N) as
 well as select multi-synapse configurations. Inputs consisted of procedurally
 generated spiking inputs, including Poisson rate-coded spike trains, spiking
 inputs representing Boolean variables, and temporal inputs that followed
@@ -70,7 +71,7 @@ More specific objectives.
 \item Develop an astrocyte \gls{lif}-neuron model based on key bio-chemical
   pathways that are common in background literature. This astrocyte should
   respond internally to pre and post-synaptic spikes In a way that can mimic
-  STDP, but is more generalized and flexible.
+  \gls{stdp}, but is more generalized and flexible.
 
   \item Show, in the case of a single spiking neuron with one input, how the
     developed astrocyte-\gls{lif} model can drive synaptic plasticity in a way that

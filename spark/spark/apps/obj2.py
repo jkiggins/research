@@ -47,8 +47,11 @@ def _config_astro(cfg, ca_th=2.5):
     
 def _config_stdp(cfg):
     cfg['astro_params']['local']['stdp'] = [0]
-    cfg['astro_params']['local']['ca_thr'] = [0]
     
+    # cfg['astro_params']['local']['prop'] = [0]
+    # cfg['astro_params']['ca_th'] = 1.0
+    
+    cfg['astro_params']['local']['ca_thr'] = [0]
     cfg['astro_params']['ca_th'] = 0.0
 
 
@@ -443,10 +446,19 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
 
         # Repeat, but with a fixed length for each impulse
         spikes = gen_impulse_spikes(10, num_impulses=15)
-        db_stdp, db_astro = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const')
+        db_stdp, db_astro = _sim_stdp_and_astro(cfg, spikes, 'snn_1n1s1a_tp_pulse_const', astro_only_ca=False)
         db_astro.meta['xlim'] = (100, 150)
         db_stdp.meta['xlim'] = (100, 150)
         dbs = dbs + [db_astro, db_stdp]
+
+        # Sim just STDP, with longer spikes to show divergence
+        spikes = gen_impulse_spikes(10, sim_len=20000)
+        dbs_sim = _sim_stdp_and_astro(
+            cfg, spikes,
+            'snn_1n1s1a_tp_pulse_const_diverge',
+            stdp_only=True, graph_only_weight=True)
+        dbs_sim[0].meta['graph_weight_only'] = True
+        dbs = dbs + dbs_sim
 
         # Repeat, but with ltd shift
         spikes = gen_impulse_spikes(10, num_impulses=15)
@@ -469,8 +481,7 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
         db_astro.meta['xlim'] = (0, 500)
         db_stdp.meta['xlim'] = (750, 1250)
         dbs = dbs + [db_astro, db_stdp]
-        
-        dbs = dbs + dbs_sim
+
 
         # Repeat, but with a fixed length for each impulse, and poisson pattern
         seed_many(123123098)
@@ -481,15 +492,6 @@ def _exp_average_pulse_pair_baseline(cfg_path, sim=False):
         dbs = dbs + [db_astro, db_stdp]
 
         cfg['linear_params']['mu'] = 0.7
-
-        # Sim just STDP, with longer spikes to show divergence
-        spikes = gen_impulse_spikes(10, sim_len=20000)
-        dbs_sim = _sim_stdp_and_astro(
-            cfg, spikes,
-            'snn_1n1s1a_tp_pulse_const_diverge',
-            stdp_only=True, graph_only_weight=True)
-        dbs_sim[0].meta['graph_weight_only'] = True
-        dbs = dbs + dbs_sim
 
         # Again with LTD bias
         spikes = gen_ramp_impulse_spikes()

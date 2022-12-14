@@ -16,7 +16,7 @@
     neurons are similar to spiking neurons, but differ in a few key ways. Both
     types of neurons have some number of synapses, on which inputs are
     received. These inputs are transformed based on per-synapse parameters
-    (generally multiplied by a synaptic weight), the summed together. This is
+    (generally multiplied by a synaptic weight), then summed together. This is
     where the behavior diverges. \Gls{sn} add to a leaky membrane voltage with
     each input. If this membrane voltage satisfies an activation function
     (generally a voltage threshold) then the \gls{sn} fires, or generates an
@@ -50,12 +50,12 @@
     
     There are many potential models that fit the requirements of a spiking
     neuron. In addition, some models are more often paired with other
-    bio-inspired components such as astrocytes, which are explored in this
-    work. Relevant models are outlined below. These models each balance
-    bio-realism with computational efficiency, with some excelling at
-    both. Figure \ref{fig:sn_model_compare} shows where a number of models fall
-    when measured by these criteria \parencite{izhikevich_2004}. Specifically, the
-    X-axis shows the number of floating point operations per-second (FLOPS) are
+    bio-inspired components such as astrocytes (explored in this work). Relevant
+    models are outlined below. These models each balance bio-realism with
+    computational efficiency, with some excelling at both. Figure
+    \ref{fig:sn_model_compare} shows where a number of models fall when measured
+    by these criteria \parencite{izhikevich_2004}. Specifically, the X-axis
+    shows the number of floating point operations per-second (FLOPS) are
     required to simulate the model in real-time. In the Y-axis counts the number
     of cortical ``features'' out of a total of $22$ that model is able to
     reproduce.
@@ -83,7 +83,7 @@
     thought of as a voltage) reaches a certain threshold the neuron outputs a
     spike. After this time the state variable is reset, and is held at that
     value for a period known as the absolute refractory period. This mimics the
-    behavior of biological neurons \parencite{ponulak_2011}.
+    high level behavior of biological neurons \parencite{ponulak_2011}.
 
     %% \todo{Add \gls{lif} diagram}
 
@@ -126,22 +126,24 @@
     %% \todo{Add sections for SRM and Izh}
     
     \subsection{Spiking Neural Network Topologies}
-    \glspl{snn} can take on a variety of topologies, similar to traditional
-    \glspl{ann}. Feedforward, recurrent, and a hybrid of both. One, more specific
-    hybrid is a Synfire chain, which is feedforward between sub-populations of
-    recurrent networks. Within a standard feed-forward network, lateral
-    inhibition is often employed, resulting in a Winner Take All (WTA)
-    configuration. In this case a layer of neurons has feed forward connections
-    from the previous layer, in addition to inhibitory connections within the
-    layer. The result is the first neuron to emit a spike prevents all other
-    neurons within that layer from doing so \parencite{ponulak_2011}.
+    \glspl{snn} can take on a variety of topologies, similar to
+    \glspl{mlp}. These include feedforward, recurrent, or a hybrid of
+    both. Within a standard feed-forward network, lateral inhibition is often
+    employed, resulting in a Winner Take All (WTA) configuration. In this case a
+    layer of neurons has feed forward connections from the previous layer, in
+    addition to inhibitory connections within the layer. The inhibitory
+    connections from the first neuron to emit a spike, to its neighbors, prevents
+    other neurons within that layer from firing in the near term
+    \parencite{ponulak_2011}.
     
-    Synfire chains are of particular interest, as they show a coordination
-    within the spiking network. From input to output, in a feed-forward pattern,
-    populations of neurons coordinate, passing along a "packet" of neuronal
-    activity. It was observed in monkeys, that the precise timing of spikes was
-    correlated with behavior, and synfire activity was given as a possible
-    explanation \parencite{aertsen_1996}.
+    One, more specific hybrid configuration is a Synfire chain, which is
+    feedforward between sub-populations of recurrent networks. Synfire chains
+    are of particular interest, as they show a coordination within the spiking
+    network. From input to output, in a feed-forward pattern, populations of
+    neurons coordinate, passing along a "packet" of neuronal activity. It was
+    observed in monkeys, that the precise timing of spikes was correlated with
+    behavior, and synfire activity was given as a possible explanation
+    \parencite{aertsen_1996}.
     
     %%%%%%%%%%%% Coding Schemes %%%%%%%%%%%%
     \section{Coding Schemes}
@@ -154,21 +156,21 @@
     Rate-based coding is based on some of the earliest observations of sensory
     neuron activity. As pressure on a tactile nerve was increased researchers
     observed an increase in firing rate of that receptor neuron. This translated
-    into rate-based coding in artificial \glspl{snn} \parencite{ponulak_2011}. Rate-based
-    coding couldn't explain certain observations in biology however. Some
-    responses were too fast for the neurons involved to estimate the firing
-    rate. In addition, dynamic responses have been observed in the primary
-    auditory cortex without a changing of firing rate, but instead, firing
-    pattern within a sub-population of neurons. More specifically, the relative
-    timing of two or more spikes can encode information. This is very
-    advantageous, since a spike lasts $\approx 10^-3s$, but relative timing
-    between spikes has a resolution of $10^{-8}$ s \parencite{ponulak_2011}. This
-    greatly increases the bandwidth of communication, and theoretical minimum
-    latency. The general trend, is that any neurological system where processing
-    speed is especially important, will tend to rely on a spike timing based
-    encoding for information.
-    
-    A variety of temporal coding schemes have been proposed, and
+    into rate-based coding in artificial \glspl{snn}
+    \parencite{ponulak_2011}. Rate-based coding couldn't explain certain
+    observations in biology however. Some responses were too fast for the
+    neurons involved to estimate the firing rate. In addition, dynamic responses
+    have been observed in the primary auditory cortex without a changing of
+    firing rate, but instead, firing pattern within a sub-population of
+    neurons. More specifically, the relative timing of two or more spikes can
+    encode information. This is very advantageous, since a spike lasts $\approx
+    10^-3s$, but relative timing between spikes has a resolution of $10^{-8}$ s
+    \parencite{ponulak_2011}. This greatly increases the bandwidth of
+    communication, and theoretical minimum latency. The general trend, is that
+    any neurological system where processing speed is especially important, will
+    tend to rely on a spike timing based encoding for information.
+
+    a variety of temporal coding schemes have been proposed, and
     investigated. Time to first spike, as the name suggests, encodes information
     in the latency between stimulus and the first spike. This is accomplished by
     using a neuron model that has an inhibitory feedback connection, suppressing
@@ -810,7 +812,7 @@
 
     Where $\tau_c$ is a time-constant, $r$ controls the initial state, and
     $\alpha W2$ represents the effect of post-synaptic depolarization on
-    \ca. $W2$ is analogous to $W1$ from \eq{eq:fn_{neuron}}, which
+    \ca. $W2$ is analogous to $W1$ from \eq{eq:fn_neuron}, which
     defines the FitzHugh - Nagumo model.
 
     Though the exact dynamics of the response are dependent on the specific

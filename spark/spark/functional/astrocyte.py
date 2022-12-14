@@ -412,26 +412,26 @@ def astro_step_effect_weight(u_spike, params):
     return weight_mod
 
 
-def astro_step_effect_weight_prop(u_spike, state, params):
-    # u_spike is 1.0 when conditions are such that weights
-    # should be updated
+def astro_step_eff_prop(state, eff, params):
+    syns = _get_syns(params, 'prop')
+    if syns is None:
+        return state, eff
 
-    # Weight update magnitude and direction are proportional to ca
-    ca = state['ca']
-    dw = ca / params['ca_th']
-    dw = torch.clamp(dw, -1.0, 1.0)  # -1.0 to 1.0
-    dw = dw * 0.5  # -0.5 to 0.5
-    # 1.0 -> 0.5 to 1.5, 0.0 -> -0.5 to 0.5
-    dw = u_spike + dw
+    ca = state['ca'][syns]
+    eff_syns = eff[syns]
 
-    wh_zero = torch.where(torch.isclose(u_spike, torch.as_tensor(0.0)))
-    wh_u_spike = torch.where(u_spike > 0.5)
+    wh_dw = torch.where(ca.abs() > 0.0)
 
-    state['ca'][wh_u_spike] = 0.0
-    
-    dw[wh_zero] = 1.0
+    if params['dw'] == 'dw_mult':
+        eff_syns = torch.ones_like(eff_syns)
+        eff_syns[wh_dw] = 1.0 + torch.clamp(ca[wh_dw] / params['ca_th'], -0.5, 0.5)
 
-    return state, dw
+    ca[wh_dw] = torch.as_tensor(0.0)
+
+    eff[syns] = eff_syns
+    state['ca'][syns] = ca
+
+    return state, eff
 
 
 ################### tests ######################

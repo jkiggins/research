@@ -11,7 +11,7 @@ from ..functional.astrocyte import (
     astro_step_effect_weight,
     astro_step_reward_effect,
     astro_step_activity,
-    astro_step_effect_weight_prop,
+    astro_step_eff_prop,
     astro_track_activity,
     astro_step_and_coupling,
     astro_step_ip3_ca,
@@ -81,6 +81,7 @@ class Astro:
         # ------------ Effect on Synaptic Weight --------------
         eff = torch.zeros_like(state['ca'])
         state, eff = astro_step_thr(state, eff, self.params)
+        state, eff = astro_step_eff_prop(state, eff, self.params)
         state, eff = astro_step_signal(state, eff, self.params)
 
         # if self.params['weight_update'] == 'thr':

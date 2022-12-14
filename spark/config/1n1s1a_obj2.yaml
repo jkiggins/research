@@ -34,6 +34,7 @@ astro_plasticity: &astro_plasticity
   local:
     stdp: null
     ca_thr: null
+    prop: null
     ordered_prod: null
     ip3_ca: null
     

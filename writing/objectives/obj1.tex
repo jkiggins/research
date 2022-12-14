@@ -201,10 +201,10 @@ is $1$ if there is a pre-synaptic spike at time $t$ ($0$ otherwise), and
 $z_{post}$ is $1$ when the post-synaptic neuron fires ($0$ otherwise). For all
 simulations (unless otherwise specified) $d_t = 0.001$ or $1ms$.
 
-The \emph{Ca(\ipt, \kp)} and \emph{Dw(\ca)} blocks define the behavior
+The \emph{Ca(\ipt, \kp\!)} and \emph{Dw(\ca\!)} blocks define the behavior
 of the astrocyte at a synapse local level, given input from the internal state values,
 which are representative of external activity. In this chapter only the internal
-state of the astrocyte was considered so \emph{Dw(\ca)} is a
+state of the astrocyte was considered so \emph{Dw(\ca\!)} is a
 No-Op. For many of the astrocyte model variations explored in this chapter, a
 key property is stability of the response given a set of weight
 values. Stability, in this case, refers to either a lack of \ca response, or
@@ -264,7 +264,7 @@ input, such as with $\tau_{ip3/k+} = 10$.
 
 To support a plasticity rule with \gls{stdp}-like characteristics, an astrocyte model
 needs to be sensitive to the relative spike timing of pre and post-synaptic
-spikes. One approach to achieve this, is to specify a \emph{Ca(\ipt, \kp)}
+spikes. One approach to achieve this, is to specify a \emph{Ca(\ipt, \kp\!)}
 function that considers the magnitude
 of input pathway state variables \ipt and \kp as well as which variable is
 larger (the order). This gives a magnitude and sign to each update to the
@@ -423,7 +423,7 @@ While this effect with denser inputs is novel, and likely very useful in some
 cases, the breakdown of sensitivity to spike-timing is not always a desirable
 property. There may be some mitigations, involving tighter time constants
 $\tau_{ip3}$ and $\tau_{k+}$, but initial simulations showed other issues with
-this. In the next section, a modified \emph{Ca(\ipt, \kp)} is introduced, which
+this. In the next section, a modified \emph{Ca(\ipt, \kp\!)} is introduced, which
 exhibits spike-timing sensitivity with sparse and dense inputs.
 
 \section{Integrated Spike Timing Response} \label{section:istp}
@@ -434,7 +434,7 @@ demonstrated in Figure \ref{fig:astro:classic_stdp}, where the characteristic
 \ref{sec:rate_response} the sensitivity to spike timing only holds for sparse
 inputs.
 
-This \emph{Ca(\ipt, \kp)} function is define by \eq{eq:astro:temp-u} and was
+This \emph{Ca(\ipt, \kp\!)} function is define by \eq{eq:astro:temp-u} and was
 found to be sensitive to spike timing, regardless of input sparsity (or lack
 thereof). Looking closer at the definition, $reset_{ip3}$ and $reset_{k+}$
 parameters determine if additional spikes are added into the \ipt and \kp
@@ -497,7 +497,7 @@ for simulation are outlined in Table \ref{table:istp_params}.
   \end{tabular}
 \end{table}
 
-The changes to \emph{Ca(\ipt, \kp)} introduced in this section did not diminish
+The changes to \emph{Ca(\ipt, \kp\!)} introduced in this section did not diminish
 the astrocyte's ability to generalize \gls{stdp} and variations. Figures that can be
 found in Appendix \ref{appendix:astro_figures} show the full set of \gls{stdp}-like
 simulations for both astrocyte configurations in this chapter.
@@ -591,7 +591,7 @@ The literature shows considerable diversity on the main functional role(s) of an
 astrocyte, as well as how a given function is achieved chemically. In this work,
 with synaptic plasticity as a main functional role, a framework for astrocyte
 local dynamics was developed, and is outlined in Figure
-\ref{fig:1n1s1a_fn_diagram}. \emph{Ca(\ipt, \kp)} and \emph{Dw(\ca)} are generic
+\ref{fig:1n1s1a_fn_diagram}. \emph{Ca(\ipt, \kp\!)} and \emph{Dw(\ca\!)} are generic
 functional blocks which represent the gap in existing literature.
 
 It is assumed the \ca will drive synaptic plasticity, though the exact mechanism

@@ -69,7 +69,7 @@ the figures. In each figure, blue traces represent the \gls{psp} voltage wave,
 while purple represents the membrane voltage.
 
 \begin{table}[!htp]\centering
-  \caption{\Gls{lif} Neuron baseline parameters} \label{table:lif_params}
+  \caption{\Gls{lif} neuron baseline parameters} \label{table:lif_params}
   \scriptsize
   \begin{tabular}{lrrrr}\toprule
     Reset Voltage &Membrane Threshold &Membrane Tau &Synaptic Tau \\\midrule
@@ -87,7 +87,7 @@ response to poisson input. $\tau_{mem}=30$ and
 $\tau_{syn}=500$}{fig:lif:sample_2}{0.7}
 
 \asvgf{figures/artifacts/obj1/lif_sample_mem-60.0_syn-250.0.svg}{\Gls{lif} Neuron
-response to poisson input. $\tau_{mem}=60$ and
+response to Poisson input. $\tau_{mem}=60$ and
 $\tau_{syn}=250$}{fig:lif:sample_3}{0.7}
 
 Comparing Figures \ref{fig:lif:sample_1} and \ref{fig:lif:sample_2}, the neuron
@@ -134,8 +134,8 @@ parameters used during simulation.
   \end{tabular}
 \end{table}
 
-\asvgf{figures/artifacts/obj1/closed_form_stdp.svg}{Simulation of charicteristic
-  stdp equation}{fig:stdp_dw_dt}{0.4}
+\asvgf{figures/artifacts/obj1/closed_form_stdp.svg}{Simulation of characteristic
+  \gls{stdp} equation}{fig:stdp_dw_dt}{0.4}
 
 \begin{align}
   \delta trace_{pre} = -H(Z_{pre})(\tau trace_{pre}) +
@@ -243,11 +243,11 @@ with any deviations mentioned in the graph.
 \end{table}
 
 \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.225.svg}{Model
-response to sweeping input pathway $\alpha$, and
+response to sweeping $\alpha_{ip3}$, and
 $\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_1}{0.5}
 
 \asvgf{figures/artifacts/obj1/sweep-alpha_tau-ip3-spike0.055.svg}{Model response to
-sweeping input pathway $\alpha$, and
+sweeping $\alpha_{ip3}$, and
 $\tau_{ip3/k+}$}{fig:astro:sweep_alpha_ip3_tau_2}{0.5}
 
 The group of similar plots in Figures \ref{fig:astro:sweep_alpha_ip3_tau_1} and
@@ -367,10 +367,10 @@ model parameters to the corresponding \gls{stdp} behavior. If that
 variant of \gls{stdp} has a name from other research it is included.
 
 \begin{table}[!htp]\centering
-\caption{Model Parameters associated with \gls{stdp} variants.} \label{table:astro_varient_params}
+\caption{Model parameters associated with \gls{stdp} variants.} \label{table:astro_varient_params}
 \scriptsize
 \begin{tabular}{lrrrrrrrrrrr}\toprule
-STDP Variant &Name &$\alpha_{ip3}$ &$\tau_{ip3}$ &$\alpha_{k+}$ &$\tau_{k+}$ &$\tau_u$ &$thr_{ltp}$ &$thr_{ltd}$ &$reset_{ip3}$ &$reset_{k+}$ \\\midrule
+\gls{stdp} Variant &Name &$\alpha_{ip3}$ &$\tau_{ip3}$ &$\alpha_{k+}$ &$\tau_{k+}$ &$\tau_u$ &$thr_{ltp}$ &$thr_{ltd}$ &$reset_{ip3}$ &$reset_{k+}$ \\\midrule
 Triplet STDP &Triplet STDP &1 &100 &1 &100 &10000 &0 &0 &Yes &Yes \\
 Classic & &1 &100 &1 &100 &10000 &0 &0 &No &No \\
 \Gls{ltd} Bias & &1 &100 &1 &30 &10000 &0 &0 &No &No \\
@@ -405,8 +405,9 @@ value where the difference between pre and post-synaptic firing rate is
 smallest. For the upper graph $w=10.0$ is close to that point, with only two
 regions in the timeline with any activity.
 
-\asvgf{figures/artifacts/obj1/astro_rp_many-w_tl.svg}{Astrocyte response to random
-  poission spike train for various synaptic weights}{fig:astro:rp_many-w_tl}{0.5}
+\asvgf{figures/artifacts/obj1/astro_rp_many-w_tl.svg}{Astrocyte response
+  timeline with random Poisson spike train input for various synaptic
+  weights}{fig:astro:rp_many-w_tl}{0.5}
 
 Looking at the upper plot in Figure \ref{fig:astro:rp_many-w_tl}, the effect of
 $thr_{ltp}=1.75$ and $thr_{ltd}=-1.75$ can be seen. Those parameter values form
@@ -416,8 +417,9 @@ weight values resulting in stable behavior. Sweeping synaptic weight in Figure
 \ref{fig:astro:rp_many_w_sweep} shows that weight values beyond $w \approx 3.0$
 result in no \ca activity.
 
-\asvgf{figures/artifacts/obj1/astro_rp_many-w_sweep.svg}{Astrocyte response to random
-  poission spike train for various synaptic weights}{fig:astro:rp_many_w_sweep}{0.4}
+\asvgf{figures/artifacts/obj1/astro_rp_many-w_sweep.svg}{Astrocyte
+  response to random Poisson spike train for various synaptic
+  weights}{fig:astro:rp_many_w_sweep}{0.4}
 
 While this effect with denser inputs is novel, and likely very useful in some
 cases, the breakdown of sensitivity to spike-timing is not always a desirable

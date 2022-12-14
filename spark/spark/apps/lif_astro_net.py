@@ -671,7 +671,7 @@ def plot_1nNs1a(
 
             elif g == 'astro-ca' and ('astro-ca' in plot):
                 mark_on = torch.where(tl['eff'] > 1.0)[0].tolist()
-                lines = ax.plot(tl['ca'][:, i].tolist(), '-o', color=graph_color, markevery=mark_on)
+                lines = ax.plot(tl['ca'][:, i].tolist(), '-', color=graph_color, markevery=mark_on)
                 
                 ax.set_ylabel("[$Ca^{2+}$]", fontsize=25)
                 # Only label the fist synapses' graph, and reuse the color for all other synapses

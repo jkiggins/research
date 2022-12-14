@@ -65,7 +65,7 @@ single \gls{lif} neuron (1nNs1a). The expected behavior of an \gls{lif} neuron
 implementing AND can be defined in terms of single spikes as shown in Figure
 \ref{fig:logical-and-coupling}.
 
-\asvgf{figures/AstroAndCoupling.svg}{Logical Definition for AND
+\asvgf{figures/AstroAndCoupling.svg}{Logical definition for AND
   Coupling}{fig:logical-and-coupling}{0.5}
 
 In Figure \ref{fig:logical-and-coupling} each of the blue or orange boxes
@@ -92,8 +92,8 @@ control level, to individual synapses.
   response locally, and the desired and coupling
   response}{fig:global-v-local-and-coupling}{0.5}
 
-\asvgf{figures/AstroAndCoupling_signals.svg}{Logical definition for and
-  coupling}{fig:local-ca-global-response}{0.5}
+\asvgf{figures/AstroAndCoupling_signals.svg}{Logical definition for AND
+  coupling with \ca signaling}{fig:local-ca-global-response}{0.5}
 
 In essence, all spiking activity on N synapses (for the purpose of implementing
 AND) fall into one of the following categories.
@@ -276,8 +276,8 @@ neuron begins to fire in response to two pre-synaptic spikes. There was a slight
 over-correction, and some \gls{ltp} events occur, bringing the weights back
 up. Eventually, the synaptic weights converge and offer a good approximation of
 an AND function over the inputs. Looking at the bottom plot, there are two error
-rate traces, labeled $+\Delta_w$ and $+\Delta_w$. These indicate example inputs
-where the neuron responded incorrectly, and one or more synaptic weights neeeded
+rate traces, labeled $+\Delta w$ and $-\Delta w$. These indicate example inputs
+where the neuron responded incorrectly, and one or more synaptic weights needed
 to be increased, or decreased respectively. Summing these two error rates give
 an overall error rate.
 
@@ -300,24 +300,29 @@ progression of learning in 3 and 4 synapse configurations respectively. In each
 case, the addition of a synapse beyond 2 results in increased noise in the
 convergence, towards the end of simulation. Exploring this convergence further,
 initial weight values of each synapse are uniformly distributed from $0.0$ to
-$2.0$. Figure \ref{fig:snn_4s1a_and_w_dw_w} shows the results, which indicate
-the initial weight value does have some effect on convergence, but that overall,
-a stable solution is reached given a range of initial values.
+$2.0$. Figures \ref{fig:snn_4s1a_and_w_dw_w} and \ref{fig:snn_2s1a_and_w_dw_w}
+show the results, which indicate the initial weight value does have some effect
+on progression of learning, but overall convergence was unaffected.
+
+\asvgf{figures/artifacts/obj3/snn_2s1a_and_w.svg}{Weight change in the 1n2s1a
+  configuration, with random initial weight values between $0.0$ and
+  $2.0$}{fig:snn_2s1a_and_w_dw_w}{0.6}
 
 \asvgf{figures/artifacts/obj3/snn_4s1a_and_w.svg}{Weight change in the 1n4s1a
-  configuration, with the astrocyte directing synaptic
-  plasticity}{fig:snn_4s1a_and_w_dw_w}{0.6}
+  configuration, with random initial weight values between $0.0$ and
+  $2.0$}{fig:snn_4s1a_and_w_dw_w}{0.6}
 
-Though the learning rule converges to a degree, there is still a fair amount of
-noise in the weight values as $n$ increases, and the mean error rate is upwards
-of $20\%$. In order to better explain what is going on, observe the two error
-rates, in the lower plots of Figures \ref{fig:snn_3s1a_and_w_dw} and
-\ref{fig:snn_4s1a_and_w_dw}. There is an oscillation, between the majority of
-errors involving $+\Delta W$ and $-\Delta W$. This indicates that optimal weight
-values on all of the synapses, are being under and overshot repeatedly. This is
-a common problem in learning rules, and is not a fundamental
-drawback. Additional discussion and next steps were outlined in chapter
-\ref{chapter:conclusion}.
+The learning rule converges quite well in a 2 synapse configuration. With 3 and
+4 synapses, there is convergence to a degree, but still a fair amount of noise
+in the weight values. Looking at the mean error rate towards the end of
+simulation however, it is upwards of $20\%$. In order to better explain what is
+going on, observe the two error rates, in the lower plots of Figures
+\ref{fig:snn_3s1a_and_w_dw} and \ref{fig:snn_4s1a_and_w_dw}. There is an
+oscillation, between the majority of errors involving $+\Delta W$ (weight values
+are too low) and $-\Delta W$ (weight values are too high). This indicates that
+optimal weight values are being under and overshot repeatedly. This is a common
+problem in learning rules, and is not a fundamental drawback. Additional
+discussion and next steps were outlined in chapter \ref{chapter:conclusion}.
 
 \section{Summary}
 %% Though there is a lack of general consensus, much of the neuroscience literature

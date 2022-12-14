@@ -554,7 +554,7 @@ def _graph_exp_w_tl(dbs, xlim=None, ip3_kp=False):
         
     graphs.append('spikes')
 
-    fig, axes = gen_sgnn_axes(1, graphs, offset=True, figsize=(9, 6))
+    fig, axes = gen_sgnn_axes(1, graphs, offset=True, figsize=(9, 9))
 
     axes['spikes'][0].set_title("Pre and Post-Synaptic Spikes")
 
@@ -994,9 +994,11 @@ def _main(args):
         _print_sim("LIF/Astro Weight Sweep")
         seed_many()
         
-        # dbs = _exp_rate_w_impulse(cfg_path, sim=args.sim)
-        # _graph_exp_w_tl(dbs)
-        # _graph_exp_rp_w_sweep(dbs[0])
+        dbs = _exp_rate_w_impulse(cfg_path, sim=args.sim)
+        _graph_exp_w_tl(dbs)
+        _graph_exp_rp_w_sweep(dbs[0])
+
+        exit(1)
 
         # db = _exp_pulse_pair_w_impulse(cfg_path, sim=args.sim)
 

@@ -1,0 +1,110 @@
+% Abstract
+\begin{abstract}
+The mammalian brain is the most capable and complex computing entity known
+today. For many years there has been research focused on reproducing the brain's
+processing capabilities. An early example of this endeavor was the perceptron
+which has become the core building block of neural network models in the deep
+learning era. Deep learning has had tremendous success in well-defined tasks
+like object detection, games like go and chess, and automatic speech
+recognition. In fact, some deep learning models can match and even outperform
+humans in specific situations. However, in general, they require much more
+training, have higher power consumption, are more susceptible to noise and
+adversarial perturbations, and have very different behavior than their
+biological counterparts. In contrast, spiking neural network models take a step
+closer to biology, and in some cases behave identically to measurements of real
+neurons. Though there has been advancement, spiking neural networks are far from
+reaching their full potential, in part because the full picture of their
+biological underpinnings is unclear. This work attempts to reduce that gap
+further by exploring a bio-inspired configuration of spiking neurons coupled
+with a computational astrocyte model. Astrocytes, initially thought to be
+passive support cells in the brain are now known to actively participate in
+neural processing. They are believed to be critical for some processes, such as
+neural synchronization, self-repair, and learning. The developed astrocyte model
+is geared towards synaptic plasticity and is shown to improve upon existing
+local learning rules, as well as create a generalized approach to local
+spike-timing-dependent plasticity. Beyond generalizing existing learning
+approaches, the astrocyte is able to leverage temporal and spatial integration
+to improve convergence, and tolerance to noise. The astrocyte model is expanded
+to influence multiple synapses and configured for a specific learning task. A
+single astrocyte paired with a single leaky integrate and fire neuron is shown
+to converge on a solution in 2, 3, and 4 synapse configurations. Beyond the more
+concrete improvements in plasticity, this work provides a foundation for
+exploring supervisory astrocyte-like elements in spiking neural networks, and a
+framework to implement and extend many three-factor learning rules. Overall,
+this work brings the field a bit closer to leveraging some of the distinct
+advantages of biological neural networks.
+\end{abstract}
+
+\chapter{Introduction}\label{section:introduction}
+\section{Motivation}
+The human brain exhibits may features that current approaches to machine
+learning and intelligence are unable to mimic. Certainly, deep learning has
+achieved fantastic results in a variety of specialized tasks, but this success
+comes with a cost. Increasingly higher parameters counts are needed to
+achieve improvements, and with each parameter comes additional time and energy
+for training. Once trained, computing a deep network's decision in real-time
+requires specialized, power-hungry hardware. The human brain on the other hand,
+exhibits a much higher level of connectivity, is able to handle a wide variety
+of complex tasks, and has many advantages in the context of learning, and
+tolerance to adversarial inputs. Where a deep learning model requires many
+diverse examples to approach generalization, the human brain is able to
+surpass this with only a few examples \parencite{tsimenidis_2020}. Even more
+impressive, the brain can accomplish these feats with $\approx$ 20 Watts of
+power. At a high level, this work explores \glspl{snn} and astrocytes in an
+effort to explain, and realized some of these features.
+
+Beyond the high-level motivations, both \gls{snn} literature and research
+surrounding computational astrocyte models have gaps. \glspl{snn} are difficult
+to train, especially at a network level. Overall, training is holding back
+\gls{snn} despite their rich dynamics and advantages with time-series data
+\parencite{tavanaei_2019}. Moving over to astrocytes, there is a clear role for
+them in computation, learning, and overall cognition
+\parencite{mederos_2018}. There are a handful of computational astrocyte models,
+but in general they fail to clearly define a functional role. Works that do,
+don't focus on aspects that solve key problems in \glspl{snn}
+\parencite{manninen_2019}. This leaves a clear need for an computational
+astrocyte model that focuses on extracting key features from biology, and
+advances the functionality of \glspl{snn}.
+
+
+\chapter{Background and Related Work}\label{chapter:background}
+\section{Spiking Neural Networks}
+    \glspl{snn} are a type of brain-inspired computing model. This class of
+    \gls{ann} is the most bio-realistic that is used in engineering
+    applications. They are an important topic in the machine learning field
+    specifically, and have gained interest in recent years.
+    
+    \glspl{snn}, formed by connections between spiking neurons, are a
+    bio-realistic type of \gls{ann}. Spiking neurons instead emit spikes,
+    reminiscent of biological neuron's action potentials. These spikes travel
+    across a synapse, from one neuron to another, and are usually multiplied by
+    a weight along the way. In some cases, there are more complex dynamics
+    involved at the synapse, including delay, filtering, or the modeling of
+    diffusion. At the downstream neuron's post-synaptic terminal, spikes arrive
+    and are transformed into a voltage wave, called a \gls{psp}. \glspl{psp} are
+    added over space and time, and accumulate at the neuron downstream, in the
+    form of membrane voltage, or more generically a state variable. An
+    activation function of this state variable determines if and when a spiking
+    neuron fires. Generally, once a certain threshold is reached the
+    post-synaptic neuron emits a voltage spike (fires). Since there are many
+    Spiking Neuron models, it is necessary to formalize what is considered a
+    spiking neuron. In general they process information from one or more inputs,
+    and produce a single spike-like output. The probability of firing is
+    increased by excitatory inputs, and decreased by inhibitory inputs. There is
+    at least one internal state variable, and depending on this variable output
+    spikes are generated \parencite{ponulak_2011}.
+
+    There are many potential models that fit the requirements of a spiking
+    neuron. In addition, some models are more often paired with other
+    bio-inspired components such as astrocytes, which are explored in this
+    work. Relevant models are outlined below. These models each balance
+    bio-realism with computational efficiency, with some excelling at
+    both. Figure \ref{fig:sn_model_compare} shows where a number of models fall
+    when measured by these criteria \parencite{izhikevich_2004}. Specifically, the
+    X-axis shows the number of floating point operations per-second (FLOPS) are
+    required to simulate the model in real-time. In the Y-axis counts the number
+    of cortical ``features'' out of a total of $22$ that model is able to
+    reproduce.
+    
+    \afigf{figures/sn-model-compare.png}{Comparison of spiking neuron
+      models}{fig:sn_model_compare}{1.0}

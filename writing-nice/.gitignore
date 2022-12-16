@@ -1,0 +1,16 @@
+*.out
+*.bbl
+*.pdf
+*.log
+*.blg
+*.bcf
+*.glo
+*.xdy
+**/*.aux
+**/*.acn
+main.tex.*
+*.xml
+main.toc
+main.lo*
+main.idx
+svg-inkscape/*

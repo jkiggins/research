@@ -71,7 +71,7 @@
 }
 
 \newcommand{\asvgf}[4]{
-	\begin{figure}[htbp]
+	\begin{figure}[!htbp]
     	\centering
 		\adjustbox{max width=#4\linewidth}{\includesvg{#1}}
         \caption{#2.}
@@ -153,8 +153,20 @@
 \author{\IEEEauthorblockN{Jacob Kiggins}
 \IEEEauthorblockA{\textit{Computer Engineering Dept.} \\
 \textit{Rochester Institute of Technology}\\
-Rochester, USA \\
-jmk1154@rit.edu}}
+Rochester, NY \\
+jmk1154@rit.edu}
+\and
+\IEEEauthorblockN{Dr. J. David Schaffer}
+\IEEEauthorblockA{\textit{College of Community and Public Affairs} \\
+\textit{Binghamton University}\\
+Binghamton, NY \\
+dschaffe@binghamton.edu}
+\and
+\IEEEauthorblockN{Dr. Cory Merkel}
+\IEEEauthorblockA{\textit{Computer Engineering Dept.} \\
+\textit{Rochester Institute of Technology}\\
+Rochester, NY \\
+cemeec@rit.edu}}
 
 
 \begin{document}
@@ -173,18 +185,19 @@ era. Despite many successes achieved through deep learning, these networks
 behave much differently than their biological counterparts. In a search for
 improvements to things like training time and volume requirements, power
 consumption, noise and adversarial input tolerance, research is looking towards
-the brain. Spiking neural networks take a step closer to biology in their
-operation and are the focus of much research for their capabilities, though have
-yet to reach their full potential. This work attempts to reduce that gap further
-by exploring a bio-inspired configuration of spiking neurons coupled with a
-computational astrocyte model. Astrocytes, initially thought to be passive
-support cells in the brain are now known to actively participate in neural
-processing. The developed astrocyte model is geared towards synaptic plasticity
-and is shown to generalize existing local learning rules. Coupled with a spiking
-neuron the pair was able to show distinct benefits in implementing a
-multi-synapse view on plasticity.  Overall, this work brings the field a bit
-closer to leveraging some of the distinct advantages of biological neural
-networks.
+the brain, and bio-inspired computing models. \gls{snn} are take a step closer
+to biology in their operation and are the focus of much research, geared towards
+reproducing some of these novel features of the brain. As of yet, \gls{snn} have
+not reached their full potential. This work attempts to advance \gls{snn} and
+bio-inspired computation as a whole, by exploring a configuration of \glspl{sn}
+coupled with a computational astrocyte model. Astrocytes, initially
+thought to be passive support cells in the brain are now known to actively
+participate in neural processing. The developed astrocyte model is geared
+towards synaptic plasticity and is shown to generalize and extend
+\gls{stdp}. The astrocyte model was extended to support multi-synapse
+integration, again with a focus on plasticity. The multi-synapse view was shown
+to be critical for learning logical AND. Convergence for a single \gls{lif}
+neuron an 2, 3, and 4 synapses was demonstrated for this function.
 
 \end{abstract}
 
@@ -224,8 +237,8 @@ Spiking Neural Networks, Astrocytes, Neuromorphic
 
 \section{Background and Related Work}
 \subsection{Spiking Neural Networks}
-\glspl{snn} are a type of brain-inspired computing model and the most
-bio-realistic used in engineering applications. \glspl{sn} emit spikes,
+\Glspl{snn} are a type of brain-inspired computing model and the most
+bio-realistic used in engineering applications. \Glspl{sn} emit spikes,
 reminiscent of a biological neuron's action potentials. These spikes travel
 across a synapse, from one neuron to the post synaptic terminal of
 another. During transmission this spike is usually multiplied by a weight value,
@@ -267,12 +280,15 @@ Due to it's simplicity and computational efficiency the most popular \gls{sn}
 model explored in \gls{snn} literature is the \gls{lif} neuron. In this model
 there is an internal voltage, which increases as spikes arrive at the
 post-synaptic terminal of the neuron. Charge leaks from this internal reservoir
-over time, lowering the voltage. \eq{eq:lif} defines the behavior of a generic
-\gls{lif} model \parencite{izhikevich_2004}.
+over time, lowering the voltage \parencite{izhikevich_2004}.
 
-\begin{align}
-  \frac{du}{dt}(t) = -\tau_{mem}u(t)+(i_o + \Sigma w_jz_j(t)) \label{eq:lif}
-\end{align}
+
+%% \eq{eq:lif} defines the behavior of a generic
+%% \gls{lif} model \parencite{izhikevich_2004}.
+
+%% \begin{align}
+%%   \frac{du}{dt}(t) = -\tau_{mem}u(t)+(i_o + \Sigma w_jz_j(t)) \label{eq:lif}
+%% \end{align}
 
 %% In \eq{eq:lif}, $\tau$ is the leaking time-constant, with $i_o$
 %% representing a constant leak, independent of $u$. $\Sigma w_ji_j(t)$ is the
@@ -375,7 +391,7 @@ weight.
   \Delta W =
   \begin{cases}
     Ae^{-\frac{|t_{pre}-t_{post}|}{\tau}} & t_{pre} - t_{post} \leq 0, A > 0
-    \\ Be^{\frac{|t_pre-t_post|}{\tau}} & t_{pre} - t_{post} > 0, B < 0
+    \\ Be^{\frac{|t_{pre}-t_{post}|}{\tau}} & t_{pre} - t_{post} > 0, B < 0
   \end{cases} \label{eq:classic_stdp}
 \end{align}
 
@@ -389,23 +405,20 @@ recognize repeating spatio-temporal patterns, and complex patterns can be
 recognized by a single neuron \parencite{tavanaei_2019}. \Gls{stdp} does have
 trouble converging in order to differentiate similar (but distinct) inputs
 \parencite{vigneron_2020}. \Gls{stdp} also tends to drive weights to favor early
-spikes, using those early spikes as the main factor in pattern
-recognition. There has been extensive statistical analysis of \gls{stdp}, In
-addition, it has been shown that classic \gls{stdp} will generally drive weights
-to either maximally inhibitory, or maximally excitatory
-\parencite{legenstein_2005}. Researches found that on average, a
+spikes, using those pre-synaptic spikes that arrive first to a neuron as the
+main factor in pattern recognition. There has been extensive statistical
+analysis of \gls{stdp}. In addition, it has been shown that classic \gls{stdp}
+will generally drive weights to either maximally inhibitory, or maximally
+excitatory \parencite{legenstein_2005}. Researches found that on average, a
 supervised variant of \gls{stdp} (with teaching signal to force output firing)
 can converge to a desired min/max weight distribution
-\parencite{legenstein_2005}. So while \gls{stdp} may be limited on the possible
-weight configurations due to stability it can learn any configuration within the
-space.
-
+\parencite{legenstein_2005}.
 
 \subsubsection{Promising Results With Coordinated STDP}
 Much of the success in training \gls{snn} with \gls{stdp} relates back to some
 level of coordination, or supervision. For some learning rules there is a reward
 signal, for others there is inhibition based on the activity of other neurons,
-or some networl-level activity. Figure \ref{fig:coordinated_stdp} shows the
+or some network-level activity. Figure \ref{fig:coordinated_stdp} shows the
 general form of a coordinated \gls{stdp} rule.
 
 \asvgf{figures/coordinated_stdp.svg}{\gls{lif} neuron with \gls{stdp}
@@ -418,8 +431,8 @@ There has been some success and increasing interest with a supervised variant on
 unsupervised manor, with classic \gls{stdp}. Later layers were updated using
 \gls{rstdp}. That is, if the output was correct, \gls{stdp} was applied. If not,
 \gls{astdp} was applied. This learning approach has basis in biology, with the
-reward modulation mimicking the activity Dopamine and Acetylcholine (ACh). As a
-proof of concept, researchers applied their learning method to a shallow
+reward modulation mimicking the activity Dopamine \parencite{mozafari_2018}. As
+a proof of concept, researchers applied their learning method to a shallow
 network, with a single trainable layer. This architecture gave passable results,
 but wasn't well suited to multi-layer training. For their deep architecture
 which mixed supervised and un-supervised \gls{stdp}, and accuracy of 97.2\% was
@@ -448,20 +461,22 @@ each term, the input spike is considered, but first with $S_{d}$ which is the
 desired output coming from the ideal neuron. Second, with the actual output
 \parencite{mozafari_2018}. Using this learning rule, it is possible to converge,
 from an untrained neuron, to one of similar configuration with a desired
-behavior \parencite{ponulak_2010}. The use of an additional synaptic input and
-the specifics of \eq{eq:resume_stdp} creates a unique extension to classic
-\gls{stdp}. Weights can be updated without one of the down-stream neurons
-firing, and activity on a third synapse is influencing plasticity. Beyond that,
-this is yet another learning rule, that has shown success when introducing a
-third factor to \gls{stdp} \parencite{mozafari_2018}.
+behavior \parencite{ponulak_2010}.
+
+%% The use of an additional synaptic input and
+%% the specifics of \eq{eq:resume_stdp} creates a unique extension to classic
+%% \gls{stdp}. Weights can be updated without one of the down-stream neurons
+%% firing, and activity on a third synapse is influencing plasticity. Beyond that,
+%% this is yet another learning rule, that has shown success when introducing a
+%% third factor to \gls{stdp} \parencite{mozafari_2018}.
 
 There are a variety of methods coupled with \gls{stdp} which attempt to force
-synapses or whole neurons to be sensitive to different kinds of inputs, instead
-of learning redundant responses to inputs. These generally take the form of
-inhibition, either of the learning rule, or neuron activity. One specific
-example, involves spiking convolution operations, which are trained on image
-inputs \parencite{delorme_2001}. Researches employed unsupervised \gls{stdp},
-but forced inhibition between the feature maps. If a neuron fired in one feature
+synapses to be sensitive to different kinds of inputs, instead of learning
+redundant responses to inputs. These generally take the form of inhibition,
+either of the learning rule, or neuron activity. One specific example, involves
+spiking convolution operations, which are trained on image inputs
+\parencite{delorme_2001}. Researches employed unsupervised \gls{stdp}, but
+forced inhibition between the feature maps. If a neuron fired in one feature
 map, the corresponding neuron is inhibited in all of the others. Results were
 promising, and activation of \gls{lif} neuron maps showed selectivity for image
 features such as blobs and contours.
@@ -477,37 +492,32 @@ placed to control extracellular neurotransmitter and ion
 concentrations. From a functional point of view, astrocytes listen and
 respond to activity at the synaptic clefts of multiple synapses. Activity on
 a given synapse leads to a local response, in the astrocyte process that
-surrounds that synapse. Local responses from many synapses contribute to an
-intermediate response, and potentially a global, cell-body response. This global
+surrounds that synapse. Local responses from many synapses contribute to a
+regional response, and potentially a global, cell-body response. This global
 response may propagate to other astrocytes, influencing their activity
 \parencite{min_2012}.
 
 At the local level, astrocytes are sensitive to pre and post synaptic
 potentials. They sense this activity via uptake of \gls{glu} released at the
-presynaptic terminal and \kp ion uptake at the postsynaptic terminal. In the
-case of inhibitory synaptic transmission, astrocytes take up \gls{gaba}. The
-astrocyte will then respond with one or more \gls{gt}. These include \gls{glu},
-D-serine, \gls{atp} or \gls{tnfa}. These \gls{gt} have different effects
-depending on where and when they are released.
+presynaptic terminal and \kp ion uptake at the postsynaptic terminal. Sensing
+those pre and post-synaptic spikes. The astrocyte will then respond with one or
+more \gls{gt}, which have various effects, with some of them listed below:
 
 \begin{itemize}
-\item \Gls{glu}: When released to the pre-synaptic neuron \gls{glu} generally
-  results in an increase in Probability of Release (PR). At the
-  post-synaptic terminal, \gls{glu} release results in depolarization, lowering
-  the effective threshold for post-synaptic spikes \parencite{pitta_2016}.
-\item D-Serine: this neurochemical gates the \gls{ndma} receptors, and
-  subsequently gates \gls{ltp}/\gls{ltd} \parencite{mederos_2018}.
-\item \Gls{atp} has a depressive effect, opposite to \gls{glu}, and can
-  propagate beyond the synaptic cleft \parencite{mederos_2018}.
-\item \Gls{tnfa} results in an increase in the number of post-synaptic
-  surface \gls{glu} receptors, and a decrease in \gls{gaba} receptors
-  \parencite{chung_2015}.
+\item Increase in Probability of Release (PR), or post-synaptic neuron
+  sensitivity.
+\item Increase in post-synaptic neuron excitability \parencite{chung_2015}.
+\item Gating and modulation of \gls{ltp}/\gls{ltd} \parencite{mederos_2018}.
+\item Longer-range spatial influence.
 \end{itemize}
 
-\Gls{gt} release from an astrocyte is dependent on the integration of
-synaptic activity over 100s of milliseconds (for a local response)
-\parencite{pitta_2016} to 10s of seconds for a whole cell response
-\parencite{mederos_2018}.
+\Gls{gt} release from an astrocyte is dependent on the integration of synaptic
+activity at multiple levels, and across multiple time-scales. At the local level
+there is a fast response leading to a release of \gls{gt} at that synapse
+\parencite{pitta_2016}. As the responses of many synapses propagate to regional
+and global levels there may be coordinated responses at longer timescales, up to
+seconds for a global response \parencite{mederos_2018}.
+
 %% The connection between local
 %% and cell level response is mediated by \gls{cicr}. As local activity
 %% increases beyond a certain threshold, the \ca concentration causes
@@ -517,7 +527,7 @@ synaptic activity over 100s of milliseconds (for a local response)
 
 \section{Functional Roles of Astrocytes}
 
-There are a variety of theories of the functional role of astrocytes.
+There are a variety of theories for the functional role of astrocytes.
 Some of these are speculation based on general themes of astrocyte behavior,
 and others are specific and highly grounded in experimental data.
 
@@ -560,24 +570,15 @@ fields for visual information \parencite{gordleeva_2021}.
 
 %% Astrocyte Modulation of \gls{ltd}/\gls{ltp}
 Astrocytes have been shown to play a key role in the bio-chemical pathways that
-lead to \gls{stdp} at neuronal synapses, and can gate \gls{ltd} and \gls{ltp}
-via D-Serine release \parencite{manninen_2019}. Astrocytes may also reverse the
-polarity of \gls{stdp}, implementing \gls{astdp} \parencite{min_2012}. In
-addition \Gls{glu} released by astrocytes in response to pre and post-synaptic
-activity may stretch or shift the nominal \gls{stdp} curve in both experimental
-results, and computational models \parencite{pitta_2016}.
-
-Astrocytes can modulate the concentration of their surface glu transporters,
-this in turn modulates the level of glu spill-over, beyond the synapse. This
-increases the excitability (depolarizing neurons partially towards firing)
-at the post-synaptic terminal for a local region of synapses. Astrocytes may
-also respond to \gls{glu} activity (as sensed by transporter uptake) by
-releasing more \gls{glu}, or by releasing \gls{atp}, based on signaling
-frequency. Within the Hippocampus, it has been observed that \gls{gaba}
-release from a pre-synaptic neuron can be taken up by \gls{gaba}
-transporters on an astrocyte's surface. This leads to an increase in \na /
-\ca within the astrocyte, and the eventual release of \gls{atp}. \Gls{atp}
-acts as an inhibitor, down-regulating excitatory transmission
+lead to \gls{stdp}, and plasticity in general at neuronal synapses. They can
+gate \gls{ltd} and \gls{ltp} via D-Serine release \parencite{manninen_2019} and
+may also reverse the polarity of \gls{stdp}, implementing \gls{astdp}
+\parencite{min_2012}. In addition \Gls{glu} released by astrocytes in response
+to pre and post-synaptic activity may stretch or shift the nominal \gls{stdp}
+curve in both experimental results, and computational models
+\parencite{pitta_2016}. Astrocytes can modulate the concentration of their
+surface \gls{glu} transporters in response to activity and in turn increase the
+excitability at the post-synaptic terminal for a local region of synapses
 \parencite{mederos_2018}.
 
 %% \section{Common Astrocyte Biochemical Pathways}
@@ -722,15 +723,14 @@ d_{ca} = -\cam \tau_{ca} d_t + T_{delta} \label{eq:astro:temp-u}
 \end{align}
 
 In this case, $z_{post}$ and $z_{pre}$ are pre and post-synaptic spikes that the
-astrocyte is sensing on a single synapse. The $\alpha_{ip3/k+}$ parameters are
+astrocyte is sensing at a synapse. The $\alpha_{ip3/k+}$ parameters are
 used to control the magnitude of influence \ipt and \kp have on astrocyte
 \ca. In addition $\alpha_{ltd/ltp}$ can override default \gls{ltp}/\gls{ltd}
 behavior, implementing anti-stdp, or biasing weight updates towards
 \gls{ltp}/\gls{ltd}. Note also, that \eq{eq:astro:temp-u} implies astrocyte \ca
 will decay with each time step, but only be influenced by \ipt and \kp when
 spikes occur, and not continuously. If enough \ca accumulates from coordinated
-spiking events, a threshold $thr_{ca}$ is reached and \ca reset. The baseline
-parameter values for simulation are outlined in Table \ref{table:istp_params}.
+spiking events, a threshold $thr_{ca}$ is reached and \ca reset.
 
 %%  Equations
 %% \ref{eq:astro:temp-sign-1} and \ref{eq:astro:temp-sign-2} show definitions
@@ -742,17 +742,58 @@ parameter values for simulation are outlined in Table \ref{table:istp_params}.
 %% sign_{ltp} = 1 - H(ip3 + thr_{ltp}) \label{eq:astro:temp-sign-2}
 %% \end{align}
 
-\begin{table}[!htp] \centering
-  \caption{Integrated spike timing astrocyte parameters} \label{table:istp_params}
-  \scriptsize
-  \begin{tabular}{lrrrrr}\toprule
-    dt &$\alpha$-s &$\tau$ \ipt & $\tau_{k+}$ & $thr_{ca}$ \\\midrule
-    0.001 s &1 &100 1/s &100 1/s &2.5 \\
-    \bottomrule
-  \end{tabular}
+\subsection{Generalization of STDP}
+
+The astrocyte model that has been outlined thus far is well-placed, and
+well-defined to implement \gls{stdp} and \gls{stdp}-like local learning
+rules. Through the \gls{ipt} and \gls{kp} pathways, there is a distinction
+between the timing of pre and post-synaptic spikes. The only missing piece is to
+inspect the \ca response and define a suitable $\Delta W(\cam)$. Figure
+\ref{fig:stdp_dw_dt_impl} shows the \ca response of the astrocyte model, which
+matches exactly the classic \gls{stdp} weight update curve. Using $\Delta
+W(\cam)=\cam$, resetting \ca each time the weight is changed implements classic
+\gls{stdp}.
+
+\asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_astro_plasticity.svg}{Simulation
+  of astrocyte implementation of classic \gls{stdp}}{fig:stdp_dw_dt_impl}{0.7}
+
+The astrocyte model is capable of going beyond classic \gls{stdp}, by
+implementing some common variations found throughout the literature. These are
+outlined in Table \ref{table:astro_varient_params}.
+
+\begin{table}[htbp]\centering
+\caption{Model parameters associated with \gls{stdp} variants.} \label{table:astro_varient_params}
+\scriptsize
+\begin{tabular}{lrrrrrrr}\toprule
+\gls{stdp} Variant &$\alpha_{ip3}$ &$\tau_{ip3}$ &$\alpha_{k+}$ &$\tau_{k+}$ &$\tau_u$ &$thr_{ltp}$ &$thr_{ltd}$ \\\midrule
+Classic &1 &100 &1 &100 &10000 &0 &0 \\
+\Gls{ltd} Bias &1 &100 &1 &30 &10000 &0 &0 \\
+\Gls{ltp} Bias &1 &30 &1 &100 &10000 &0 &0 \\
+\Gls{ltd} Shift &1 &100 &1 &100 &10000 &0.5 &0.5 \\
+\Gls{ltp} Shift &1 &100 &1 &100 &10000 &-0.5 &-0.5 \\
+Anti-STDP &-1 &100 &-1 &100 &10000 &0 &0 \\
+\bottomrule
+\end{tabular}
 \end{table}
 
-\subsection{Generalization of STDP}
+In addition to generalizing \gls{stdp} variations that have been explored in
+other works, this astrocyte model can leverage the flexibility of its \ca
+response to improve learning. Introducing temporal integration, through addition
+of a simple threshold on \ca, which gates the existing $\Delta W(\cam)$
+operation. Figure \ref{fig:ppi:impulse_istp} shows learning progression with
+this \ca threshold, and Figure \ref{fig:ppi:impulse_stp} shows the behavior of
+classic \gls{stdp}.
+
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_astro_0.svg}{
+  Astrocyte response to successive spikes, displaying temporal pulse-pair
+  integration}{fig:ppi:impulse_istp}{0.7}
+
+\asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_classic_0.svg}{
+  Classic \gls{stdp} response to successive spikes}{fig:ppi:impulse_stp}{0.7}
+
+Since weight changes are now based on multiple pre and post-synaptic spike
+pairs, integrated into a \ca response over time, the learning is more stable,
+and exhibits convergence, when compared to classic \gls{stdp}.
 
 %% \subsection{Temporal Integration}
 
@@ -877,34 +918,34 @@ parameter values for simulation are outlined in Table \ref{table:istp_params}.
 
 \section{Extension Astrocyte Model To Multi-Synapse Configurations}
 
-In biology, astrocytes are observed influencing many synapses, in general,
-hundreds of synapse across a single digit number of neurons. This spatial
-integration is a fundamental property of astrocytes, and the response to
+In biology, astrocytes are observed influencing many synapses. In general, they
+interact with a single digit number of neurons and up to 100,000 synapses. This
+spatial integration is a fundamental property of astrocytes, and the response to
 activity from these connected synapses is observed as a cell-level \ca
-response. Taking this concept and applying it to the astrocyte model
-in this work, a coordinated approach to synaptic plasticity is developed. This
-approach is employed in a learning task where a multi-synapse view is critical.
+response. Taking this concept and applying it to the astrocyte model in this
+work, a coordinated approach to synaptic plasticity is developed. This approach
+is employed in a learning task where a multi-synapse view is critical.
 
 \subsection{Synaptic Coupling}
-This chapter introduces the concept of synaptic coupling. This is an
-intermediate between the strictly local response that has been explored thus
-far, and the slower (seconds timescale) cell-level responses directly observed
-in biology. With synaptic coupling, there is a regional response to a hand-full
-of synapses. This response is fast (unlike the cell-level \ca responses),
-operating at the speed of the local responses explored thus far. Some in the
-computing and neuroscience communities believe similar intermediate
-astrocyte responses occur in nature, but that researchers don't have the
-capabilities to observe them yet. In any case, synaptic coupling fits the common
-theme of multi-level integration, and is shown to be critical in an example
-learning task. Figure \ref{fig:astro:syn_coupling} shows the progression of the
-astrocyte model from exhibiting a strictly local responses, to support
-coupling. There are three major changes to the model from previous iterations.
+This section introduces the concept of synaptic coupling. It is an regional
+response, which occurs between the strictly local response that has been
+explored thus far, and the slower (seconds timescale) cell-level responses
+directly observed in biology. The response is fast (unlike the cell-level \ca
+responses), operating at the speed of the local responses explored thus far, and
+encompasses a hand-full of synapses. Some in the computing and neuroscience
+communities believe similar intermediate astrocyte responses occur in nature,
+but that researchers don't have the capabilities to observe them yet. In any
+case, synaptic coupling fits the common theme of multi-level integration, and is
+shown to be an effective approach in an example learning task. Figure
+\ref{fig:astro:syn_coupling} shows the progression of the astrocyte model from
+exhibiting a strictly local responses, to support coupling. There are three
+major changes to the model from previous iterations.
 
 \begin{enumerate}
 \item The \ca response generated local to a synapse propagates up to the
   regional level.
 \item At the regional level, there is some function implemented by the
-  astrocyte, which directs plasticity across any connected synapses.
+  astrocyte, which directs plasticity across associated synapses.
 \item At the regional level, two additional internal signals \dser and
   \serca are introduced. These can be though of as chemical signals which can
   propagate from the regional level, down to a given synapse. They are
@@ -918,34 +959,33 @@ coupling. There are three major changes to the model from previous iterations.
 \subsection{Synaptic AND Coupling}
 The function explored for multi-synapse astrocyte plasticity is logical
 AND. This is implemented by a single astrocyte, influencing N synapses of a
-single \gls{lif} neuron (1nNs1a). The expected behavior of an \gls{lif} neuron
+single \gls{lif} neuron. The expected behavior of an \gls{lif} neuron
 implementing AND can be defined in terms of single spikes as shown in Figure
 \ref{fig:global-v-local-and-coupling}.
 
 In Figure \ref{fig:global-v-local-and-coupling} each of the blue or orange boxes
 represents a spike, either pre-synaptic, or post-synaptic. Figure
 \ref{fig:global-v-local-and-coupling} shows the difference between the local
-astrocyte response, vs. the global response required to implement logical
+astrocyte response, vs. the regional response required to implement logical
 AND. Without any context of the response from other synapses, a strictly local
 rule isn't able to correctly converge to an AND function. In most situations
 outlined, the regional control logic will need to signal the correct response to
 one or more synapses.
 
 To implement this, first the typical activity local to a synapse is considered,
-see Figure \ref{fig:local-ca-global-response}. These \ca responses propagate,
-and are readily available at the regional level. Using the \ca transients
-from each synapse, the global logic determines if weights should change on a
-given synapse, and if so, in what direction. To communicate the proper response
-\dser (which triggers a weight change at a synapse) and \serca, (which triggers
-messenger degradation and re-uptake) signals are passed from the regional
-control level, to individual synapses.
+These \ca responses propagate, and are readily available at the regional
+level. Using the \ca transients from each synapse, the global logic determines
+if weights should change on a given synapse, and if so, in what direction. To
+communicate the proper response \dser (which triggers a weight change at a
+synapse) and \serca, (which triggers messenger degradation and re-uptake)
+signals are passed from the regional control level, to individual synapses.
 
 \asvgf{figures/AstroAndCoupling_implementation.svg}{Comparison of astrocyte
   response locally, and the desired and coupling
   response}{fig:global-v-local-and-coupling}{1.0}
 
-\asvgf{figures/AstroAndCoupling_signals.svg}{Logical definition for AND
-  coupling with \ca signaling}{fig:local-ca-global-response}{1.0}
+%% \asvgf{figures/AstroAndCoupling_signals.svg}{Logical definition for AND
+%%   coupling with \ca signaling}{fig:local-ca-global-response}{1.0}
 
 In essence, all spiking activity on N synapses (for the purpose of implementing
 AND) fall into one of the following categories.
@@ -953,12 +993,12 @@ AND) fall into one of the following categories.
 \item AND - The neuron behaved correctly, this is either $pre_0, pre_1, ...,
   pre_n \implies post_o$ or $others -> \neg post_0$ : Reset synapse state, \ipt,
   \kp, and \ca cleanup.
-\item Other-influence - This situation occurs when $post_o$ comes before all
-  $pre_i$ inputs. This implies something happening outside the control of
-  associated synapses. It doesn't make sense to change the weight in this case,
-  as it is unknown why there was a $post_0$ spike. In addition, the \gls{lif} neuron
-  may be in a refractory period, and it wouldn't make sense to try and update
-  weights during that: Reset all synapses.
+%% \item Other-influence - This situation occurs when $post_o$ comes before all
+%%   $pre_i$ inputs. This implies something happening outside the control of
+%%   associated synapses. It doesn't make sense to change the weight in this case,
+%%   as it is unknown why there was a $post_0$ spike. In addition, the \gls{lif} neuron
+%%   may be in a refractory period, and it wouldn't make sense to try and update
+%%   weights during that: Reset all synapses.
 \item Early-Spike - $post_0$ occurs before some spiking inputs, but after
   others. This would indicate one or more of the input synapses have weights
   that are too high: \gls{ltd} on synapses that received inputs.
@@ -967,68 +1007,69 @@ AND) fall into one of the following categories.
   \gls{ltp} on all synapses.
 \end{itemize}
 
-Which of these categories a given set
-of inputs and response belongs to, depends on some model parameters. Namely,
-the timing constants and thresholds $thr_{and}$ and $thr_{ltp}$. Given a
-set of parameters, there is a deterministic window of time spikes must fall into
-in order to be considered for a particular response. Outside this window, from
-the perspective of the astrocyte, those spikes never happened. This window is
-dependent on many parameters however, and possibly changes given previous
-activity. Instead of solving for the exact point in time a spikes falls out of
-the time window, an upper bound is defined, $\delta_{ptp}=10ms$. The astrocyte
-was tuned to guarantee proper behavior if spikes fall within this
-window. This implies that the time between the first pre-synaptic spike, to the
-first (possibly only) post-synaptic spike must be no more than this value. With
-this timing constraint a variety of pre-pre-post spiking events can be generated
-in a two-synapse configuration. This experiment will remove the influence of
-synaptic weights and \gls{lif} neuron dynamics, focusing solely on astrocyte
-response \ca. Running this simulation, it was found that the astrocyte responded
-correctly to inputs 100\% of the time, if the astrocyte state was reset before
-presenting each test input.
+%% Which of these categories a given set
+%% of inputs and response belongs to, depends on some model parameters. Namely,
+%% the timing constants and thresholds $thr_{and}$ and $thr_{ltp}$. Given a
+%% set of parameters, there is a deterministic window of time spikes must fall into
+%% in order to be considered for a particular response. Outside this window, from
+%% the perspective of the astrocyte, those spikes never happened. This window is
+%% dependent on many parameters however, and possibly changes given previous
+%% activity. Instead of solving for the exact point in time a spikes falls out of
+%% the time window, an upper bound is defined, $\delta_{ptp}=10ms$. The astrocyte
+%% was tuned to guarantee proper behavior if spikes fall within this
+%% window. This implies that the time between the first pre-synaptic spike, to the
+%% first (possibly only) post-synaptic spike must be no more than this value. With
+%% this timing constraint a variety of pre-pre-post spiking events can be generated
+%% in a two-synapse configuration. This experiment will remove the influence of
+%% synaptic weights and \gls{lif} neuron dynamics, focusing solely on astrocyte
+%% response \ca. Running this simulation, it was found that the astrocyte responded
+%% correctly to inputs 100\% of the time, if the astrocyte state was reset before
+%% presenting each test input.
 
-Though simulations thus far are a good indication of a performant astrocyte
-model; Real-world applications will involve a set of continuous inputs, where
-astrocyte and neuron states are maintained, not reset every 10ms. A continuous
-simulation is explored next, with inputs generated by concatenating a number of
-10ms bouts in time. In this configuration, there are some situations where the
+In order to constrain the requirements, and allow for tuning of astrocyte
+parameters, a limit $\delta_{ptp}=10ms$ was defined. This defines a sliding
+window of time where the astrocyte is tuned to respond. It was shown that with a
+zero initial state, all possible spike configurations in a 10ms window were
+handled correctly. Real-world applications will involve a set of continuous
+inputs however, and spikes arrive with the astrocyte in a variety of
+states. With this additional variable there are some situations where the
 astrocyte does not respond as expected (a mis-match from ground truth), in
-general this is due to a \ca deviation from zero, at the boundary where
-generated 10ms bouts are joined. These situations made up $\approx 14\%$ of
-inputs, across 10,000 10ms bouts. When considering $n=3$ and $n=4$ synapses with
-continuous randomly generated spiking inputs, the error rate observed is
-consistent with that of $n=2$. For $n=3$ there are 283 mismatches out of 2000
-10ms bouts (14.15 \% error). For $n=4$, there are 416 mismatches out of 3000
-(13.9 \% error).
+general this is due to a \ca deviation from zero due to previous activity. These
+mismatches made up $\approx 14\%$ of 10,000 10ms bouts presented to the
+astrocyte. When considering $n=3$ and $n=4$ synapses with continuous randomly
+generated spiking inputs, the error rate observed is consistent with that of
+$n=2$. For $n=3$ there are 283 mismatches out of 2000 10ms bouts (14.15 \%
+error). For $n=4$, there are 416 mismatches out of 3000 (13.9 \% error).
 
-By default there are some cases present in the randomly generated spike train
-that are impossible in the current configuration. Namely, cases where a
-post-synaptic spike precedes all pre-synaptic spikes. This would be possible
-with influence from other synapses outside of the AND-coupling domain, or
-through the introduction of noise into the neuron model, but those cases aren't
-considered here. With the removal of such cases, the error rate increases to
-23.3 \% for 2 synapses, 22.0 \% for 3 synapses, and 18.0 \% for 4 synapses. The
-increased error rate indicates that they astrocyte model benefits from sparsity
-in activity needing a response.
+%% By default there are some cases present in the randomly generated spike train
+%% that are impossible in the current configuration. Namely, cases where a
+%% post-synaptic spike precedes all pre-synaptic spikes. This would be possible
+%% with influence from other synapses outside of the AND-coupling domain, or
+%% through the introduction of noise into the neuron model, but those cases aren't
+%% considered here. With the removal of such cases, the error rate increases to
+%% 23.3 \% for 2 synapses, 22.0 \% for 3 synapses, and 18.0 \% for 4 synapses. The
+%% increased error rate indicates that they astrocyte model benefits from sparsity
+%% in activity needing a response.
 
-Initial simulations which have isolated the astrocyte and provided random
-inputs, indicate that in a majority of cases, the astrocyte is capable of
-directing plasticity correctly to implement an AND function. A fairly consistent
-error rate of between 14 \% and 24 \% is observed, which is theorized to be low
-enough for proper convergence to implement AND.
+%% Initial simulations which have isolated the astrocyte and provided random
+%% inputs, indicate that in a majority of cases, the astrocyte is capable of
+%% directing plasticity correctly to implement an AND function. A fairly consistent
+%% error rate of between 14 \% and 24 \% is observed, which is theorized to be low
+%% enough for proper convergence to implement AND.
 
-Closing the loop fully, the weight update behavior outlined in
-\eq{eq:astro_and_dw} is implemented. With that addition, an astrocyte-\gls{lif}
-(1n2s1a) configuration was simulated, given the same continuous inputs generated
-by concatenating 10ms bouts, but only of pre-synaptic spikes for $n=2$
-synapses. Where before, post-synaptic spikes were also randomly generated, now
-any post-synaptic activity is driven by an \gls{lif} neuron with synaptic
-weights. The initial synaptic weight is $\approx 0.7$.
+%% Closing the loop fully, the weight update behavior outlined in
+%% \eq{eq:astro_and_dw} is implemented. With that addition, an astrocyte-\gls{lif}
+%% (1n2s1a) configuration was simulated, given the same continuous inputs generated
+%% by concatenating 10ms bouts, but only of pre-synaptic spikes for $n=2$
+%% synapses. Where before, post-synaptic spikes were also randomly generated, now
+%% any post-synaptic activity is driven by an \gls{lif} neuron with synaptic
+%% weights. The initial synaptic weight is $\approx 0.7$.
 
-\begin{align}
-  dw_{syn} = ca_{syn} lr_{ltp} \textrm{ if } ca_{syn} >
-  0 \label{eq:astro_and_dw} \\
-  dw_{syn} = ca_{syn} lr_{ltd} \textrm{ if } ca_{syn} < 0 \\
-\end{align}
+%% \begin{align}
+%%   dw_{syn} = ca_{syn} lr_{ltp} \textrm{ if } ca_{syn} >
+%%   0 \label{eq:astro_and_dw} \\
+%%   dw_{syn} = ca_{syn} lr_{ltd} \textrm{ if } ca_{syn} < 0 \\
+%% \end{align}
 
 \asvgf{figures/artifacts/obj3/snn_1n2s1a_and.svg}{Weight change in the 2s1n1a
   configuration, with the astrocyte directing synaptic
@@ -1042,15 +1083,15 @@ to two pre-synaptic spikes. There was a slight over-correction, and some
 \gls{ltp} events occur, bringing the weights back up. Eventually, the synaptic
 weights converge and offer a good approximation of an AND function over the
 inputs. Looking at the bottom plot, there are two error rate traces, labeled
-$+\Delta w$ and $-\Delta w$. These indicate example inputs where the neuron
+$+\Delta w$ (blue) and $-\Delta w$ (orange). These indicate example inputs where the neuron
 responded incorrectly, and one or more synaptic weights needed to be increased,
 or decreased respectively. Summing these two error rates give an overall error
 rate.
 
-Under the limited test conditions, simulation demonstrates success for
-coordinated astrocyte plasticity. This convergence to an AND function needs
-further exploration. Since the coordinated plasticity was developed to work with
-N synapses, it is important to evaluate other configurations besides $n=2$.
+Initial simulation with $n=2$ demonstrated success for coordinated astrocyte
+plasticity. This convergence to an AND function needs further exploration
+however, and since the approach was developed to work with any number of synapses, it was
+important to evaluate larger values of $n$.
 
 \asvgf{figures/artifacts/obj3/snn_1n3s1a_and.svg}{Weight change in the 3s1n1a
   configuration, with the astrocyte directing synaptic
@@ -1061,13 +1102,30 @@ N synapses, it is important to evaluate other configurations besides $n=2$.
   plasticity}{fig:snn_4s1a_and_w_dw}{0.9}
 
 Figures \ref{fig:snn_3s1a_and_w_dw} and \ref{fig:snn_4s1a_and_w_dw} show the
-progression of learning in 3 and 4 synapse configurations respectively. In each
-case, the addition of a synapse beyond 2 results in increased noise in the
-convergence, towards the end of simulation. Exploring this convergence further,
-initial weight values of each synapse are uniformly distributed from $0.0$ to
-$2.0$. Figures \ref{fig:snn_4s1a_and_w_dw_w} and \ref{fig:snn_2s1a_and_w_dw_w}
-show the results, which indicate the initial weight value does have some effect
-on progression of learning, but overall convergence was unaffected.
+progression of learning in 3 and 4 synapse configurations. In each case, the
+addition of a synapse beyond 2 results in increased noise and oscillations in
+the weight values towards the end of simulation. Though still moving in the
+right direction, the astrocyte plasticity approach provides results with
+significant error. Looking at the mean error rate towards the end of
+simulation, it is upwards of $20\%$. In order to better explain what is
+going on, consider the two error rates, in the lower plot of Figure
+\ref{fig:snn_4s1a_and_w_dw}. There is an oscillation, between the majority of
+errors involving $+\Delta W$ (blue, weight values are too low) and $-\Delta W$
+(orange, weight values are too high). This indicates that optimal weight values
+are being under and overshot repeatedly. Oscillation which prevents proper
+convergence is a common problem in learning rules, and is not a fundamental
+drawback. Though it wasn't explored here, some reasonable next steps would be to
+introduce a learning rate schedule, or to add the concept temporal integration
+at the regional level. Simply lowering the overall learning rate lead to better
+convergence, but with a higher error rate than observed with the noisy solution.
+
+To ensure the learning rule is robust to weight initial conditions the starting
+values were uniformly distributed from $0.0$ to $2.0$, instead of all being
+fixed to $0.7$. Figures \ref{fig:snn_4s1a_and_w_dw_w} and
+\ref{fig:snn_2s1a_and_w_dw_w} show learning progression for two simulations,
+which indicate the initial weight value does have some effect on learning, but
+overall convergence was unaffected, and the error rates are approximately the
+same as previous runs.
 
 \asvgf{figures/artifacts/obj3/snn_2s1a_and_w.svg}{Weight change in the 1n2s1a
   configuration, with random initial weight values between $0.0$ and
@@ -1077,42 +1135,29 @@ on progression of learning, but overall convergence was unaffected.
   configuration, with random initial weight values between $0.0$ and
   $2.0$}{fig:snn_4s1a_and_w_dw_w}{0.9}
 
-The learning rule converges quite well in a 2 synapse configuration. With 3 and
-4 synapses, there is convergence to a degree, but still a fair amount of noise
-in the weight values. Looking at the mean error rate towards the end of
-simulation however, it is upwards of $20\%$. In order to better explain what is
-going on, observe the two error rates, in the lower plots of Figures
-\ref{fig:snn_3s1a_and_w_dw} and \ref{fig:snn_4s1a_and_w_dw}. There is an
-oscillation, between the majority of errors involving $+\Delta W$ (weight values
-are too low) and $-\Delta W$ (weight values are too high). This indicates that
-optimal weight values are being under and overshot repeatedly. This is a common
-problem in learning rules, and is not a fundamental drawback. Additional
-discussion and next steps were outlined in section \ref{section:conclusion}.
+
 
 
 \section{Conclusion} \label{section:conclusion}
 The main goal of this work was to identify key properties of astrocyte-neuron
 interactions in biology, that could be leveraged in a simplified computational
-model, when paired with \gls{lif} neurons. Common chemical signaling pathways
-were teased from both neuroscience and computing literature. The intersection of
-signaling pathways and functional roles that best fit this work was determined
-to be synapic plasticity, with a focus on multi-level integration, across time
-and space. A computational astrocyte model was developed to implement classic
-STDP on a single synapse, using simplified versions of common astrocyte chemical
-pathways. The astrocyte model was extended to support integration of activity
-from multiple synapses and the concept of synaptic coupling was
-introduced. Using logical AND as a test function, it was demonstrated that a
-multi-synapse learning approach could direct \gls{lif} neuron weight values to a
-solution for logical AND. This was demonstrated in 2, 3 and 4 synapse
-configurations, with lesser degrees of success at each increase. This work lays
-the groundwork for an astrocyte-like approach to synaptic plasticity, providing
-a computationally simple, bio-inspired model. This model is shown to generalize
-classic \gls{stdp}, and can improve upon it in a variety of situations. Breaking
-away from the strictly local paradigm, the astrocyte model demonstrates
-coordinated plasticity in a learning task that would be otherwise impossible
-with a strictly local view. Equally as important, this work offers an
-opportunity for organization and coordination, when melding local and global
-learning signals.
+model, when paired with \gls{lif} neurons. The intersection of signaling
+pathways and functional roles that best fit this work was determined to be
+synapic plasticity, with a focus on multi-level integration, across time and
+space. A computational astrocyte model was developed, and shown to be capable of
+implementing classic STDP, as well as common variants found in the existing
+literature. Taking advantage of the \ca response and temporal integration, the
+astrocyte demonstrated improvements over \gls{stdp} in a single-synapse
+configuration, with a given test input. The astrocyte model was extended to
+support integration of activity from multiple synapses and the concept of
+synaptic coupling was introduced. Using logical AND as a test function, it was
+demonstrated that a multi-synapse learning approach could direct \gls{lif}
+neuron weight values to a solution for logical AND. This was demonstrated in 2,
+3 and 4 synapse configurations, with lesser degrees of success with each
+additional synapse. This work lays the groundwork for an astrocyte-like approach
+to synaptic plasticity, with an emphasis on coordination spatially and
+temporally, breaking away from a strictly local view. It provides this with a
+computationally simple, bio-inspired approach.
 
 % Add the acronyms
 %% \glsaddall

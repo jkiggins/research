@@ -17,7 +17,7 @@
 \usepackage{float}
 \usepackage{booktabs, multirow} % for borders and merged ranges
 
-\usepackage[backend=biber,bibencoding=utf8,style=authoryear-comp]{biblatex}
+\usepackage[backend=biber,bibencoding=utf8,style=ieee]{biblatex}
 %% \usepackage[backend=biber, bibencoding=utf8]{biblatex}
 \addbibresource{mybibliography.bib}
 
@@ -150,23 +150,23 @@
 %% allowing the author to define a "short title" to be used in page headers.
 \title{A Bio-Inspired Computational Astrocyte Model for Spiking Neural Networks}
 
-\author{\IEEEauthorblockN{Jacob Kiggins}
-\IEEEauthorblockA{\textit{Computer Engineering Dept.} \\
-\textit{Rochester Institute of Technology}\\
-Rochester, NY \\
-jmk1154@rit.edu}
-\and
-\IEEEauthorblockN{Dr. J. David Schaffer}
-\IEEEauthorblockA{\textit{College of Community and Public Affairs} \\
-\textit{Binghamton University}\\
-Binghamton, NY \\
-dschaffe@binghamton.edu}
-\and
-\IEEEauthorblockN{Dr. Cory Merkel}
-\IEEEauthorblockA{\textit{Computer Engineering Dept.} \\
-\textit{Rochester Institute of Technology}\\
-Rochester, NY \\
-cemeec@rit.edu}}
+%% \author{\IEEEauthorblockN{Jacob Kiggins}
+%% \IEEEauthorblockA{\textit{Computer Engineering Dept.} \\
+%% \textit{Rochester Institute of Technology}\\
+%% Rochester, NY \\
+%% jmk1154@rit.edu}
+%% \and
+%% \IEEEauthorblockN{Dr. J. David Schaffer}
+%% \IEEEauthorblockA{\textit{College of Community and Public Affairs} \\
+%% \textit{Binghamton University}\\
+%% Binghamton, NY \\
+%% dschaffe@binghamton.edu}
+%% \and
+%% \IEEEauthorblockN{Dr. Cory Merkel}
+%% \IEEEauthorblockA{\textit{Computer Engineering Dept.} \\
+%% \textit{Rochester Institute of Technology}\\
+%% Rochester, NY \\
+%% cemeec@rit.edu}}
 
 
 \begin{document}
@@ -185,7 +185,7 @@ era. Despite many successes achieved through deep learning, these networks
 behave much differently than their biological counterparts. In a search for
 improvements to things like training time and volume requirements, power
 consumption, noise and adversarial input tolerance, research is looking towards
-the brain, and bio-inspired computing models. \gls{snn} are take a step closer
+the brain, and bio-inspired computing models. \Glspl{snn} take a step closer
 to biology in their operation and are the focus of much research, geared towards
 reproducing some of these novel features of the brain. As of yet, \gls{snn} have
 not reached their full potential. This work attempts to advance \gls{snn} and
@@ -195,9 +195,11 @@ thought to be passive support cells in the brain are now known to actively
 participate in neural processing. The developed astrocyte model is geared
 towards synaptic plasticity and is shown to generalize and extend
 \gls{stdp}. The astrocyte model was extended to support multi-synapse
-integration, again with a focus on plasticity. The multi-synapse view was shown
-to be critical for learning logical AND. Convergence for a single \gls{lif}
-neuron an 2, 3, and 4 synapses was demonstrated for this function.
+integration, again with a focus on plasticity. Logical AND was used as a test
+function for multi-synapse astrocyte plasticity and convergence for a single \gls{lif}
+neuron with 2, 3, and 4 synapses was demonstrated. The plasticity model is
+general and many other functions could be used in-place of AND, taking advantage of a
+multi-synapse view.
 
 \end{abstract}
 
@@ -205,35 +207,42 @@ neuron an 2, 3, and 4 synapses was demonstrated for this function.
 Spiking Neural Networks, Astrocytes, Neuromorphic
 \end{IEEEkeywords}
 
-%% \section{Introduction}
+\section{Introduction}
+
 %% The human brain exhibits may features that current approaches to machine
 %% learning and artificial intelligence are unable to mimic. Certainly, deep
 %% learning has achieved fantastic results in a variety of specialized tasks, but
 %% this success comes with a cost. Increasingly higher parameters counts are needed
 %% to achieve improvements, and with each parameter comes additional time and
 %% energy for training. Once trained, computing a deep network's decision in
-%% real-time requires specialized, power-hungry hardware. The human brain on the
-%% other hand, exhibits a much higher level of connectivity, is able to handle a
-%% wide variety of complex tasks, and has many advantages in the context of
-%% learning, and tolerance to adversarial inputs. Where a deep learning model
-%% requires many diverse examples to approach generalization, the human brain is
-%% able to surpass this with only a few examples \parencite{tsimenidis_2020}. Even
-%% more impressive, the brain can accomplish these feats with $\approx$ 20 Watts of
-%% power. At a high level, this work explores \glspl{snn} and astrocytes in an
-%% effort to explain, and realized some of these features.
+%% real-time requires specialized, power-hungry hardware.
 
-%% Beyond the high-level motivations, both \gls{snn} literature and research
-%% surrounding computational astrocyte models have gaps. \glspl{snn} are difficult
-%% to train, especially at a network level. Overall, training is holding back
-%% \gls{snn} despite their rich dynamics and advantages with time-series data
-%% \parencite{tavanaei_2019}. Moving over to astrocytes, there is a clear role for
-%% them in computation, learning, and overall cognition
-%% \parencite{mederos_2018}. There are a handful of computational astrocyte models,
-%% but in general they fail to clearly define a functional role. Works that do,
-%% don't focus on aspects that solve key problems in \glspl{snn}
-%% \parencite{manninen_2019}. This leaves a clear need for an computational
-%% astrocyte model that focuses on extracting key features from biology, and
-%% advances the functionality of \glspl{snn}.
+The human brain exhibits very high levels of connectivity, is able to handle a
+wide variety of complex tasks, and has many advantages in the context of
+learning, and tolerance to adversarial inputs. Where a deep learning model
+requires many diverse examples to approach generalization, the human brain is
+able to surpass this with only a few examples \parencite{tsimenidis_2020}. Even
+more impressive, the brain can accomplish these feats with $\approx$ 20 Watts of
+power. Research in the intersection between neuroscience and computation
+attempts to understand the mechanisms used by the brain to achieve these
+feats. Neuroscientists are continuously making new discoveries, and computer
+scientists are taking inspiration from these discoveries in their modeling
+efforts. This work continues that process, through the development and
+exploration of a computational astrocyte model, inspired by biology and previous
+modeling efforts.
+
+Beyond the high-level motivations, both \gls{snn} literature and research
+surrounding computational astrocyte models have gaps. \glspl{snn} are difficult
+to train, especially at a network level, and overall, training is holding back
+\gls{snn} despite their rich dynamics and advantages with time-series data
+\parencite{tavanaei_2019}. Moving over to astrocytes, there is a clear role for
+them in computation, learning, and overall cognition
+\parencite{mederos_2018}. There are a handful of computational astrocyte models,
+but in general they fail to clearly define a functional role. Works that do,
+don't focus on aspects that solve key problems in \glspl{snn}
+\parencite{manninen_2019}. This leaves a clear need for a computational
+astrocyte model that focuses on extracting key features from biology, and
+advances the functionality of \glspl{snn}.
 
 \section{Background and Related Work}
 \subsection{Spiking Neural Networks}
@@ -251,32 +260,19 @@ this voltage determines if and when a spiking neuron fires. Generally,
 once a certain threshold is reached the post-synaptic neuron emits a voltage
 spike (fires).
 
-%% Since there are many Spiking Neuron models, it is necessary to formalize what is
-%% considered a spiking neuron. In general they process information from one or
-%% more inputs, and produce a single spike-like output. The probability of firing
-%% is increased by excitatory inputs, and decreased by inhibitory inputs. There is
-%% at least one internal state variable, and depending on this variable output
-%% spikes are generated \parencite{ponulak_2011}.
-
-%% In addition, some models are more often paired with other
-%% bio-inspired components such as astrocytes, which are explored in this
-%% work. Relevant models are outlined below. These models each balance
-%% bio-realism with computational efficiency, with some excelling at
-%% both.
-
 There are many potential models that fit the requirements of a spiking
 neuron. Figure \ref{fig:sn_model_compare} shows where a number of models fall
 when measured against their bio-realism
-\parencite{izhikevich_2004}. Specifically, the X-axis shows the number of
+\parencite{hendy_2022}. Specifically, the X-axis shows the number of
 floating point operations per-second (FLOPS) are required to simulate the model
 in real-time. In the Y-axis counts the number of cortical ``features'' out of a
 total of $22$ that model is able to reproduce.
-    
-\afigf{figures/sn-model-compare.png}{Comparison of spiking neuron
+
+\afigf{figures/JEI_31_1_010901_f004.png}{Comparison of spiking neuron
   models}{fig:sn_model_compare}
 
 \subsubsection{Leaky Integrate and Fire Neurons}
-Due to it's simplicity and computational efficiency the most popular \gls{sn}
+Due to its simplicity and computational efficiency the most popular \gls{sn}
 model explored in \gls{snn} literature is the \gls{lif} neuron. In this model
 there is an internal voltage, which increases as spikes arrive at the
 post-synaptic terminal of the neuron. Charge leaks from this internal reservoir
@@ -428,10 +424,10 @@ There has been some success and increasing interest with a supervised variant on
 \gls{stdp}, known as \gls{rstdp}. Using a deep convolutional approach, a
 \glspl{snn} was employed to solve the \gls{mnist} digit recognition task
 \parencite{mozafari_2018}. Early layers of the network were trained in an
-unsupervised manor, with classic \gls{stdp}. Later layers were updated using
+unsupervised manner, with classic \gls{stdp}. Later layers were updated using
 \gls{rstdp}. That is, if the output was correct, \gls{stdp} was applied. If not,
 \gls{astdp} was applied. This learning approach has basis in biology, with the
-reward modulation mimicking the activity Dopamine \parencite{mozafari_2018}. As
+reward modulation mimicking the activity of dopamine \parencite{mozafari_2018}. As
 a proof of concept, researchers applied their learning method to a shallow
 network, with a single trainable layer. This architecture gave passable results,
 but wasn't well suited to multi-layer training. For their deep architecture
@@ -445,11 +441,11 @@ achieved \parencite{mozafari_2018}.
 %% recognize discriminating features, instead of repeating ones.
 
 The ReSuMe learning rule is another variant of \gls{stdp}, which is similar to
-the \gls{rstdp} rule. With ReSuMe, a single neuron and set of synapses are
-initialized with random weight values. There is a 2nd similar neuron which
-implements the desired behavior. Inputs are provided to both neurons, and at
-each time step weights are updated according to the difference between the
-teaching neuron, and neuron in training. The weight update can be described by:
+the \gls{rstdp} rule. With ReSuMe, a single neuron is initialized with random
+weight values. There is a 2nd similar neuron which implements the desired
+behavior. Inputs are provided to both neurons, and at each time step weights are
+updated according to the difference between the teaching neuron, and neuron in
+training. The weight update can be described by:
 
 \begin{align}
   \Delta w = \Delta W_{STDP}(S_{in}, S_{d}) + \Delta W_{aSTDP}(S_{in}, S_{o}) \label{eq:resume_stdp}
@@ -477,11 +473,11 @@ either of the learning rule, or neuron activity. One specific example, involves
 spiking convolution operations, which are trained on image inputs
 \parencite{delorme_2001}. Researches employed unsupervised \gls{stdp}, but
 forced inhibition between the feature maps. If a neuron fired in one feature
-map, the corresponding neuron is inhibited in all of the others. Results were
+map, the corresponding neuron is inhibited in all others. Results were
 promising, and activation of \gls{lif} neuron maps showed selectivity for image
 features such as blobs and contours.
 
-\section{Introduction to Astrocytes}
+\subsection{Introduction to Astrocytes}
 Astrocytes are a type of glial cell found in mammalian brains. Their
 structure and function are still the topic of cutting edge research
 today. They are vital for many normal brain functions, including
@@ -525,7 +521,7 @@ seconds for a global response \parencite{mederos_2018}.
 %% wave, and can reach the main cell body, other astrocyte processes, and even
 %% other astrocytes \parencite{manninen_2018}.
 
-\section{Functional Roles of Astrocytes}
+\subsection{Functional Roles of Astrocytes}
 
 There are a variety of theories for the functional role of astrocytes.
 Some of these are speculation based on general themes of astrocyte behavior,
@@ -573,7 +569,7 @@ Astrocytes have been shown to play a key role in the bio-chemical pathways that
 lead to \gls{stdp}, and plasticity in general at neuronal synapses. They can
 gate \gls{ltd} and \gls{ltp} via D-Serine release \parencite{manninen_2019} and
 may also reverse the polarity of \gls{stdp}, implementing \gls{astdp}
-\parencite{min_2012}. In addition \Gls{glu} released by astrocytes in response
+\parencite{min_2012}. In addition, \Gls{glu} released by astrocytes in response
 to pre and post-synaptic activity may stretch or shift the nominal \gls{stdp}
 curve in both experimental results, and computational models
 \parencite{pitta_2016}. Astrocytes can modulate the concentration of their
@@ -692,7 +688,7 @@ It should be noted, that the astrocyte response pathways are similar in form to
 an \gls{lif} neuron's membrane voltage. This decision is driven in part by a
 simplification on some bio-realistic models, but also to demonstrate that key
 properties of astrocytes are dependent on the pathways and relative
-time-constants, less then the specifics of \ca, \ipt, or \kp dynamics.
+time-constants, less than the specifics of \ca, \ipt, or \kp dynamics.
 
 \begin{align}
   d_{ip3} = d_t (-IP_3)\tau_{ip3} + \alpha_{ip3} z_{pre}(t) \label{eq:astro:spike-ip3} \\
@@ -725,7 +721,7 @@ d_{ca} = -\cam \tau_{ca} d_t + T_{delta} \label{eq:astro:temp-u}
 In this case, $z_{post}$ and $z_{pre}$ are pre and post-synaptic spikes that the
 astrocyte is sensing at a synapse. The $\alpha_{ip3/k+}$ parameters are
 used to control the magnitude of influence \ipt and \kp have on astrocyte
-\ca. In addition $\alpha_{ltd/ltp}$ can override default \gls{ltp}/\gls{ltd}
+\ca. In addition, $\alpha_{ltd/ltp}$ can override default \gls{ltp}/\gls{ltd}
 behavior, implementing anti-stdp, or biasing weight updates towards
 \gls{ltp}/\gls{ltd}. Note also, that \eq{eq:astro:temp-u} implies astrocyte \ca
 will decay with each time step, but only be influenced by \ipt and \kp when
@@ -927,7 +923,7 @@ work, a coordinated approach to synaptic plasticity is developed. This approach
 is employed in a learning task where a multi-synapse view is critical.
 
 \subsection{Synaptic Coupling}
-This section introduces the concept of synaptic coupling. It is an regional
+This section introduces the concept of synaptic coupling. It is a regional
 response, which occurs between the strictly local response that has been
 explored thus far, and the slower (seconds timescale) cell-level responses
 directly observed in biology. The response is fast (unlike the cell-level \ca
@@ -938,8 +934,8 @@ but that researchers don't have the capabilities to observe them yet. In any
 case, synaptic coupling fits the common theme of multi-level integration, and is
 shown to be an effective approach in an example learning task. Figure
 \ref{fig:astro:syn_coupling} shows the progression of the astrocyte model from
-exhibiting a strictly local responses, to support coupling. There are three
-major changes to the model from previous iterations.
+exhibiting a strictly local responses, to support synaptic coupling. There are
+three major changes to the model from previous iterations.
 
 \begin{enumerate}
 \item The \ca response generated local to a synapse propagates up to the
@@ -1028,12 +1024,12 @@ AND) fall into one of the following categories.
 
 In order to constrain the requirements, and allow for tuning of astrocyte
 parameters, a limit $\delta_{ptp}=10ms$ was defined. This defines a sliding
-window of time where the astrocyte is tuned to respond. It was shown that with a
+window of time, where the astrocyte is tuned to respond. It was shown that with a
 zero initial state, all possible spike configurations in a 10ms window were
 handled correctly. Real-world applications will involve a set of continuous
 inputs however, and spikes arrive with the astrocyte in a variety of
 states. With this additional variable there are some situations where the
-astrocyte does not respond as expected (a mis-match from ground truth), in
+astrocyte does not respond as expected (a miss-match from ground truth), in
 general this is due to a \ca deviation from zero due to previous activity. These
 mismatches made up $\approx 14\%$ of 10,000 10ms bouts presented to the
 astrocyte. When considering $n=3$ and $n=4$ synapses with continuous randomly

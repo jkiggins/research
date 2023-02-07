@@ -17,6 +17,8 @@
 \usepackage{float}
 \usepackage{booktabs, multirow} % for borders and merged ranges
 
+
+
 \usepackage[backend=biber,bibencoding=utf8,style=ieee]{biblatex}
 %% \usepackage[backend=biber, bibencoding=utf8]{biblatex}
 \addbibresource{mybibliography.bib}
@@ -183,23 +185,22 @@ capabilities. An early example of this endeavor was the perceptron which has
 become a core building block of neural network models in the deep learning
 era. Despite many successes achieved through deep learning, these networks
 behave much differently than their biological counterparts. In a search for
-improvements to things like training time and volume requirements, power
-consumption, noise and adversarial input tolerance, research is looking towards
-the brain, and bio-inspired computing models. \Glspl{snn} take a step closer
-to biology in their operation and are the focus of much research, geared towards
-reproducing some of these novel features of the brain. As of yet, \gls{snn} have
-not reached their full potential. This work attempts to advance \gls{snn} and
-bio-inspired computation as a whole, by exploring a configuration of \glspl{sn}
-coupled with a computational astrocyte model. Astrocytes, initially
-thought to be passive support cells in the brain are now known to actively
-participate in neural processing. The developed astrocyte model is geared
-towards synaptic plasticity and is shown to generalize and extend
-\gls{stdp}. The astrocyte model was extended to support multi-synapse
-integration, again with a focus on plasticity. Logical AND was used as a test
-function for multi-synapse astrocyte plasticity and convergence for a single \gls{lif}
-neuron with 2, 3, and 4 synapses was demonstrated. The plasticity model is
-general and many other functions could be used in-place of AND, taking advantage of a
-multi-synapse view.
+improvements to things like training time and dataset size, power consumption,
+noise, and adversarial input tolerance, research is looking towards the brain,
+and bio-inspired computing models. \Glspl{snn} take a step closer to biology in
+their operation and are the focus of much research, geared towards reproducing
+some of these novel features of the brain. As of yet, \gls{snn} have not reached
+their full potential. This work attempts to advance \gls{snn} and bio-inspired
+computation as a whole, by exploring a configuration of \glspl{sn} coupled with
+a computational astrocyte model. Astrocytes, initially thought to be passive
+support cells in the brain are now known to actively participate in neural
+processing. The proposed astrocyte model is geared towards synaptic plasticity
+and is shown to generalize and extend \gls{stdp}. In addition, the model
+supports plasticity-focused multi-synapse integration. Logical AND was used as a
+test function for multi-synapse astrocyte plasticity, and convergence for a
+single \gls{lif} neuron with 2, 3, and 4 synapses was demonstrated. The
+plasticity model is general and many other functions could be used in-place of
+AND, taking advantage of a multi-synapse view.
 
 \end{abstract}
 
@@ -217,32 +218,52 @@ Spiking Neural Networks, Astrocytes, Neuromorphic
 %% energy for training. Once trained, computing a deep network's decision in
 %% real-time requires specialized, power-hungry hardware.
 
+%%  Where a deep learning model
+%% requires many diverse examples to approach generalization, the human brain is
+%% able to surpass this with only a few examples \parencite{tsimenidis_2020}. Even
+%% more impressive, the brain can accomplish these feats with $\approx$ 20 Watts of
+%% power.
+
 The human brain exhibits very high levels of connectivity, is able to handle a
 wide variety of complex tasks, and has many advantages in the context of
 learning, and tolerance to adversarial inputs. Where a deep learning model
 requires many diverse examples to approach generalization, the human brain is
 able to surpass this with only a few examples \parencite{tsimenidis_2020}. Even
-more impressive, the brain can accomplish these feats with $\approx$ 20 Watts of
+more impressive, the brain can accomplish these feats with $\approx 20$ Watts of
 power. Research in the intersection between neuroscience and computation
 attempts to understand the mechanisms used by the brain to achieve these
 feats. Neuroscientists are continuously making new discoveries, and computer
 scientists are taking inspiration from these discoveries in their modeling
-efforts. This work continues that process, through the development and
-exploration of a computational astrocyte model, inspired by biology and previous
-modeling efforts.
+efforts. One such discovery implicated astrocytes as active participants in
+neural processing, where before they were considered support cells. This
+discovery lead to the development of a wide variety of astrocyte models
+\cite{manninen_2019}. Many of these were highly grounded in biochemistry, and
+focused on reproducing observed astrocyte behavior. Given the a clear role for
+astrocytes in computation and learning \parencite{mederos_2018}, this work takes
+a slighly different appraoch, and looks to leverage astrocytes to enhance the
+processing capabilities of \glspl{snn}. In general \glspl{snn} are difficult to
+train, especially at a network level, and this is holding back \gls{snn} despite
+their rich dynamics and advantages with time-series data
+\parencite{tavanaei_2019}. This work attempts to close these gaps further,
+through the development and exploration of a computational astrocyte model,
+inspired by biology and previous modeling efforts. The main contributions are
 
-Beyond the high-level motivations, both \gls{snn} literature and research
-surrounding computational astrocyte models have gaps. \glspl{snn} are difficult
-to train, especially at a network level, and overall, training is holding back
-\gls{snn} despite their rich dynamics and advantages with time-series data
-\parencite{tavanaei_2019}. Moving over to astrocytes, there is a clear role for
-them in computation, learning, and overall cognition
-\parencite{mederos_2018}. There are a handful of computational astrocyte models,
-but in general they fail to clearly define a functional role. Works that do,
-don't focus on aspects that solve key problems in \glspl{snn}
-\parencite{manninen_2019}. This leaves a clear need for a computational
-astrocyte model that focuses on extracting key features from biology, and
-advances the functionality of \glspl{snn}.
+\begin{itemize}
+  \item A computational astrocyte model, with a design geared towards synaptic
+    plasticity.
+  \item Coupled with a \gls{lif} neuron, the astrocyte model was shown to
+    implement a general form of classic \gls{stdp}, and improve local learning
+    through temporal integration.
+  \item Multi-synapse astrocyte plasticity was defined and explored with
+    success, using a logical AND as a test function.
+\end{itemize}
+
+%% There are a handful of computational astrocyte models,
+%% but in general they fail to clearly define a functional role. Works that do,
+%% don't focus on aspects that solve key problems in \glspl{snn}
+%% \parencite{manninen_2019}. This leaves a clear need for a computational
+%% astrocyte model that focuses on extracting key features from biology, and
+%% advances the functionality of \glspl{snn}.
 
 \section{Background and Related Work}
 \subsection{Spiking Neural Networks}
@@ -262,11 +283,10 @@ spike (fires).
 
 There are many potential models that fit the requirements of a spiking
 neuron. Figure \ref{fig:sn_model_compare} shows where a number of models fall
-when measured against their bio-realism
-\parencite{hendy_2022}. Specifically, the X-axis shows the number of
-floating point operations per-second (FLOPS) are required to simulate the model
-in real-time. In the Y-axis counts the number of cortical ``features'' out of a
-total of $22$ that model is able to reproduce.
+when measured against their bio-realism \parencite{hendy_2022}. Specifically,
+the X-axis shows the number of floating point operations per-second (FLOPS) are
+required to simulate the model in real-time. In the Y-axis counts the number of
+cortical ``features'' out of a total of $22$ that model is able to reproduce.
 
 \afigf{figures/JEI_31_1_010901_f004.png}{Comparison of spiking neuron
   models}{fig:sn_model_compare}
@@ -565,7 +585,7 @@ fields for visual information \parencite{gordleeva_2021}.
 %% are exhausted quickly.
 
 %% Astrocyte Modulation of \gls{ltd}/\gls{ltp}
-Astrocytes have been shown to play a key role in the bio-chemical pathways that
+Astrocytes have been shown to play a key role in the biochemical pathways that
 lead to \gls{stdp}, and plasticity in general at neuronal synapses. They can
 gate \gls{ltd} and \gls{ltp} via D-Serine release \parencite{manninen_2019} and
 may also reverse the polarity of \gls{stdp}, implementing \gls{astdp}
@@ -678,7 +698,7 @@ excitability at the post-synaptic terminal for a local region of synapses
 %% molecule that diffuses \parencite{gordleeva_2021, pitta_2012, postnov_2009}.
 
 \section{Astrocyte Model Development}
-Figure \ref{fig:1n1s1a_fn_diagram} outlines the developed astrocyte-\gls{lif} neuron
+Figure \ref{fig:1n1s1a_fn_diagram} outlines the proposed astrocyte-\gls{lif} neuron
 model, as well as the internal dynamics of the neuron.
 
 \asvgf{figures/1n1s1a_diagram.svg}{Astrocyte and neuron model diagram for an \gls{lif}
@@ -1132,8 +1152,6 @@ same as previous runs.
   $2.0$}{fig:snn_4s1a_and_w_dw_w}{0.9}
 
 
-
-
 \section{Conclusion} \label{section:conclusion}
 The main goal of this work was to identify key properties of astrocyte-neuron
 interactions in biology, that could be leveraged in a simplified computational
@@ -1161,6 +1179,9 @@ computationally simple, bio-inspired approach.
 
 %% % Reset all acronyms
 %% \glsresetall
+
+%% \renewcommand*{\bibfont}{\footnotesize}
+\renewcommand*{\bibfont}{\small}
 
 % Bibliography file
 \printbibliography[heading=bibintoc]

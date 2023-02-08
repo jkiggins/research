@@ -189,8 +189,8 @@ improvements to things like training time and dataset size, power consumption,
 noise, and adversarial input tolerance, research is looking towards the brain,
 and bio-inspired computing models. \Glspl{snn} take a step closer to biology in
 their operation and are the focus of much research, geared towards reproducing
-some of these novel features of the brain. As of yet, \gls{snn} have not reached
-their full potential. This work attempts to advance \gls{snn} and bio-inspired
+some of these novel features of the brain. As of yet, \glspl{snn} have not reached
+their full potential. This work attempts to advance \glspl{snn} and bio-inspired
 computation as a whole, by exploring a configuration of \glspl{sn} coupled with
 a computational astrocyte model. Astrocytes, initially thought to be passive
 support cells in the brain are now known to actively participate in neural
@@ -238,9 +238,9 @@ efforts. One such discovery implicated astrocytes as active participants in
 neural processing, where before they were considered support cells. This
 discovery lead to the development of a wide variety of astrocyte models
 \cite{manninen_2019}. Many of these were highly grounded in biochemistry, and
-focused on reproducing observed astrocyte behavior. Given the a clear role for
+focused on reproducing observed astrocyte behavior. Given the clear role for
 astrocytes in computation and learning \parencite{mederos_2018}, this work takes
-a slighly different appraoch, and looks to leverage astrocytes to enhance the
+a slightly different approach, and looks to leverage astrocytes to enhance the
 processing capabilities of \glspl{snn}. In general \glspl{snn} are difficult to
 train, especially at a network level, and this is holding back \gls{snn} despite
 their rich dynamics and advantages with time-series data
@@ -932,7 +932,7 @@ and exhibits convergence, when compared to classic \gls{stdp}.
 %% updates. In this way, astrocytes can converge on synaptic weight values, but
 %% still support continuous learning.
 
-\section{Extension Astrocyte Model To Multi-Synapse Configurations}
+\section{Multi-Synapse Astrocyte Plasticity}
 
 In biology, astrocytes are observed influencing many synapses. In general, they
 interact with a single digit number of neurons and up to 100,000 synapses. This
@@ -1153,12 +1153,13 @@ same as previous runs.
 
 
 \section{Conclusion} \label{section:conclusion}
-The main goal of this work was to identify key properties of astrocyte-neuron
-interactions in biology, that could be leveraged in a simplified computational
-model, when paired with \gls{lif} neurons. The intersection of signaling
+The goal of this work was to advance the capabilities of \glspl{snn} using a
+computational astrocyte model, geared towards synaptic plasticity. Key
+properties of astrocyte-neuron interaction were identified from biology, and
+leveraged in a simplified computational model. The intersection of signaling
 pathways and functional roles that best fit this work was determined to be
-synapic plasticity, with a focus on multi-level integration, across time and
-space. A computational astrocyte model was developed, and shown to be capable of
+synaptic plasticity, with a focus on multi-level integration across time and
+space. A computational astrocyte model was proposed, and shown to be capable of
 implementing classic STDP, as well as common variants found in the existing
 literature. Taking advantage of the \ca response and temporal integration, the
 astrocyte demonstrated improvements over \gls{stdp} in a single-synapse

@@ -124,7 +124,7 @@ def plot_dw(axes, loc, dw):
     ax.set_xlim(-10, dw.shape[0] + 10)
 
 
-def plot_w(axes, loc, w):
+def plot_w(axes, loc, w, title="Synaptic Weight Progression"):
     ax = _locate_ax(axes, loc)
     
     nsyns = w.shape[-1]
@@ -133,7 +133,7 @@ def plot_w(axes, loc, w):
         colors_i = i % len(dw_colors)
         ax.plot(w[:, i].tolist(), color=dw_colors[colors_i])
 
-    ax.set_title("Synaptic Weight over Time")
+    ax.set_title(title)
     ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Synaptic Weight")
 
@@ -229,10 +229,10 @@ def plot_mismatch_bar(axes, loc, bar):
     )
 
 
-def plot_err(axes, loc, err, regions, legend=True):
+def plot_err(axes, loc, err, regions, legend=True, title="Error Rates During Learning"):
     ax = _locate_ax(axes, loc)
 
-    ax.set_title("Error Rates During Learning")
+    ax.set_title(title)
     ax.set_ylabel("Error rates")
     ax.set_xlabel("Learning Iterations")
 

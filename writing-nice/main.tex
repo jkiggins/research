@@ -191,18 +191,18 @@ improvements to things like training time and dataset size, power consumption,
 noise, and adversarial input tolerance, research is looking towards the brain,
 and bio-inspired computing models. \Glspl{snn} take a step closer to biology in
 their operation and are the focus of much research, geared towards reproducing
-some of these novel features of the brain. As of yet, \glspl{snn} have not reached
-their full potential. This work attempts to advance \glspl{snn} and bio-inspired
-computation as a whole, by exploring a configuration of \glspl{sn} coupled with
-a computational astrocyte model. Astrocytes, initially thought to be passive
-support cells in the brain are now known to actively participate in neural
-processing. The proposed astrocyte model is geared towards synaptic plasticity
-and is shown to generalize and extend \gls{stdp}. In addition, the model
-supports plasticity-focused multi-synapse integration. Logical AND was used as a
-test function for multi-synapse astrocyte plasticity, and convergence for a
-single \gls{lif} neuron with 2, 3, and 4 synapses was demonstrated. The
-plasticity model is general and many other functions could be used in-place of
-AND, taking advantage of a multi-synapse view.
+some of these novel features of the brain. As of yet, \glspl{snn} have not
+reached their full potential. This work explores the advancement of \glspl{snn}
+though introduction of a novel astrocyte model. Astrocytes, initially thought to
+be passive support cells in the brain are now known to actively participate in
+neural processing. The proposed astrocyte model is geared towards synaptic
+plasticity and is shown to generalize and extend \gls{stdp}. In addition, the
+model supports plasticity-focused multi-synapse integration. Logical AND was
+used as a test function for multi-synapse astrocyte plasticity, and convergence
+for a single \gls{lif} neuron with 2, 3, and 4 synapses was demonstrated. The
+plasticity model is general and many other functions could presumably be used
+in-place of AND, taking advantage of a multi-synapse view. This leaves a solid
+path forward for future work.
 
 \end{abstract}
 
@@ -257,7 +257,7 @@ inspired by biology and previous modeling efforts. The main contributions are
     implement a general form of classic \gls{stdp}, and improve local learning
     through temporal integration.
   \item Multi-synapse astrocyte plasticity was defined and explored with
-    success, using a logical AND as a test function.
+    success, using logical AND as a test function.
 \end{itemize}
 
 %% There are a handful of computational astrocyte models,
@@ -298,8 +298,7 @@ Due to its simplicity and computational efficiency the most popular \gls{sn}
 model explored in \gls{snn} literature is the \gls{lif} neuron. In this model
 there is an internal voltage, which increases as spikes arrive at the
 post-synaptic terminal of the neuron. Charge leaks from this internal reservoir
-over time, lowering the voltage \parencite{izhikevich_2004}.
-
+over time, lowering the voltage \parencite{ponulak_2011}.
 
 %% \eq{eq:lif} defines the behavior of a generic
 %% \gls{lif} model \parencite{izhikevich_2004}.
@@ -321,10 +320,11 @@ over time, lowering the voltage \parencite{izhikevich_2004}.
 %% neurons are fairly simple computationally, relying on exponential functions
 %% and thresholds in the functional definition.
 
-This work makes use of a \gls{lif} neuron model. While not the most
-bio-realistic, \gls{lif} neurons exhibit rich behavior with few parameters, and
-are easily extended. The goal here, is to remain computationally simple, while
-still leveraging unique features found in biology.
+This work makes use of a \gls{lif} neuron model which like other
+integrate-and-fire type models is not the most bio-realistic
+\parencite{izhikevich_2004}. However, \gls{lif} neurons exhibit rich behavior
+with few parameters, and are easily extended. The goal here, is to remain
+computationally simple, while still leveraging unique features found in biology.
 
 Equations (\ref{eq:lif:psp}), and (\ref{eq:lif:v}) define the differential equations that
 govern neuron \gls{psp} $v_{syn}$ and membrane voltage $v_{mem}$
@@ -337,7 +337,10 @@ d_{vmem} = -\tau_{mem} (v_{mem} + v_{syn}) d_t \label{eq:lif:v}
 
 Here, $z_{pre}$ represents the spiking activity on the synapse at time $t$ and
 has a value of either $0$ or $1$. $w$ is the synaptic weight. $\tau_{syn}$ and
-$\tau_{mem}$ are post-synaptic terminal and membrane timing constants.
+$\tau_{mem}$ are post-synaptic terminal and membrane timing constants. In these
+equations $d_t$ represents an small step in time, and $d_{vsyn/vmem}$
+corresponding steps in voltage. During simulation for this work the time-step
+was fixed to 1ms.
 
 The \gls{lif} neuron fires according to \eq{eq:lif:fire}, where $H$ is the
 Heaviside step function, and $thr_{mem}$ is the $v_{mem}$ threshold that
@@ -397,7 +400,7 @@ post-synaptic spike (downstream neuron fires), and weakened if a
 pre-synaptic spike follows post-synaptic spike.
 
 \asvgf{figures/heb_diagrams.svg}{Diagram showing \gls{stdp} and rate-based
-  hebbian learning $\Delta w$ response}{fig:heb_rate_stdp}{0.6}
+  hebbian learning $\Delta w$ response}{fig:heb_rate_stdp}{0.7}
 
 \eq{eq:classic_stdp} describes classic \gls{stdp}
 \parencite{tavanaei_2019}. $\tau$ in this case is a decay constant, which
@@ -436,11 +439,10 @@ can converge to a desired min/max weight distribution
 Much of the success in training \gls{snn} with \gls{stdp} relates back to some
 level of coordination, or supervision. For some learning rules there is a reward
 signal, for others there is inhibition based on the activity of other neurons,
-or some network-level activity. Figure \ref{fig:coordinated_stdp} shows the
-general form of a coordinated \gls{stdp} rule.
+or some network-level activity.
 
-\asvgf{figures/coordinated_stdp.svg}{\gls{lif} neuron with \gls{stdp}
-  learning and generic coordination signal}{fig:coordinated_stdp}{0.5}
+%% \asvgf{figures/coordinated_stdp.svg}{\gls{lif} neuron with \gls{stdp}
+%%   learning and generic coordination signal}{fig:coordinated_stdp}{0.5}
 
 There has been some success and increasing interest with a supervised variant on
 \gls{stdp}, known as \gls{rstdp}. Using a deep convolutional approach, a
@@ -463,11 +465,11 @@ achieved \parencite{mozafari_2018}.
 %% recognize discriminating features, instead of repeating ones.
 
 The ReSuMe learning rule is another variant of \gls{stdp}, which is similar to
-the \gls{rstdp} rule. With ReSuMe, a single neuron is initialized with random
-weight values. There is a 2nd similar neuron which implements the desired
-behavior. Inputs are provided to both neurons, and at each time step weights are
-updated according to the difference between the teaching neuron, and neuron in
-training. The weight update can be described by:
+the \gls{rstdp} rule \parencite{ponulak_2010}. With ReSuMe, a single neuron is
+initialized with random weight values. There is a 2nd similar neuron which
+implements the desired behavior. Inputs are provided to both neurons, and at
+each time step weights are updated according to the difference between the
+teaching neuron, and neuron in training. The weight update can be described by:
 
 \begin{align}
   \Delta w = \Delta W_{STDP}(S_{in}, S_{d}) + \Delta W_{aSTDP}(S_{in}, S_{o}) \label{eq:resume_stdp}
@@ -479,7 +481,7 @@ each term, the input spike is considered, but first with $S_{d}$ which is the
 desired output coming from the ideal neuron. Second, with the actual output
 \parencite{mozafari_2018}. Using this learning rule, it is possible to converge,
 from an untrained neuron, to one of similar configuration with a desired
-behavior \parencite{ponulak_2010}.
+behavior.
 
 %% The use of an additional synaptic input and
 %% the specifics of \eq{eq:resume_stdp} creates a unique extension to classic
@@ -773,7 +775,7 @@ W(\cam)=\cam$, resetting \ca each time the weight is changed implements classic
 \gls{stdp}.
 
 \asvgf{figures/artifacts/obj1/1n1s1a_tp_l-stdp_w-dw_mult_dwdt_astro_plasticity.svg}{Simulation
-  of astrocyte implementation of classic \gls{stdp}}{fig:stdp_dw_dt_impl}{0.7}
+  of astrocyte implementation of classic \gls{stdp}}{fig:stdp_dw_dt_impl}{0.8}
 
 The astrocyte model is capable of going beyond classic \gls{stdp}, by
 implementing some common variations found throughout the literature. These are
@@ -804,10 +806,10 @@ classic \gls{stdp}.
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_astro_0.svg}{
   Astrocyte response to successive spikes, displaying temporal pulse-pair
-  integration}{fig:ppi:impulse_istp}{0.7}
+  integration}{fig:ppi:impulse_istp}{0.8}
 
 \asvgf{figures/artifacts/obj2/snn_1n1s1a_tp_pulse_classic_0.svg}{
-  Classic \gls{stdp} response to successive spikes}{fig:ppi:impulse_stp}{0.7}
+  Classic \gls{stdp} response to successive spikes}{fig:ppi:impulse_stp}{0.8}
 
 Since weight changes are now based on multiple pre and post-synaptic spike
 pairs, integrated into a \ca response over time, the learning is more stable,
@@ -1080,7 +1082,7 @@ error). For $n=4$, there are 416 mismatches out of 3000 (13.9 \% error).
 %% (1n2s1a) configuration was simulated, given the same continuous inputs generated
 %% by concatenating 10ms bouts, but only of pre-synaptic spikes for $n=2$
 %% synapses. Where before, post-synaptic spikes were also randomly generated, now
-%% any post-synaptic activity is driven by an \gls{lif} neuron with synaptic
+%% any post-synaptic activity is driven by an \gls{lif} neuron wih synaptic
 %% weights. The initial synaptic weight is $\approx 0.7$.
 
 %% \begin{align}
@@ -1089,52 +1091,41 @@ error). For $n=4$, there are 416 mismatches out of 3000 (13.9 \% error).
 %%   dw_{syn} = ca_{syn} lr_{ltd} \textrm{ if } ca_{syn} < 0 \\
 %% \end{align}
 
-\asvgf{figures/artifacts/obj3/snn_1n2s1a_and.svg}{Weight change in the 2s1n1a
-  configuration, with the astrocyte directing synaptic
-  plasticity}{fig:snn_2s1a_and_w_dw}{0.9}
+\asvgf{figures/artifacts/obj3/astro_and_lif.svg}{Weight values and error rates
+  during learning in 2, 3, and 4 synapse
+  configurations}{fig:snn_astro_and}{1.0}
 
-Looking at Figure \ref{fig:snn_2s1a_and_w_dw}: Initially, synaptic weight values
-are too high, and the neuron fires in response to a single pre-synaptic
-spike. As expected, the astrocyte triggers \gls{ltd}, and the synaptic weight
-decreases. This continues, and the \gls{lif} neuron begins to fire in response
-to two pre-synaptic spikes. There was a slight over-correction, and some
-\gls{ltp} events occur, bringing the weights back up. Eventually, the synaptic
-weights converge and offer a good approximation of an AND function over the
-inputs. Looking at the bottom plot, there are two error rate traces, labeled
+Looking at the top two plots in Figure \ref{fig:snn_astro_and}: Initially,
+synaptic weight values are too high, and the neuron fires in response to a
+single pre-synaptic spike. As expected, the astrocyte triggers \gls{ltd}, and
+the synaptic weight decreases. This continues, and the \gls{lif} neuron begins
+to fire in response to two pre-synaptic spikes. There was a slight
+over-correction, and some \gls{ltp} events occur, bringing the weights back
+up. Eventually, the synaptic weights converge and offer a good approximation of
+an AND function over the inputs.
+
+Looking at the second plot, there are two error rate traces, labeled
 $+\Delta w$ (blue) and $-\Delta w$ (orange). These indicate example inputs where the neuron
 responded incorrectly, and one or more synaptic weights needed to be increased,
 or decreased respectively. Summing these two error rates give an overall error
 rate.
 
 Initial simulation with $n=2$ demonstrated success for coordinated astrocyte
-plasticity. This convergence to an AND function needs further exploration
-however, and since the approach was developed to work with any number of synapses, it was
-important to evaluate larger values of $n$.
-
-\asvgf{figures/artifacts/obj3/snn_1n3s1a_and.svg}{Weight change in the 3s1n1a
-  configuration, with the astrocyte directing synaptic
-  plasticity}{fig:snn_3s1a_and_w_dw}{0.9}
-
-\asvgf{figures/artifacts/obj3/snn_1n4s1a_and.svg}{Weight change in the 4s1n1a
-  configuration, with the astrocyte directing synaptic
-  plasticity}{fig:snn_4s1a_and_w_dw}{0.9}
-
-Figures \ref{fig:snn_3s1a_and_w_dw} and \ref{fig:snn_4s1a_and_w_dw} show the
-progression of learning in 3 and 4 synapse configurations. In each case, the
-addition of a synapse beyond 2 results in increased noise and oscillations in
-the weight values towards the end of simulation. Though still moving in the
-right direction, the astrocyte plasticity approach provides results with
-significant error. Looking at the mean error rate towards the end of
-simulation, it is upwards of $20\%$. In order to better explain what is
-going on, consider the two error rates, in the lower plot of Figure
-\ref{fig:snn_4s1a_and_w_dw}. There is an oscillation, between the majority of
-errors involving $+\Delta W$ (blue, weight values are too low) and $-\Delta W$
-(orange, weight values are too high). This indicates that optimal weight values
-are being under and overshot repeatedly. Oscillation which prevents proper
-convergence is a common problem in learning rules, and is not a fundamental
-drawback. Though it wasn't explored here, some reasonable next steps would be to
-introduce a learning rate schedule, or to add the concept temporal integration
-at the regional level. Simply lowering the overall learning rate lead to better
+plasticity. Testing the learning approach further, lower plots show similar
+simulation with 3 and 4 synapse configurations. In each case, the addition of a
+synapse beyond 2 results in increased noise and oscillations in the weight
+values towards the end of simulation. Though still moving in the right
+direction, the astrocyte plasticity approach provides results with significant
+error. Looking at the mean error rate towards the end of simulation, it is
+upwards of $20\%$. In order to better explain what is going on, consider the
+error rate plots. There is an oscillation, between the majority of errors
+involving $+\Delta W$ (blue, weight values are too low) and $-\Delta W$ (orange,
+weight values are too high). This indicates that optimal weight values are being
+under and overshot repeatedly. Oscillation which prevents proper convergence is
+a common problem in learning rules, and is not a fundamental drawback. Though it
+wasn't explored here, some reasonable next steps would be to introduce a
+learning rate schedule, or to add the concept temporal integration at the
+regional level. Simply lowering the overall learning rate lead to better
 convergence, but with a higher error rate than observed with the noisy solution.
 
 To ensure the learning rule is robust to weight initial conditions the starting
@@ -1145,13 +1136,13 @@ which indicate the initial weight value does have some effect on learning, but
 overall convergence was unaffected, and the error rates are approximately the
 same as previous runs.
 
-\asvgf{figures/artifacts/obj3/snn_2s1a_and_w.svg}{Weight change in the 1n2s1a
+\asvgf{figures/artifacts/obj3/snn_2s1a_and_w.svg}{Weight change in the 2s1n1a
   configuration, with random initial weight values between $0.0$ and
-  $2.0$}{fig:snn_2s1a_and_w_dw_w}{0.9}
+  $2.0$}{fig:snn_2s1a_and_w_dw_w}{1.0}
 
-\asvgf{figures/artifacts/obj3/snn_4s1a_and_w.svg}{Weight change in the 1n4s1a
+\asvgf{figures/artifacts/obj3/snn_4s1a_and_w.svg}{Weight change in the 4s1n1a
   configuration, with random initial weight values between $0.0$ and
-  $2.0$}{fig:snn_4s1a_and_w_dw_w}{0.9}
+  $2.0$}{fig:snn_4s1a_and_w_dw_w}{1.0}
 
 
 \section{Conclusion} \label{section:conclusion}

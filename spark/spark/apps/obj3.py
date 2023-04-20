@@ -111,7 +111,7 @@ def _graph_n_syn_coupled_astro_lif(
     w_err_only=False,
     fig=None,
     axes=None,
-    err_no_legend=True
+    err_no_legend=True,
 ):
 
     if (fig is None) or (axes is None):
@@ -566,7 +566,7 @@ def _main(args):
     ca_th = 0.81
     xlim = (75, 100)
 
-    plot.rc_config({'font.size': 14})
+    plot.rc_config({'font.size': 18})
 
     if args.astro_nsyn_poisson:
         cfgs, num_cfgs = _cfg_gen(
@@ -713,7 +713,25 @@ def _main(args):
 
         # Graph for each distinct value of n
         # for n, db_syn in db.group_by('n').items():
-        for db_syn in dbs:
+        # import code
+        # code.interact(local=dict(globals(), **locals()))
+        # exit(1)
+
+        fig=None
+        axes=None
+
+        gs = plot.gs(6, 1)
+        fig, axes = plot.gen_axes(
+            ('w0', gs[0]),
+            ('err0', gs[1]),
+            ('w1', gs[2]),
+            ('err1', gs[3]),
+            ('w2', gs[4]),
+            ('err2', gs[5]),
+            figsize=(8,20),
+        )
+        
+        for i, db_syn in enumerate(dbs):
             n = db_syn.meta['n']
 
             # Get plot descr
@@ -723,30 +741,44 @@ def _main(args):
             db_cat = db_syn.cat()
 
             # Graph error
-            gs = plot.gs(1, 1)
-            fig, axes = plot.gen_axes(
-                ('err', gs[0]),
-                figsize=(8,6),
-            )
-            plot.plot_err(axes, ('err',), db_cat['err'], db_cat['regions'])
-            fig_path = "{}_err.svg".format(descr)
-            print("Saving: ", fig_path)
-            fig.tight_layout()
-            fig.savefig(fig_path)
+            # gs = plot.gs(1, 1)
+            # fig, axes = plot.gen_axes(
+            #     ('err', gs[0]),
+            #     figsize=(8,6),
+            # )
+            # plot.plot_err(axes, ('err',), db_cat['err'], db_cat['regions'])
+            # fig_path = "{}_err.svg".format(descr)
+            # print("Saving: ", fig_path)
+            # fig.tight_layout()
+            # fig.savefig(fig_path)
 
             # Graph weight timeline
-            fig, axes = _graph_n_syn_coupled_astro_lif(db_cat, n, xlim=None, w_err_only=True)
-            fig_path = "{}.svg".format(descr)
-            print('Saving: ', fig_path)
-            fig.tight_layout()
-            fig.savefig(fig_path)
+            plot.plot_w(
+                axes, (f"w{i}",),
+                db_cat['tl']['w'],
+                title=f"Weight Progression for {n} Synapses"
+            )
+
+            plot.plot_err(
+                axes, (f"err{i}",),
+                db_cat["err"],
+                db_cat["regions"],
+                legend=True,
+                title=f"Error Rates for {n} Synapse LIF Neuron"
+            )
 
             # Limit X range
-            fig, axes = _graph_n_syn_coupled_astro_lif(db_cat, n, xlim=(0,200))
-            fig_path = "{}_xlim.svg".format(descr)
-            print('Saving: ', fig_path)
-            fig.tight_layout()
-            fig.savefig(fig_path)
+            # fig, axes = _graph_n_syn_coupled_astro_lif(db_cat, n, xlim=(0,200))
+            # fig_path = "{}_xlim.svg".format(descr)
+            # print('Saving: ', fig_path)
+            # fig.tight_layout()
+            # fig.savefig(fig_path)
+
+        fig_path = "{}.svg".format("astro_and_lif")
+        print('Saving: ', fig_path)
+        fig.tight_layout()
+        fig.savefig(fig_path)
+
 
 
 
